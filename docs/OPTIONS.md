@@ -1014,3 +1014,35 @@ false`) — ein Hinweis, keine kalibrierte Ausreißererkennung. `rang_status` ne
 niedrigste 8 nach Percentile, die tiefe Liste ohne Ticker der hohen, markiert statt ausgeblendet, kein Signal).
 Live 15.10.: Sprungmarken Skew/RR 11 · 5 · 6 von 150 (3 M · 6 M · 1 J), neuer Rand 15 · 6 · 2.
 Wächter `verify_skew_rang.py`, Mutation 44/44.
+
+## /skew überarbeitet (2026-10-17)
+
+Nutzerwünsche, je Paket mit Codex bis Freigabe ([Seite R1–R3](review_prompts/2026-10-17_skew_seite_r1.md),
+[Kacheln R1–R2](review_prompts/2026-10-17_skew_kacheln_r1.md)).
+
+- **Fest 1 Jahr + Percentile.** Schalter Fenster (3M/6M/1J) und Rank/Percentile entfernt — 3M hat im Median nur 56
+  normierte Punkte je Ticker, der Rank kippt an einem einzelnen Ausreißer. Der Cron (`shared/skew_rang.py`) liefert
+  weiter alle Fenster und Rank (Tooltip „Rank · Percentile · n“), die Seite liest nur `365`/`pctl`.
+- **Standardkategorie „Alle“** (vorher Mag7 → VRP zeigte 7 Ticker). Jede Kachel unter dem Radar nennt die aktive
+  Kategorie und die Tickerzahl.
+- **Zeile unter dem Radar:** „Letzte Aktualisierung“ = `Last-Modified` der `options_skew.json` (Zeitpunkt des Cron-
+  Schreibens), Session, „a von b Tickern im Radar“, aufklappbar die fehlenden mit Grund (keine Kette aus
+  `coverage.failed`, zu kurz aus `rang_status`, sonst keine 30-Tage-Messung). Ohne Rang derselben Session nur ein
+  Hinweis. `SKEW_RANG` enthält nur Ticker mit Messwert im Lauf (ein zweiter Lauf derselben Session ließ sonst einen
+  gescheiterten Ticker mit altem Rang stehen). Cron schreibt `coverage.failed[].cats`.
+- **Kacheln:** Skew-Verlauf | Term-Structure, Smile | Markt-Kontext, VRP | Vol-Trigger, darunter die Kennzahlen.
+  VRP als HTML-Balken (Ticker und Wert auf der freien Seite der Nulllinie, nicht weiß auf hellgrün), so hoch wie der
+  Vol-Trigger, scrollt in sich.
+- **Vol-Trigger:** Call-/Put-Wall mit Veränderung zur Vorsession in Klammern (grün höher, rot tiefer — Nutzer-
+  entscheidung), aus `gex_history_session/<datum>.json` (jüngste Datei vor der Session, bis 10 Tage zurück). Halbe
+  Strikes mit einer Nachkommastelle, Farbe nach ungerundetem Vorzeichen; ist die gefundene Datei nicht der vorige
+  Werktag (Archivlücke oder Feiertag), `*` an jeder Differenz und Hinweis mit Datum. Fußnote: nach Verfallstagen
+  verschieben sich Walls oft mechanisch. Quellenzeile („EOD-GEX aus Yahoo-Optionsketten“ — falsch, GEX kommt aus
+  Massive) entfernt.
+- **Vol-Kennzahlen:** zweispaltig, eigene Sortierung über alle Zeilen (`SKEW_KZ_SORT`, leer immer hinten), beide
+  Tabellen mit `<thead>` und `data-no-sort`; ausgeblendet werden nur Zeilen ohne jede Kennzahl (PFE/OKLO behalten am
+  16.10. ihren NE-Skew — an diesem Verfallstag war nur ein Verfall nahe 30 Tagen auswertbar).
+- **Fehler seitenweit:** `SA.makeSortable` (`landing/js/app.js`) sortierte im impliziten `<tbody>` einer per
+  `innerHTML` gebauten Tabelle die Kopfzeile mit — nach dem ersten Sortieren verschwanden die Überschriften, auf jeder
+  so gebauten Tabelle. Wächter `scripts/js/probe_sortierer.js` (jsdom, Gegenprobe alte app.js rot) im Gate.
+- Extremblock 2×2, „79 %“ statt „P79“, „182 Tage“ statt „n 182“, Markierungen unter dem Ticker.

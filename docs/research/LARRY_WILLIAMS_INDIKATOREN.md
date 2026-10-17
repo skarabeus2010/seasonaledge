@@ -264,6 +264,30 @@ Trading Starter Pack“ (StockCharts) und „Larry Williams Futures/Stock Indica
 
 ## C. Kursmuster
 
+> **Ereignisstudie 2026-10-17** (vorab festgelegter Plan, Codex-Freigabe: [Plan v2](../review_prompts/2026-10-17_williams_muster_plan_v2.md)
+> + [v3](../review_prompts/2026-10-17_williams_muster_plan_v3.md) + [v4](../review_prompts/2026-10-17_williams_muster_plan_v4.md);
+> Code `scripts/research/williams_muster.py`, Wächter `scripts/verify_williams_muster.py`, Ausgaben auf dem Server
+> `logs/williams/`, eingefroren an Commit `2073cea`). 317 Aktien/ETFs, Überrendite auf 5 Sitzungen gegenüber
+> derselben Kontrolle desselben Tickers, stationärer Bootstrap, Holm über 10 Hypothesen.
+>
+> | Muster | Entdeckung 2000–2023 | Hälften | Prüfzeitraum 2024–09/2026 |
+> |---|---|---|---|
+> | Smash Day Kauf (R_bek) | **+14,5 Bp**, n 380 141, p 0,0008 | +22 / +9 | +16,8 Bp, p₁ 0,024 — **nicht bestätigt** (Holm 0,017) |
+> | Smash Day Verkauf (Short-Sicht) | **+14,3 Bp**, n 438 031, p 0,00001 | +18 / +12 | +13,4 Bp, p₁ 0,029 — **nicht bestätigt** (Holm 0,025) |
+> | Smash Day Verkauf, Stopp-Einstieg | +12,8 Bp, p 0,0018 | +21 / +8 | +14,9 Bp, p₁ 0,092 — nicht bestätigt; netto absolut −36 Bp |
+> | Outside Day Kauf/Verkauf | +10 … +15 Bp, p 0,04–0,08 | gleich | nicht weitergereicht |
+> | Inside Day (\|R\|) | −0,7 %, n. s. | | nicht weitergereicht |
+> | kleiner Kerzenkörper (Blast-Off-Regel, \|R\|) | +0,2 %, n. s.; Spanne 0,0 % | | nicht weitergereicht |
+>
+> **Lesart:** Smash Day zeigt eine Gegenbewegung in beide Richtungen — wahrscheinlich der allgemeine Kurzfrist-
+> Umkehreffekt nach starken Tagen, nicht Williams-spezifisch (nicht geprüft, ob das Muster mehr leistet als „großer
+> Tagesverlust“). Der Effekt schrumpft (zweite Hälfte etwa halb so groß); Survivorship (heutige Ticker) schönt eher
+> den Kauf-Fall. Inside Day und Blast-Off ohne messbaren Effekt — auch nicht im Betrag der Folgebewegung.
+>
+> **Folgen (Nutzerentscheidungen):** Smash Day steht als Muster in der Morgen-Mail (`shared/kursmuster.py`, grün
+> Kauf-/rot Verkauf-Setup, nicht im Score, Legende nennt „nicht bestätigt“); der Blast-Off-Bonus ist aus dem
+> Technical Score entfernt, BO bleibt Info-Spalte.
+
 ### 20. Oops!
 - **Beschreibung:** Eröffnung mit Lücke unter dem Vortagestief, Rückkehr in die Vortagesspanne; benannt nach dem
   Anruf eines Brokers, dessen Kunden-Stopps die Lücke ausgelöst hatte.

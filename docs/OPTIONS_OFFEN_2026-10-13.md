@@ -1,6 +1,25 @@
-# Optionen — offene Aufgaben (Stand 2026-10-16)
+# Optionen — offene Aufgaben (Stand 2026-10-17)
 
-## Nächster Tag (17.10.) — Reihenfolge
+## Stand 17.10. (erledigt)
+- **GEX-Abendlücke gefunden:** Yahoo liefert den Tagesbalken der Session, aber `close = None` etwa 00:00–01:00 UTC
+  (Proben 17.10. 00:15/00:45); der GEX-Lauf 16.10. 00:21 UTC fiel genau hinein. Um 20:30 UTC noch vorläufiger
+  Schluss (SPY 763,23 statt 763,25), ab 22:15 und ab 02:00 korrekt. Massive liefert Tagesbalken und `/prev` der
+  Session nach Mitternacht New York (17.10. 07:47 UTC belegt); Aktien-Aggregate dort eng rate-limitiert (429 ab ~6
+  Abrufen am Stück). Nachlauf `sa-gexnachlauf-1017` 08:00 UTC: 20/20, Archiv 16.10., Key Levels ok.
+- **B3a/B3b laufen:** `rang_session = session`, 149 Ticker im Rang; History mit `rv_1m`, IV/RV-Rang `zu_kurz` (n = 1).
+- **/skew überarbeitet** (Details: [OPTIONS.md](OPTIONS.md#skew-überarbeitet-2026-10-17)).
+
+## Nächste Schritte
+1. **Massive-Proben auswerten:** Timer `sa-massiveprobe` fragt in den Nächten nach den Sessions 19.10. und 20.10.
+   (20:00–07:30 UTC, alle 30 min) Tagesbalken SPY/QQQ und `/prev` SPY ab → `/root/massive_abend/`. Frage: ab wann
+   gibt Massive den Balken frei? Dann Spot-Regel mit Codex: GEX-Lauf als systemd-Timer nach Mitternacht New York mit
+   Massive-Spot (Rate-Limit beachten) **oder** Yahoo mit Wiederholung bei `close = None`. Achtung Morgen-Mail 05:30
+   UTC, falls sie GEX-Werte zeigen soll.
+2. Gescheiterte Ticker zählen auf /skew je Kategorie erst, wenn der Options-Cron `coverage.failed[].cats` schreibt
+   (ab Lauf 18.10.) — einmal ansehen.
+3. Vanna-Vorzeichen gegen FlashAlpha (GitHub-Recherche: `aaguiar10/gflows` normiert Vanna mit ·S·σ, Charm mit ·S·T).
+
+## Archiv: Liste für den 17.10.
 1. **GEX-Abendproblem auswerten:** Proben `/root/yahoo_abend/*.json` (16.10. 20:30/22:15, 17.10. 00:15/00:45/02:00/04:30
    UTC) — was liefert Yahoo am Abend für den Tagesbalken der Session (fehlt er, `close` None, anderer Zeitstempel)?
    Dann die Spot-Regel festlegen (mit Codex). Bis dahin: Nachlauf `sa-gexnachlauf-1017` (17.10. 08:00 UTC) schreibt GEX
