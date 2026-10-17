@@ -529,7 +529,8 @@ def block_reparatur() -> None:
 SCHREIBER_MIT_NUMMERN = {"scripts/nightly_refresh.py", "scripts/intraday_refresh.py", "scripts/backfill_new_ticker.py",
                          "scripts/fix_missing_days.py", "scripts/backfill_tdoy.py"}
 SCHREIBER_OHNE_NUMMERN = {"scripts/backfill_ohlc.py", "scripts/backfill_log_return.py", "scripts/fix_ohlc_adjustment.py",
-                          "scripts/fix_log_returns_may2026.py"}   # einmalige log_return-Korrektur ^GDAXI
+                          "scripts/fix_log_returns_may2026.py",   # einmalige log_return-Korrektur ^GDAXI
+                          "scripts/repair_kopierte_zeilen.py"}    # einmalige Reparatur kopierter Zeilen 2026-10
 SCHREIB_MUSTER = re.compile(r"upsert_prices\s*\(|table\(\s*[\"']prices[\"']\s*\)\s*\.\s*(upsert|update|insert)\s*\(")
 
 
