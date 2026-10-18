@@ -463,7 +463,7 @@ Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`
 | Daily Health | `daily_health.yml` | `0 5 * * *` | System-Health-Mail (refresh_log/Freshness) |
 | **DB Completeness** | `db_completeness.yml` | `0 5 * * 0` (So) | 4-Dim-Audit + Orphan-/Stale-Erkennung + Auto-Fix + Mail |
 | Full Scanner | `full_scanner.yml` | `0 3 * * 0` (So) | scanner_results + ki_scores für alle Ticker |
-| Brier Compute | `brier_compute.yml` | `0 2 * * 0` (So) | Polymarket-Brier-Kalibrierung |
+| Brier Compute | `brier_compute.yml` | nur manuell (seit 2026-10-18) | Polymarket-Brier-Kalibrierung |
 | Polymarket Daily/Intraday | `polymarket_daily.yml` / `polymarket_intraday.yml` | `30 21 * * *` / `23 * * *` | Prognosemarkt-Snapshots (Intraday FOMC-Fenster) |
 | Weekly Newsletter (manuell) | `weekly_newsletter_manual.yml` | `workflow_dispatch` | test/dry-run/live |
 

@@ -653,7 +653,9 @@ def collect_health_data() -> dict:
                        "detail": f"Query-Fehler: {str(e)[:100]}", "value": "ERR"})
         downgrade("red")
 
-    # ── Check 6c: Brier-Stats (Polymarket-Kalibrierung, wöchentlich) ──
+    # ── Check 6c: Brier-Stats (Polymarket-Kalibrierung, seit 2026-10-18 nur manuell) ──
+    # Kein Zeitplan mehr (brier_compute.yml) → Alter ist kein Fehler; nur eine
+    # fehlende Datei ist rot (dann bleibt der Abschnitt auf /polymarket leer).
     try:
         import os as _os
         _brier_path = "/app/landing/data/brier_stats.json"
@@ -668,14 +670,8 @@ def collect_health_data() -> dict:
         else:
             _mtime = datetime.fromtimestamp(_os.path.getmtime(_brier_path), tz=timezone.utc)
             _age_days = (now_utc - _mtime).days
-            if _age_days <= 10:
-                status, detail = "green", f"Zuletzt berechnet: {_mtime.date()} ({_age_days}d)"
-            elif _age_days <= 14:
-                status = "yellow"
-                detail = f"{_mtime.date()} ({_age_days}d, erwartet ≤10d)"
-            else:
-                status = "red"
-                detail = f"{_mtime.date()} ({_age_days}d alt, Cron greift nicht)"
+            status = "green"
+            detail = f"Zuletzt berechnet: {_mtime.date()} ({_age_days}d, Lauf nur manuell)"
             checks.append({
                 "name": "Brier-Stats",
                 "status": status,

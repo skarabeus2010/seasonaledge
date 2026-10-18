@@ -1,16 +1,17 @@
-name: Brier Score Compute (Weekly)
+name: Brier Score Compute (manuell)
 
 # Fuehrt Scraper fuer resolved markets + Brier-Score-Berechnung aus.
-# Separat vom nightly_refresh.py Phase H, weil der Scraper 15-30 Min
-# braucht (~1500 Markets × Preis-Historie) und den Nightly blockieren
-# wuerde. Schreibt landing/data/brier_stats.json fuer die /polymarket-Page.
+# Schreibt landing/data/brier_stats.json fuer die /polymarket-Page.
+#
+# Seit 2026-10-18 NUR manuell (Nutzerentscheidung). Der woechentliche Lauf
+# (Sonntag 02:00 UTC, real ~08-09 UTC) war der einzige lange Job, den ein
+# Deploy noch per SIGKILL beenden konnte (11.10.), die Kalibrierung aendert
+# sich ueber Wochen kaum, und die Stichprobe ist bis zur Entscheidung ueber
+# die Brier-Stichprobe und B4 (Aufloesungsbeleg statt endDate) offen.
+# Danach hoechstens monatlich wieder einplanen. Vor dem Ausloesen: nicht
+# pushen, solange der Lauf geht (ausserhalb der Deploy-Sperre).
 
 on:
-  schedule:
-    # Sonntag 02:00 UTC (04:00 MESZ) — ausserhalb aller Handelszeiten,
-    # vor dem Nightly Phase H (der brier_stats.json neu erzeugt basierend
-    # auf der aktualisierten polymarket_resolved_markets-Tabelle).
-    - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       tags:
