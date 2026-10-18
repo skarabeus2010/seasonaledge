@@ -248,6 +248,7 @@
   <script src="/landing/js/app.js"></script>
   <script src="/landing/js/kurse.js"></script>
   <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
   <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/dash-compute.js"></script>
@@ -314,19 +315,19 @@
       try {
         var ex = SA.holidays.detect(ticker || '') || 'NYSE';
         return ex === 'NONE' ? 'NYSE' : ex;
-      } catch (e) { return 'NYSE'; }
+      } catch (e) { if (SA.kalenderMethode !== 'alt') throw e; return 'NYSE'; }
     }
     function _lastTradingDay(ticker, year, month, nFromEnd) {
       try { return SA.holidays.lastTradingDay(year, month, nFromEnd || 1, exchangeFor(ticker)); }
-      catch (e) { return null; }
+      catch (e) { if (SA.kalenderMethode !== 'alt') throw e; return null; }
     }
     function _nthTradingDay(ticker, year, month, n) {
       try { return SA.holidays.nthTradingDay(year, month, n, exchangeFor(ticker)); }
-      catch (e) { return null; }
+      catch (e) { if (SA.kalenderMethode !== 'alt') throw e; return null; }
     }
     function _nearForward(ticker, year, month, day) {
       try { return SA.holidays.nextTradingDay(year, month, day, exchangeFor(ticker)); }
-      catch (e) { return null; }
+      catch (e) { if (SA.kalenderMethode !== 'alt') throw e; return null; }
     }
 
     /**

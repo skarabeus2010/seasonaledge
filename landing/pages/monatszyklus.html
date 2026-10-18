@@ -298,6 +298,7 @@
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/significance.js"></script>
   <script src="/landing/js/outlier.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
   <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/decade-compute.js"></script>
 
@@ -439,7 +440,7 @@
       var tm = today.getMonth() + 1;
       var td = today.getDate();
       var ex;
-      try { ex = SA.holidays.detect(ticker || ''); } catch(e) { ex = 'NONE'; }
+      try { ex = SA.holidays.detect(ticker || ''); } catch(e) { if (SA.kalenderMethode !== 'alt') throw e; ex = 'NONE'; }
       // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive.
       // An Wochenenden/Feiertagen wird der heutige Nicht-Handelstag nicht
       // mitgezählt → der Marker landet automatisch auf dem letzten Handelstag

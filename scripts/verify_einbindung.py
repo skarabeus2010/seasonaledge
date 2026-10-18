@@ -22,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import pathlib
+import json
 import re
 import shutil
 import subprocess
@@ -75,9 +76,14 @@ def js_dateien():
     return sorted(JS.glob("*.js"))
 
 
+SA_EN = sorted((WURZEL / "landing" / "en").glob("*.html")) if "--mit-en" in sys.argv else []
+
+
 def html_dateien():
     out = [p for p in sorted((WURZEL / "landing").rglob("*.html")) if "en" not in p.relative_to(WURZEL / "landing").parts[:1]]
+    out += SA_EN   # erzeugte EN-Seiten nur mit --mit-en (nach build_en.py; im Gate gibt es landing/en/ noch nicht)
     out += sorted((WURZEL / "blog" / "templates").glob("*.html"))
+    out += sorted((WURZEL / "seo" / "tools").glob("*.html"))   # nginx liefert /tools/ direkt von dort (Kalender V2)
     return out
 
 
@@ -102,7 +108,7 @@ def seiten():
     from shared import kalender_methode
     pruefe("Methode: methode.js = shared/kalender_methode.LESER", methode_js == kalender_methode.LESER,
            "%s / %s" % (methode_js, kalender_methode.LESER))
-    befunde, apex, boerse, methoden = [], [], [], set()
+    befunde, apex, boerse, methoden, reihenfolge = [], [], [], set(), []
     anzahl = 0
     for p in html_dateien():
         t = lesen(p)
@@ -117,15 +123,29 @@ def seiten():
         a = re.search(r'<script[^>]*src="[^"]*apexcharts[^"]*"', t)
         if a and m_pos is not None and a.start() > m_pos:
             apex.append(str(p.relative_to(WURZEL)))
-        if any(m.group(1) == "boersenkalender" for m in skripte):
-            boerse.append(str(p.relative_to(WURZEL)))
+        namen = [m.group(1) for m in skripte]
+        if "boersenkalender" in namen:
+            rel = str(p.relative_to(WURZEL)).replace("\\", "/")
+            boerse.append(rel)
+            # Reihenfolge methode.js → boersenkalender.js → holidays.js (Fassade braucht das Bundle beim Laden)
+            # (der Converter lädt kein holidays.js — dort genügt methode.js → boersenkalender.js)
+            if not ("methode" in namen and namen.index("methode") < namen.index("boersenkalender")
+                    and ("holidays" not in namen or namen.index("boersenkalender") < namen.index("holidays"))):
+                reihenfolge.append(rel)
     pruefe("Seiten: Bootstrap vollständig und methode.js zuerst (%d Seiten)" % anzahl, not befunde, befunde[:5])
     # ApexCharts steht auf einigen Seiten HINTER den eigenen Skripten. methode.js hüllt es deshalb über einen
     # Setter auf window.ApexCharts (auch späte Zuweisung); die Wirkung belegt die Sperrprobe mit echten Seiten.
     mj = lesen(JS / "methode.js")
     pruefe("Seiten: Chart-Hülle unabhängig von der Ladereihenfolge (%d Seiten laden ApexCharts später)" % len(apex),
            "Object.defineProperty(window, 'ApexCharts'" in mj and "set: function (v) { apexWert = huelleCharts(v); }" in mj)
-    pruefe("Seiten: boersenkalender.js von keiner Seite eingebunden (bis zur Umschaltung)", not boerse, boerse[:3])
+    soll = json.loads(lesen(WURZEL / "scripts" / "fixtures" / "einbindung_manifest.json"))["kalender_seiten"]
+    if SA_EN:   # EN-Fassung jeder Manifestseite unter ihrer EN-Adresse (Kalender V2, Codex Code R1)
+        from shared.seo_basis import en_slug
+        soll = soll + ["landing/en/%s.html" % en_slug(pathlib.PurePosixPath(x).stem) for x in soll
+                       if x.startswith("landing/pages/") and (WURZEL / "landing" / "en" / (en_slug(pathlib.PurePosixPath(x).stem) + ".html")).exists()]
+    pruefe("Seiten: boersenkalender.js genau auf den Seiten des Manifests (%d)" % len(soll),
+           sorted(boerse) == sorted(soll), sorted(set(boerse) ^ set(soll))[:5])
+    pruefe("Seiten: Reihenfolge methode.js → boersenkalender.js → holidays.js", not reihenfolge, reihenfolge[:5])
     pruefe("Methode: jede Seite trägt die Methode aus methode.js", methoden == {methode_js}, sorted(methoden))
 
 

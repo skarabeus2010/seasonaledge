@@ -105,6 +105,7 @@ jobs:
       # dem Schritt "Handelstag-Nummern" installiert.
       - name: Waechter - Sitzungshelfer
         run: python3 scripts/verify_sitzungen.py
+
       # Daily Briefing auf dem systemd-Timer (2026-10-12): ein Live-Versand je Berliner Datum, Wiederaufnahme ohne
       # Doppelte, Health-Check nur Live-Laeufe + 10:00-Frist, kein GitHub-Zeitplan. --streng: unter Linux muss auch
       # der parallele Lauf (flock) gepruefte sein, UNGEPRUEFT ist rot.
@@ -170,6 +171,10 @@ jobs:
         run: |
           npm ci --prefix scripts/perf --no-audit --no-fund
           python3 scripts/verify_seiten_kurse.py
+      # Kalender V2 (docs/review_prompts/2026-10-18_kalender_v2_*): Fassade SA.holidays, Header, Converter — braucht
+      # jsdom aus dem npm ci darüber (echte Seiten, alt gegen HEAD).
+      - name: Waechter - Kalender-Fassade, Header und Converter (V2)
+        run: python3 scripts/verify_holidays_fassade.py
       # Tabellen-Sortierung (jsdom, braucht das npm ci darüber): SA.makeSortable laesst die Kopfzeile oben, auch im
       # impliziten <tbody>; /skew Vol-Kennzahlen sortiert beide Haelften gemeinsam (2026-10-17).
       - name: Waechter - Tabellen-Sortierung
@@ -261,6 +266,8 @@ jobs:
             # Jetzt die Reverts: inject_credentials.sh aendert landing/
             # in-place, und diese Aenderungen blockieren sonst das Vorspulen.
             git checkout -- seo/output/ 2>/dev/null || true
+            # seo/tools/ traegt seit Kalender V2 Releasekennung + Cache-Buster (Converter) — beides In-Place.
+            git checkout -- seo/tools/ 2>/dev/null || true
             git checkout -- landing/ 2>/dev/null || true
 
             # Ab hier ist der Baum angefasst. Scheitert das Vorspulen, traegt

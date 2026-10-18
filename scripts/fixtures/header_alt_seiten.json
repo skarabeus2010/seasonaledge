@@ -1,0 +1,81 @@
+{
+ "schema": 1,
+ "uhr": "2026-08-01T15:00:00Z",
+ "quelle": "git archive HEAD (Stand vor Kalender V2)",
+ "seiten": {
+  "backtest-engine": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "crash-fruehwarnung": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "dashboard": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "dekadenzyklus": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "feiertage": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "intermarket-shocks": [
+   ""
+  ],
+  "jahreszyklus": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "ki-saisonalitaet": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "kriegszeiten": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "monatswechsel": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "monatszyklus": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "mondphasen": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "opex": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "overnight": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "plain-vanilla": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "risikozyklus": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "sektor-rotation": [
+   "Heute: Sa 01.08.2026 · 23 Sektoren · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "spot-vol-beta": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "tdom-analyse": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "trifecta": [
+   "Heute: Sa 01.08.2026 · ^DJI · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "vixpiration": [
+   "Heute: Sa 01.08.2026 · SPY · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "wochentage": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ],
+  "zentralbanken": [
+   "Heute: Sa 01.08.2026 · ^GSPC · TDOM 0/21 · TWOY 31/53 · TDOY 145/251 · Q3 · MidTerm"
+  ]
+ },
+ "converter": [
+  "01.08.2026 Samstag <span class=\"sep\">·</span> CDOY 213 <span class=\"sep\">·</span> <em style=\"color:#5a6e85;\">kein Handelstag</em>",
+  "02.07.2026 Donnerstag <span class=\"sep\">·</span> CDOY 183 <span class=\"sep\">·</span> <span class=\"blue\">TDOM 2</span><span class=\"sub\">/22</span> <span class=\"sep\">·</span> TDOY 125<span class=\"sub\">/~252</span>",
+  "24.12.2026 Donnerstag <span class=\"sep\">·</span> CDOY 358 <span class=\"sep\">·</span> <span class=\"blue\">TDOM 18</span><span class=\"sub\">/22</span> <span class=\"sep\">·</span> TDOY 247<span class=\"sub\">/~252</span>"
+ ]
+}

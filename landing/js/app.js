@@ -777,13 +777,14 @@ SA.fetchAllPrices = function(ticker, extraFilter) {
  * @param {string} ticker - Aktueller Ticker
  * @param {Array} [rows] - optional, fallback fuer Nicht-Handelstage
  */
-SA.renderTradingDayHeader = function(elementOrId, ticker, rows) {
+SA.renderTradingDayHeader = function(elementOrId, ticker, rows, kalenderTicker) {
   var el = (typeof elementOrId === 'string')
     ? document.getElementById(elementOrId)
     : elementOrId;
   if (!el) return;
 
   var isEN = window.location.pathname.indexOf('/en/') === 0 || window.location.pathname === '/en';
+  if (SA.kalenderMethode === 'kalender_v1') return SA._headerKalenderV1(el, ticker, kalenderTicker, isEN);
   var weekdays = isEN
     ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -861,6 +862,62 @@ SA.renderTradingDayHeader = function(elementOrId, ticker, rows) {
     ' \u00B7 TDOY ' + tdoyCount + '/' + tdoyTotal +
     ' \u00B7 Q' + quarter +
     ' \u00B7 ' + cycleNames[cycle];
+};
+
+/**
+ * Header unter der Kalendermethode 'kalender_v1' (Kalender V2, Vertrag B1; Entwurf v2/v3).
+ * Alle Felder aus EINEM Börsendatum: heute(boerse, jetzt) in der Börsenzone (CRYPTO/FOREX UTC). Zähler aus
+ * SA.boersenkalender.nummern — an geschlossenen Tagen kumuliert (NYSE 01.08.2026 = TDOM 0, TDOY 145), keine
+ * DB-Zeile. Status/Konvention sichtbar. Ticker ohne Kalender → Hinweis statt NYSE. kalenderTicker: Referenz
+ * für Körbe (sektor-rotation), dann „Kalender: <Ticker> · <Börse>“. Uhr für Tests: SA.__uhr().
+ */
+SA._headerKalenderV1 = function(el, ticker, kalenderTicker, isEN) {
+  var K = SA.boersenkalender;
+  var t = function(key, de) { return isEN && SA.i18n && SA.i18n.t ? SA.i18n.t(key, de) : de; };
+  var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+  var refTicker = kalenderTicker || ticker;
+  var b, heute, n;
+  try {
+    b = K.boerse(refTicker);
+    heute = K.heute(b, SA.__uhr ? SA.__uhr() : Date.now()).datum;
+    n = K.nummern([heute], b)[0];
+  } catch (e) {
+    el.textContent = t('app.hdr_kein_kalender', 'Kein Börsenkalender für') + ' ' + (refTicker || '—');
+    return;
+  }
+  var y = +heute.slice(0, 4), m = +heute.slice(5, 7), d = +heute.slice(8, 10);
+  var monatsLetzter = [31, (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30,
+    31, 30, 31][m - 1];
+  var tdomSumme = K.sitzungen(y + '-' + pad(m) + '-01', y + '-' + pad(m) + '-' + pad(monatsLetzter), b).length;
+  var tdoySumme = K.sitzungen(y + '-01-01', y + '-12-31', b).length;
+  // Wochentag, ISO-Woche: arithmetisch über UTC-Tageszähler (keine lokale Zone)
+  var tag = Date.UTC(y, m - 1, d) / 86400000;
+  var wd = ((tag % 7) + 11) % 7;                      // 0 = Sonntag (1970-01-01 war Donnerstag)
+  var isoWoche = function(yy, mm, dd) {
+    var tz = Date.UTC(yy, mm - 1, dd) / 86400000, dow = (((tz % 7) + 10) % 7) + 1;   // 1 = Montag … 7 = Sonntag
+    var donnerstag = tz + 4 - dow, dj = new Date(donnerstag * 86400000).getUTCFullYear();
+    return [Math.floor((donnerstag - Date.UTC(dj, 0, 1) / 86400000) / 7) + 1, dj];
+  };
+  var woche = isoWoche(y, m, d);   // [Woche, ISO-Jahr]; Summe aus DEMSELBEN ISO-Jahr (01.01.2027 = Woche 53/53)
+  var wochentage = isEN ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var datum = isEN ? pad(m) + '/' + pad(d) + '/' + y : pad(d) + '.' + pad(m) + '.' + y;
+  var quartal = Math.floor((m - 1) / 3) + 1;
+  var zyklus = ((y - 2020) % 4 + 4) % 4 + 1;
+  var zyklusNamen = { 1: 'Election', 2: 'Post-Election', 3: 'MidTerm', 4: 'Pre-Election' };
+  var status = K.status(b, y), zusatz = [];
+  if (!n.offen) zusatz.push(t('app.hdr_geschlossen', 'geschlossen'));
+  if (b === 'CRYPTO') zusatz.push(t('app.hdr_konvention_crypto', 'Kalender: täglich (Konvention)'));
+  else if (b === 'FOREX') zusatz.push(t('app.hdr_konvention_forex', 'Kalender: Mo–Fr ohne Feiertage (Konvention)'));
+  else if (status === 'annahme') zusatz.push(t('app.hdr_status_annahme', 'Kalender: Annahme'));
+  else if (status === 'ungeprueft') zusatz.push(t('app.hdr_status_ungeprueft', 'Kalender ungeprüft (exploratorisch)'));
+  if (kalenderTicker) zusatz.push(t('app.hdr_kalender_von', 'Kalender:') + ' ' + kalenderTicker + ' · ' + b);
+  el.textContent = (isEN ? 'Today: ' : 'Heute: ') + wochentage[wd] + ' ' + datum + ' · ' + (ticker || '') +
+    ' · TDOM ' + n.tdom + '/' + tdomSumme +
+    ' · TWOY ' + woche[0] + '/' + isoWoche(woche[1], 12, 28)[0] +
+    ' · TDOY ' + n.tdoy + '/' + tdoySumme +
+    ' · Q' + quartal +
+    ' · ' + zyklusNamen[zyklus] +
+    (zusatz.length ? ' · ' + zusatz.join(' · ') : '');
 };
 
 // ── Sortable Tables (wiederverwendbar) ──────────────────────────────────────

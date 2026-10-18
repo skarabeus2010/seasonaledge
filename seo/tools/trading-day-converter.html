@@ -145,6 +145,21 @@
         <div class="converter-row">
             <label for="datepicker">Datum:</label>
             <input type="date" id="datepicker">
+            <select id="boerse" aria-label="Börse" hidden>
+                <option value="NYSE">NYSE (USA)</option>
+                <option value="XETRA">Xetra (Deutschland)</option>
+                <option value="LSE">London</option>
+                <option value="EURONEXT">Euronext</option>
+                <option value="MILAN">Mailand</option>
+                <option value="SIX">SIX (Schweiz)</option>
+                <option value="STOCKHOLM">Stockholm</option>
+                <option value="OSLO">Oslo</option>
+                <option value="TSE">Tokio</option>
+                <option value="HKEX">Hongkong</option>
+                <option value="KRX">Korea</option>
+                <option value="CRYPTO">Krypto (täglich)</option>
+                <option value="FOREX">Devisen (Mo–Fr)</option>
+            </select>
             <div class="result-line" id="result">Datum auswählen&hellip;</div>
         </div>
     </div>
@@ -154,17 +169,17 @@
         <div class="info-card">
             <div class="num gold">CDOY</div>
             <div class="lbl">Calendar Day of Year</div>
-            <p style="font-size:0.85rem; margin-top:0.5rem;">Kalendertag 1&ndash;366. Zählt jeden Tag, auch Wochenenden und Feiertage.</p>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Kalendertag 1 bis 365, im Schaltjahr 366. Zählt jeden Tag, auch Wochenenden und Feiertage.</p>
         </div>
         <div class="info-card">
             <div class="num blue">TDOM</div>
             <div class="lbl">Trading Day of Month</div>
-            <p style="font-size:0.85rem; margin-top:0.5rem;">Handelstag im Monat (1&ndash;23). Nur Börsentage, keine Wochenenden/Feiertage.</p>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Nummer des Handelstags im Monat. Wie viele es gibt, hängt von Börse und Monat ab; der Rechner zeigt die Summe des gewählten Monats. Nur Börsentage, keine Wochenenden/Feiertage.</p>
         </div>
         <div class="info-card">
             <div class="num teal">TDOY</div>
             <div class="lbl">Trading Day of Year</div>
-            <p style="font-size:0.85rem; margin-top:0.5rem;">Handelstag im Jahr (1&ndash;252). Basis für saisonale Muster-Analyse.</p>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">Nummer des Handelstags im Jahr. Wie viele es gibt, hängt von Börse und Jahr ab. Basis für saisonale Muster-Analyse.</p>
         </div>
     </div>
 
@@ -178,7 +193,7 @@
     <p>In der saisonalen Analyse zeigt sich: bestimmte TDOMs haben historisch signifikant höhere oder niedrigere Renditen. Beispiel: TDOM 1 und die letzten 3 Handelstage des Monats sind statistisch oft positiv.</p>
 
     <h2>Was ist TDOY?</h2>
-    <p>Der <strong>Trading Day of Year (TDOY)</strong> zählt die Handelstage seit Jahresbeginn. Die NYSE hat ~252 Handelstage pro Jahr, Krypto-Börsen ~365. TDOY ermöglicht jahresübergreifende Vergleiche unabhängig von Kalenderverschiebungen.</p>
+    <p>Der <strong>Trading Day of Year (TDOY)</strong> zählt die Handelstage seit Jahresbeginn. Wie viele Handelstage ein Jahr hat, hängt von Börse und Feiertagen ab; Krypto-Märkte handeln jeden Tag. TDOY ermöglicht jahresübergreifende Vergleiche unabhängig von Kalenderverschiebungen.</p>
     <p>Auf SeasonAlpha nutzen wir TDOY für die <a href="https://seasonalpha.ai" style="color:#4d9fff;">Jahreszyklus-Analyse</a>: Jedes Jahr wird auf Handelstage normiert, dann über Jahrzehnte gemittelt.</p>
 
     <h3>Beispiel: S&amp;P 500 Saisonalität</h3>
@@ -197,13 +212,13 @@
         <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
             <dt itemprop="name">Wie viele Handelstage hat ein Jahr?</dt>
             <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
-                <span itemprop="text">Die NYSE hat typischerweise 252 Handelstage pro Jahr. Krypto-Märkte handeln 365 Tage. Die genaue Zahl variiert je nach Feiertagen.</span>
+                <span itemprop="text">Das hängt von Börse und Jahr ab: Wochenenden und Feiertage zählen nicht. Krypto-Märkte handeln an jedem Kalendertag.</span>
             </dd>
         </div>
         <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
             <dt itemprop="name">Was ist der Unterschied zwischen CDOY und TDOY?</dt>
             <dd itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
-                <span itemprop="text">CDOY (Calendar Day of Year) zählt jeden Kalendertag (1&ndash;366). TDOY (Trading Day of Year) zählt nur Börsentage (1&ndash;252). Am 1. März ist CDOY=60, aber TDOY nur ~40, weil Wochenenden und Feiertage nicht gezählt werden.</span>
+                <span itemprop="text">CDOY (Calendar Day of Year) zählt jeden Kalendertag (1&ndash;366). TDOY (Trading Day of Year) zählt nur Börsentage. Am 1. März eines Gemeinjahres ist CDOY=60, aber TDOY nur um die 40, weil Wochenenden und Feiertage nicht gezählt werden.</span>
             </dd>
         </div>
         <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
@@ -232,8 +247,68 @@
 </div>
 
 <!-- ══ JAVASCRIPT: Converter-Logik (Client-Side) ══ -->
+<script>window.__SA_RELEASE='%%RELEASE%%';window.__SA_METHODE='alt';</script>
+<script src="/landing/js/methode.js"></script>
+<script src="/landing/js/boersenkalender.js"></script>
+<script>
+// Kalendermethode kalender_v1 (Kalender V2, Entwurf v2 B3): Rechnung nur über SA.boersenkalender, Börsenwahl,
+// Datum als ISO-Zeichenkette (kein Date in lokaler Zone), Summen = Länge von sitzungen(), Status sichtbar.
+(function() {
+    if (!(window.SA && SA.kalenderMethode === 'kalender_v1')) return;
+    var K = SA.boersenkalender;
+    var TAGE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+    var STATUS = {
+        annahme: 'Kalender: Annahme',
+        ungeprueft: 'Kalender dieses Jahres nicht belegt (exploratorisch)',
+        konvention: ''
+    };
+    var KONVENTION = { CRYPTO: 'Kalender: täglich (Konvention)', FOREX: 'Kalender: Mo–Fr ohne Feiertage (Konvention)' };
+    var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+    var picker = document.getElementById('datepicker');
+    var wahl = document.getElementById('boerse');
+    var result = document.getElementById('result');
+    wahl.hidden = false;
+    function update() {
+        var ds = picker.value, b = wahl.value;
+        if (!ds) { result.textContent = 'Datum auswählen\u2026'; return; }
+        var y, m, d, n, mSumme, jSumme;
+        try {
+            y = +ds.slice(0, 4); m = +ds.slice(5, 7); d = +ds.slice(8, 10);
+            n = K.nummern([ds], b)[0];
+            var letzter = new Date(Date.UTC(y, m, 0)).getUTCDate();
+            mSumme = K.sitzungen(y + '-' + pad(m) + '-01', y + '-' + pad(m) + '-' + pad(letzter), b).length;
+            jSumme = K.sitzungen(y + '-01-01', y + '-12-31', b).length;
+        } catch (e) {
+            result.textContent = 'Für dieses Datum oder diese Börse lässt sich nicht rechnen.';
+            return;
+        }
+        var tag = Date.UTC(y, m - 1, d) / 86400000;
+        var cdoy = tag - Date.UTC(y, 0, 1) / 86400000 + 1;
+        var wd = ((tag % 7) + 11) % 7;
+        var sep = ' <span class="sep">&middot;</span> ';
+        var text = pad(d) + '.' + pad(m) + '.' + y + ' ' + TAGE[wd] + sep + 'CDOY ' + cdoy;
+        if (n.offen) {
+            text += sep + '<span class="blue">TDOM ' + n.tdom + '</span><span class="sub">/' + mSumme +
+                    ' (' + n.tdom_rev + ')</span>' + sep + 'TDOY ' + n.tdoy + '<span class="sub">/' + jSumme +
+                    ' (' + n.tdoy_rev + ')</span>';
+        } else {
+            text += sep + '<em style="color:#5a6e85;">geschlossen</em>' + sep + 'TDOM ' + n.tdom +
+                    '<span class="sub">/' + mSumme + '</span>' + sep + 'TDOY ' + n.tdoy + '<span class="sub">/' + jSumme +
+                    '</span> <span class="sub">(bisher gezählt)</span>';
+        }
+        var hinweis = KONVENTION[b] || STATUS[K.status(b, y)] || '';
+        if (hinweis) text += sep + '<span class="sub">' + hinweis + '</span>';
+        result.innerHTML = text;
+    }
+    picker.value = K.heute(wahl.value, Date.now()).datum;
+    picker.addEventListener('change', update);
+    wahl.addEventListener('change', update);
+    update();
+})();
+</script>
 <script>
 (function() {
+    if (window.SA && SA.kalenderMethode === 'kalender_v1') return;   // Methode alt: unverändert bis V9
     // NYSE-Feiertage 2024-2027 (statisch, reicht für den Converter)
     const holidays = new Set([
         // 2024

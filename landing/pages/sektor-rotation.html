@@ -211,6 +211,7 @@
   <script src="/landing/js/i18n.js"></script>
   <script src="/landing/js/app.js"></script>
   <script src="/landing/js/kurse.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
   <script src="/landing/js/holidays.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
   <script src="/landing/js/charts.js"></script>
@@ -670,7 +671,7 @@
 
         // Trading Day Header (erster geladener Ticker)
         var firstTicker = Object.keys(sectorData)[0];
-        SA.renderTradingDayHeader('trading-day-header', loadedCount + ' Sektoren', sectorData[firstTicker].rows);
+        SA.renderTradingDayHeader('trading-day-header', loadedCount + ' Sektoren', sectorData[firstTicker].rows, firstTicker);
 
         // Cache speichern
         _cachedSectorData = sectorData;

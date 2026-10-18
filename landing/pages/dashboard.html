@@ -417,6 +417,7 @@
   <script src="/landing/js/app.js"></script>
   <script src="/landing/js/kurse.js"></script>
   <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
   <script src="/landing/js/holidays.js"></script>
   <script src="/landing/js/seasonal-compute.js"></script>
   <script src="/landing/js/dash-compute.js"></script>
@@ -562,7 +563,7 @@
       var year = dateObj.getFullYear(), month = dateObj.getMonth()+1, day = dateObj.getDate();
       var ds = year+'-'+pad2(month)+'-'+pad2(day);
       var ex;
-      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }
       // Wenn Boerse zu (Wochenende/Feiertag): kein TDOM
       if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;
       // TDOM = Anzahl Handelstage von Monatsanfang bis dateObj inklusive
@@ -623,7 +624,7 @@
     /** Naechster Handelstag nach gegebenem Datum (returns Date) */
     function nextTradingDate(fromDate){
       var ex;
-      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+      try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }
       var d = new Date(fromDate);
       for (var i = 0; i < 14; i++) {
         d.setDate(d.getDate()+1);
@@ -640,7 +641,7 @@
       // Selbe Logik wie getTdomMiniStats() Zeile 490–494.
       var t=new Date(),ty=t.getFullYear(),tm=t.getMonth()+1,td=t.getDate();
       var ex;
-      try{ex=SA.holidays.detect(ticker||'');}catch(e){ex='NONE';}
+      try{ex=SA.holidays.detect(ticker||'');}catch(e){if (SA.kalenderMethode !== 'alt') throw e; ex='NONE';}
       // TDOM = Anzahl Handelstage von Monatsanfang bis heute inklusive.
       // An WE/Feiertagen wird der heutige Nicht-Handelstag nicht mitgezählt →
       // Marker landet automatisch auf dem letzten Handelstag (statt zu fehlen).
@@ -2151,7 +2152,7 @@
       } else {
         // Werktag aber ggf. Feiertag prüfen
         var todayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
-        var ex; try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ ex='NONE'; }
+        var ex; try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }
         if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) {
           var nextHt2 = nextTradingDate(new Date());
           if (nextHt2) {
@@ -2190,7 +2191,7 @@
           else { renderOvernightCard(null); return; }
         } else {
           var onTodayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
-          var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ onEx='NONE'; }
+          var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; onEx='NONE'; }
           if (onEx !== 'NONE' && !SA.holidays.isTradingDay(onTodayStr, onEx)) {
             var onNext2 = nextTradingDate(new Date());
             if (onNext2) { onTargetWd = onNext2.getDay(); onClosedHint = 'Feiertag · nächster HT ' + dayLbl(onNext2); }

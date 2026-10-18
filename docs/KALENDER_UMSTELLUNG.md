@@ -30,7 +30,7 @@ Vorgeschichte: [Plan v1–v7](review_prompts/2026-10-10_xetra_tdoy_plan_v7.md) (
 | Phase | Inhalt | Status |
 |---|---|---|
 | V1 | Fundament: Ereigniskatalog (B4), Sitzungshelfer Python+JS (B1/B2/B5), Methodenschalter (Leser/Produktion), Produktionssperre, Einbindungswächter, `[ohne-deploy]`, Releasekennung + Sperre (v6–v9) | V1a live `e12d1e7` · V1b live `64ab4b8` · V1c-1 live `8f771e9`/`43664ec` · V1c-2 live `b2a6665` · V1c-3 live `5b88ffc` · V1d live `18ff46f` |
-| V2 | Browserkern: `SA.holidays`-Fassade, Header, Converter | offen |
+| V2 | Browserkern: `SA.holidays`-Fassade, Header, Converter | gebaut 2026-10-18 (Codex: Entwurf 3 + Code 5 Runden bis Freigabe), Deploy siehe Abschnitt V2 |
 | V3 | Ereignisse: Feiertage, Dashboard-Ereignisse, OPEX/VIX (Cboe), Kalender/ICS, Flows | offen |
 | V4 | Fenster/Renditen/Kurven/Strategien (P3i/P3j/P3k) mit Python-Zwillingen — inkl. **Umschalter Kalendertag ↔ Handelstag** (CDOY/TDOY, Monat CDOM/TDOM) auf `/jahreszyklus` und `/risikozyklus` (Nutzerwunsch 2026-10-12; B3.1/B3.7: Handelstag-Achse nach Börsenkalender, Kalendertag als benannte eigene Achsenmethode) | offen |
 | V5 | Backtest-Engine | offen |
@@ -184,7 +184,7 @@ Entwurf mit Codex in 2 Runden freigegeben ([v1](review_prompts/2026-10-12_kalend
   Abstürze zählten im Mutationstest als „gefangen“; JS-`sitzungen` war nicht vollständig gegen die Referenz
   geprüft; ein JS-Absturz in einer Vierergruppe `X,X,0,E` fiel durch das Trennen nur an `;`.
 
-## Übergabe 2026-10-12 — nächste Schritte
+## Übergabe — nächste Schritte (Stand 2026-10-18)
 
 **Stand:** V1 (Fundament) ist komplett live: Produktionssperre, Releasekennung/Seitensperre, Ereigniskatalog,
 OPEX/VIX nach Cboe, NYSE-Halbtage, Sitzungshelfer. **Noch keine Seite und kein Leser nutzt die neuen Bausteine** —
@@ -196,19 +196,42 @@ Wächter mit unabhängiger Referenz + Mutationstest in isolierter Kopie → Code
 lokal → vor dem Push prüfen, dass kein Nicht-Pflicht-Job läuft (Brier So ~08–09 UTC) → Push → Deploy beobachten
 (`docker exec seasonalpha-app grep …` statt Commit-Hash). Patch-Skripte mit dem Write-Tool, nie per Heredoc.
 
-### To-do V2 Browserkern (nächster Schritt)
-- [ ] Bestandsaufnahme aller Aufrufer von `SA.holidays.*` (`detect`, `isTradingDay`, `nextTradingDay`, `goodFriday`,
-      Feiertagslisten) und der Header-Berechnung (`app.js` ~877, „TDOM 20/20“ am Monatsanfang) — Liste mit Datei:Zeile.
-- [ ] Entwurf: `SA.holidays` als **Fassade** über `SA.boersenkalender` (gleiche Signaturen, Methodenschalter
-      `alt`/`kalender_v1`, alte Pfade unverändert solange `alt`); Ticker→Börse nur über die eine Zuordnung
-      (`detect()` gibt heute 40 Tickern NYSE, Forex 7 Tage — Befund aus P1b); keine 10-Tage-Grenze; Konverter
-      Datum ↔ TDOM/TDOY über `sitzungen`/`verschiebe`.
-- [ ] Entwurf an Codex (Prompt unter `docs/review_prompts/2026-10-1x_kalender_v2_entwurf.md`), bis Freigabe.
-- [ ] Code + Wächter: Fassade unter beiden Methoden gegen die alte Ausgabe (Methode `alt` = bitgleich) und gegen
-      Python (`kalender_v1`), echte Seiten in jsdom (`verify_seiten_kurse.py`-Muster), sechs Zeitzonen.
-- [ ] Mutationstest über die gemeinsame Mechanik (`verify_boersenereignisse_mutation.py`), Gate-Schritt.
-- [ ] Bundle-Größe: `boersenkalender.js` ist 480 KB (37 KB gzip) — vor dem Einbinden in alle Seiten prüfen, ob
-      lazy laden oder Schnitt je Börse nötig ist.
+### V2 Browserkern (gebaut 2026-10-18)
+Entwurf mit Codex in 3 Runden freigegeben ([v1](review_prompts/2026-10-18_kalender_v2_entwurf.md) …
+[v3](review_prompts/2026-10-18_kalender_v2_entwurf_v3.md)), Code in 5 Runden
+([Freigabe](review_prompts/2026-10-18_kalender_v2_code_r5_antwort.md)). **Unter `alt` ändert sich nichts Sichtbares.**
+- **Gemessen vorher:** `detect()` gab 41 Tickern den NYSE-Kalender (Euronext 21, SIX 6, Mailand 4, Stockholm 3,
+  Oslo 1, TSE/HKEX/KRX je 1, ENR.F/RHM.F), 11 Forex-Paaren 7 Tage, LSE wich an 36 Tagen 2000–2026 ab. Die alte
+  `holidays.js` und der alte Converter sind **nicht zeitzonenfrei** (Kiritimati 1994/95; Converter in New York CDOY
+  −1 in der Sommerzeit, in Kiritimati zählt der 03.07.2026 als Handelstag).
+- **Fassade** (`landing/js/holidays.js`, IIFE am Ende): nur unter `kalender_v1` reine Delegation an
+  `SA.boersenkalender` (`detect`→`boerse`, `isTradingDay`→`istHandelstag`, `get`→`feiertagsmenge`, `nth…`→`nte…`,
+  `nextTradingDay`→`naechste(…, true)` ohne Tagesgrenze); Fehlervertrag B5 (Börse fehlt/`NONE`/unbekannt, ungültiges
+  Datum, keine ganze Zahl, `n < 1` → `KalenderFehler`; `n` > Summe → `null`; unbekannter einfacher Ticker → NYSE nach
+  Listingregel); werfende Getter für die alten Regeln (`_NYSE_SONDER` …). Datumsarithmetik bleibt.
+- **Einbindung:** `boersenkalender.js` nach `methode.js`, vor `holidays.js` auf 26 Seiten + Converter, Manifest
+  `scripts/fixtures/einbindung_manifest.json` (EN-Fassungen unter ihrer EN-Adresse eingeschlossen). nginx liefert
+  JS/CSS seit 18.10. mit gzip (Bundle 509 KB → 53 KB).
+- **Fehlerfänger** in dashboard/monatszyklus/watchlist werfen unter `kalender_v1` weiter (unter `alt` unverändert).
+- **Inventar** `scripts/fixtures/kalender_v2_inventar.json`: 66 Code-Stellen mit altem Börsenalphabet, je mit Phase
+  (V3 25, V4 20, V5 2, Aufräumen 19) — **muss vor V9 leer sein**.
+- **Header** `SA._headerKalenderV1` (`app.js`): alle Felder aus einem Börsendatum (`heute(b, jetzt)`), Zähler aus
+  `nummern` (geschlossen kumuliert, keine DB-Zeile), TWOY-Summe aus dem ISO-Jahr der Woche, Status/Konvention
+  sichtbar, Ticker ohne Kalender → Hinweis; Körbe übergeben einen Kalenderticker (sektor-rotation).
+- **Converter** (`seo/tools/…`, nginx liefert `/tools/` direkt): Bootstrap + Bundle, Börsenwahl (unter `alt`
+  verborgen), Rechnung nur über das Bundle, Texte ohne feste Grenzen. Deploy setzt `seo/tools/` vor dem Vorspulen
+  zurück (Kennung und Cache-Buster sind In-Place) — sonst bräche der Folgedeploy an der Sauberkeitsprüfung.
+- **Wächter** `scripts/verify_holidays_fassade.py` (Gate, hinter der Seitenprobe; 2265 Prüfungen, ~2 min):
+  Momentaufnahmen `alt` (`holidays_alt.json` je Zone, `converter_alt.json`, `header_alt_seiten.json` — alle aus dem
+  Stand vor V2), Delegation (602 247 Vergleiche), 86 Sollfälle mit Quelle, Fehlervertrag, 57 Statusfälle durch
+  Header **und** Converter, **unabhängige Monatslisten** je Börse aus dem veröffentlichten Börsenkalender
+  (`kalender_monatslisten_2026.json`, 11 Börsen + CRYPTO/FOREX-Konvention, inkl. belegtem Monatsübergang; alle
+  gleich unserem Kalender), echte Seiten in jsdom (23 Header-Seiten, A→B→A, Converter mit Bootstrap), Inventar.
+  Mutationstest `scripts/verify_holidays_fassade_mutation.py` (21 + 2 Gegenproben).
+- **Dabei aufgefallen (eigener Posten, nicht V2):** NYSE 1960 (`ungeprueft`) setzt Presidents Day auf den 15.02.
+  (damals 22.02.) und kennt den Wahltag-Schluss 08.11.1960 nicht (belegt in `election_calendar_exceptions.json`).
+- **Nach dem Deploy prüfen:** `/tools/trading-day-converter` und eine Header-Seite per HTTP — Kennung, Skriptreihenfolge,
+  Bundle mit `Content-Encoding: gzip`; EN-Seiten laden das Bundle (`verify_einbindung.py --mit-en` auf dem Host).
 
 ### Danach
 - [ ] **V3 Ereignisse** — vorher OPEX-Momentaufnahme einfrieren; `/opex`/`/vixpiration` nur belegte Termine (OPEX ab

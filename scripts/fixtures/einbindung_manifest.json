@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "zweck": "Kalender V2 (docs/review_prompts/2026-10-18_kalender_v2_entwurf_v2.md, B2): genau diese Seiten laden boersenkalender.js, und zwar nach methode.js und vor holidays.js. Jede andere Seite lädt es nicht.",
+  "kalender_seiten": [
+    "landing/pages/backtest-engine.html",
+    "landing/pages/crash-fruehwarnung.html",
+    "landing/pages/dashboard.html",
+    "landing/pages/dekadenzyklus.html",
+    "landing/pages/dividend-kalender.html",
+    "landing/pages/earnings-kalender.html",
+    "landing/pages/feiertage.html",
+    "landing/pages/intermarket-shocks.html",
+    "landing/pages/jahreszyklus.html",
+    "landing/pages/ki-saisonalitaet.html",
+    "landing/pages/kriegszeiten.html",
+    "landing/pages/monatswechsel.html",
+    "landing/pages/monatszyklus.html",
+    "landing/pages/mondphasen.html",
+    "landing/pages/opex.html",
+    "landing/pages/overnight.html",
+    "landing/pages/plain-vanilla.html",
+    "landing/pages/risikozyklus.html",
+    "landing/pages/sektor-rotation.html",
+    "landing/pages/spot-vol-beta.html",
+    "landing/pages/tdom-analyse.html",
+    "landing/pages/trifecta.html",
+    "landing/pages/vixpiration.html",
+    "landing/pages/watchlist.html",
+    "landing/pages/wochentage.html",
+    "landing/pages/zentralbanken.html",
+    "seo/tools/trading-day-converter.html"
+  ]
+}

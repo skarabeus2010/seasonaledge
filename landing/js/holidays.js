@@ -334,4 +334,47 @@ SA.holidays = {
   }
 };
 
+// ── Fassade für die Kalendermethode 'kalender_v1' (Kalender V2, docs/KALENDER_UMSTELLUNG.md) ────────────────
+// Unter 'alt' läuft oben stehender Code unverändert (Momentaufnahme scripts/fixtures/holidays_alt.json). Unter
+// 'kalender_v1' delegieren die öffentlichen Funktionen an SA.boersenkalender — keine eigene Regel, kein Abfangen:
+// Börse fehlt/unbekannt/'NONE', ungültiges Datum oder n < 1 werfen KalenderFehler (Vertrag B5, Entwurf v2).
+// Datumsarithmetik (easter, goodFriday, thanksgiving, _nthDow, _lastDow, _ds …) bleibt in beiden Methoden.
+(function () {
+  if (SA.kalenderMethode !== 'kalender_v1') return;
+  var K = SA.boersenkalender;
+  if (!K) throw new Error('holidays.js: kalender_v1 verlangt den Börsenkalender (SA.boersenkalender) vor dieser Datei');
+  var H = SA.holidays;
+  H.detect = function (ticker) { return K.boerse(ticker); };
+  H.get = function (year, exchange) { return K.feiertagsmenge(year, exchange).slice(); };
+  H.getMap = function (year, exchange) {
+    var list = this.get(year, exchange), map = {};
+    for (var i = 0; i < list.length; i++) map[list[i]] = true;
+    return map;
+  };
+  H.isTradingDay = function (dateStr, exchange) { return K.istHandelstag(dateStr, exchange); };
+  H.nthTradingDay = function (y, m, n, exchange) { return K.nteImMonat(y, m, n, exchange); };
+  H.lastTradingDay = function (y, m, nFromEnd, exchange) {
+    return K.nteVonHintenImMonat(y, m, nFromEnd === undefined ? 1 : nFromEnd, exchange);
+  };
+  H.nthTradingDayOfYear = function (y, n, exchange) { return K.nteImJahr(y, n, exchange); };
+  // Ab einschließlich (y, m, d); keine Tagesgrenze, am Kalenderende Fehler (B5.8). Datum muss gültig sein.
+  H.nextTradingDay = function (y, m, d, exchange) {
+    // _ds setzte auch Zeichenketten zusammen ("2026" → gültiges Datum) — Typen vor dem Zusammensetzen prüfen
+    [y, m, d].forEach(function (x) {
+      if (typeof x !== 'number' || !isFinite(x) || Math.floor(x) !== x) throw new K.Fehler('Jahr/Monat/Tag müssen ganze Zahlen sein: ' + x);
+    });
+    return K.naechste(this._ds(y, m, d), exchange, true);
+  };
+  // Die Regeln der alten Methode dürfen unter kalender_v1 nicht still weiterwirken (Entwurf v2, B6).
+  ['_nyse', '_xetra', '_lse', '_cache', '_getCachedMap', '_NYSE_SONDER', '_XETRA_SONDER'].forEach(function (name) {
+    Object.defineProperty(H, name, {
+      configurable: false, enumerable: false,
+      get: function () {
+        throw new Error('holidays.js: ' + name + ' gilt nur unter der Methode alt — Verbraucher auf ' +
+                        'SA.boersenkalender (ereignisse/schliessungen) umstellen');
+      }
+    });
+  });
+})();
+
 window.SA = SA;

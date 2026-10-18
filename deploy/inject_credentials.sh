@@ -78,7 +78,8 @@ python3 "$REPO_DIR/scripts/build_calendar_data.py" \
 GIT_SHA=${2:-$(cd "$REPO_DIR" && git rev-parse --short HEAD 2>/dev/null || date +%s)}
 echo "Cache-Busting Version: $GIT_SHA"
 
-find "$REPO_DIR/landing" -name "*.html" -exec sed -i -E \
+# seo/tools/ (Trading Day Converter) laedt seit Kalender V2 eigene Skripte — gleiche Regel.
+find "$REPO_DIR/landing" "$REPO_DIR/seo/tools" -name "*.html" -exec sed -i -E \
     "s#(/landing/(css|js)/[a-zA-Z0-9_./-]+\.(css|js))(\?v=[a-zA-Z0-9]+)?#\1?v=${GIT_SHA}#g" {} +
 
 echo "Cache-Busting auf alle CSS/JS-Refs angewendet"

@@ -2122,5 +2122,12 @@
   "jz.rb_k_tr": "Avg sign hits out of 12: True Seasonal · in hindsight · gain every month",
   "jz.rb_s_ts": "True Seasonal (prior years only)",
   "jz.rb_s_rueck": "in hindsight (incl. the year)",
-  "jz.rb_y": "r (12 monthly changes)"
+  "jz.rb_y": "r (12 monthly changes)",
+  "app.hdr_kein_kalender": "No exchange calendar for",
+  "app.hdr_geschlossen": "closed",
+  "app.hdr_konvention_crypto": "Calendar: daily (convention)",
+  "app.hdr_konvention_forex": "Calendar: Mon–Fri, no holidays (convention)",
+  "app.hdr_status_annahme": "Calendar: assumption",
+  "app.hdr_status_ungeprueft": "Calendar unverified (exploratory)",
+  "app.hdr_kalender_von": "Calendar:"
 }

@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import pathlib
 import subprocess
 import sys
 import tempfile
@@ -266,8 +267,8 @@ def main() -> int:
             pruefe(f"Zeitzone {zone} gleich UTC", gleich, "Ergebnis hängt von der Zeitzone ab")
 
     treffer, lesefehler = isolation_scan()
-    pruefe("Isolation keine Seite nutzt das Bundle", not treffer, f"referenziert in {treffer[:5]}")
-    pruefe("Isolation alle Dateien lesbar", not lesefehler, f"{lesefehler[:5]}")
+    pruefe("Einbindung genau die Seiten des Manifests", not treffer, f"{treffer[:5]}")
+    pruefe("Einbindung alle Dateien lesbar", not lesefehler, f"{lesefehler[:5]}")
     # Gegenprobe am Prüfer selbst: ein nicht listbares Verzeichnis muss als Lesefehler auffallen
     # (Codex P1b R2: os.walk ohne onerror überging es still, beide Prüfungen blieben grün).
     def kaputter_walk(pfad, onerror=None):
@@ -285,9 +286,15 @@ def main() -> int:
 
 
 def isolation_scan(walk=os.walk) -> tuple[list[str], list[str]]:
-    """Keine Seite und kein Seiten-Generator bindet das Bundle ein — auch nicht build_en.py oder die
-    Deploy-Skripte, die Köpfe erzeugen (Codex P1b R1). Lese- UND Traversierungsfehler sind Befunde."""
-    treffer, lesefehler = [], []
+    """Einbindungsvertrag (Kalender V2, ersetzt die Isolation aus P1b): das Bundle laden genau die Seiten aus
+    scripts/fixtures/einbindung_manifest.json per <script src>; kein Seiten-Generator (build_en.py, Deploy-Skripte,
+    Blog-Templates) fügt es selbst ein. Liefert (Abweichungen, Lesefehler). Lese- UND Traversierungsfehler sind
+    Befunde (Codex P1b R2)."""
+    import re
+    soll = set(json.loads(open(os.path.join(WURZEL, "scripts", "fixtures", "einbindung_manifest.json"),
+                               encoding="utf-8").read())["kalender_seiten"])
+    tag = re.compile(r'<script\b[^>]*\bsrc="/landing/js/boersenkalender\.js(?:\?v=[A-Za-z0-9]+)?"')
+    ist, generator, lesefehler = set(), [], []
 
     def beim_listen(e):
         lesefehler.append(f"{getattr(e, 'filename', '?')}: {type(e).__name__}")
@@ -298,16 +305,30 @@ def isolation_scan(walk=os.walk) -> tuple[list[str], list[str]]:
             for f in dateien:
                 p = os.path.join(wurzel, f)
                 if os.path.abspath(p) == os.path.abspath(ZIEL) or not f.endswith(
-                        (".html", ".htm", ".js", ".json", ".py", ".sh", ".conf", ".j2", ".css")):
+                        (".html", ".htm", ".py", ".sh", ".j2")):  # noqa: E501 (landing/en/ wird mitgeprüft)
                     continue
+                rel = os.path.relpath(p, WURZEL).replace(os.sep, "/")
                 try:
                     with open(p, encoding="utf-8", errors="strict") as fh:
-                        if "boersenkalender" in fh.read():
-                            treffer.append(os.path.relpath(p, WURZEL))
+                        text = fh.read()
                 except (OSError, UnicodeDecodeError) as e:
-                    lesefehler.append(f"{os.path.relpath(p, WURZEL)}: {type(e).__name__}")
-    return treffer, lesefehler
-
+                    lesefehler.append(f"{rel}: {type(e).__name__}")
+                    continue
+                if f.endswith((".html", ".htm")) and tag.search(text):
+                    ist.add(rel)
+                elif not f.endswith((".html", ".htm")) and "boersenkalender.js" in text:
+                    generator.append(rel)
+    # Erzeugte EN-Seiten (landing/en/, build_en.py): erlaubt genau die EN-Fassung einer Manifestseite, unter
+    # ihrer EN-Adresse (shared.seo_basis.en_slug — _EN_SLUGS). Liegt landing/en/ vor, MUSS sie das Bundle laden.
+    sys.path.insert(0, WURZEL)
+    from shared.seo_basis import en_slug
+    soll_en = {"landing/en/" + en_slug(pathlib.PurePosixPath(x).stem) + ".html" for x in soll if x.startswith("landing/pages/")}
+    vorhanden_en = {x for x in soll_en if os.path.exists(os.path.join(WURZEL, x))}
+    soll = soll | vorhanden_en
+    abw = [f"lädt ohne Manifest: {x}" for x in sorted(ist - soll)]
+    abw += [f"Manifest, lädt nicht: {x}" for x in sorted(soll - ist)]
+    abw += [f"Generator nennt das Bundle: {x}" for x in generator]
+    return abw, lesefehler
 
 if __name__ == "__main__":
     sys.exit(main())

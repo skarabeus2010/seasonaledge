@@ -1,0 +1,404 @@
+{
+  "schema": 1,
+  "zweck": "Kalender V2 (Entwurf v2 B1, Codex Code R1): jede Code-Zeile mit einem Zeichenkettenliteral des alten Börsenalphabets (NONE/NYSE/XETRA/LSE, beide Anführungszeichen) oder einem Zugriff auf die alten Sonderlisten. Unter kalender_v1 liefert detect das neue Alphabet. Jede Stelle ist einer Phase zugeordnet und muss vor V9 umgestellt und hier entfernt sein; verify_holidays_fassade.py meldet neue Stellen und verwaiste Einträge rot.",
+  "muster": "(['\"])(NONE|NYSE|XETRA|LSE)\\1|_NYSE_SONDER|_XETRA_SONDER",
+  "stellen": [
+    {
+      "datei": "landing/js/app.js",
+      "text": "var exchange = (window.SA && SA.holidays) ? SA.holidays.detect(ticker || '') : 'NYSE';",
+      "phase": "Aufräumen",
+      "grund": "alter Header-Zweig (NYSE-Rückfall ohne SA.holidays)"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "for (var i = 0; i < this._NYSE_SONDER.length; i++) {",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (this._NYSE_SONDER[i].slice(0, 4) === String(y)) list.push(this._NYSE_SONDER[i]);",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "_NYSE_SONDER: ['2001-09-11', '2001-09-12', '2001-09-13', '2001-09-14', '2004-06-11', '2007-01-02',",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "_XETRA_SONDER: ['2000-10-03', '2007-05-28', '2014-10-03', '2015-05-25', '2016-05-16', '2016-10-03', '2017-06-05',",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "for (var i = 0; i < this._XETRA_SONDER.length; i++) {",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (this._XETRA_SONDER[i].slice(0, 4) === String(y)) list.push(this._XETRA_SONDER[i]);",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (!ticker) return 'NYSE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (/BTC|ETH|BNB|SOL|ADA|XRP|DOGE|DOT|AVAX|MATIC|LINK|UNI/i.test(ticker) && /USD/.test(ticker)) return 'NONE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (/=X$/.test(ticker)) return 'NONE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (/\\.DE$/i.test(ticker) || /\\^(GDAXI|SDAXI|MDAXI|TECDAX)/i.test(ticker)) return 'XETRA';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (/\\.L$/i.test(ticker) || /\\^FTSE/i.test(ticker)) return 'LSE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "return 'NYSE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "exchange = exchange || 'NYSE';",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (exchange === 'NONE') return [];",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (exchange === 'XETRA') return this._xetra(year).sort();",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (exchange === 'LSE') return this._lse(year).sort();",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "if (exchange === 'NONE') return true; // Crypto: 24/7",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig"
+    },
+    {
+      "datei": "landing/js/holidays.js",
+      "text": "['_nyse', '_xetra', '_lse', '_cache', '_getCachedMap', '_NYSE_SONDER', '_XETRA_SONDER'].forEach(function (name) {",
+      "phase": "Aufräumen",
+      "grund": "alter Zweig (bzw. Sperrliste der Fassade) — entfällt mit 'alt'"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "return { stichtag: k.stichtag || letzte, boerse: k.boerse || 'NYSE', letzte: letzte };",
+      "phase": "V5",
+      "grund": "Vorgabebörse ohne Ticker"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "var sonder = SA.holidays._NYSE_SONDER || [];",
+      "phase": "V3",
+      "grund": "liest _NYSE_SONDER — unter kalender_v1 gesperrt, auf ereignisse() umstellen"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "return SA.holidays.get(y, 'NYSE').filter(function(d) { return sonder.indexOf(d) < 0; });",
+      "phase": "V3",
+      "grund": "NYSE-Feiertage ohne Sonderschließungen → ereignisse()"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "var tz = boerse === 'XETRA' ? 'Europe/Berlin' : boerse === 'LSE' ? 'Europe/London' : 'America/New_York';",
+      "phase": "V3",
+      "grund": "Zeitzone nur für drei Börsen — durch heute(boerse) ersetzen"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "var H = SA.holidays, ex = (!boerse || boerse === 'NONE') ? 'NYSE' : boerse, self = this;",
+      "phase": "V3",
+      "grund": "NONE/fehlend → NYSE"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "if (boerse !== 'NONE') {   // wie bisher im Dashboard: Feiertagsstrategien nur mit Börsenkalender",
+      "phase": "V3",
+      "grund": "Feiertagsstrategien nur mit Börsenkalender"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "if (boerse !== 'NONE') {",
+      "phase": "V3",
+      "grund": "Feiertagsstrategien nur mit Börsenkalender"
+    },
+    {
+      "datei": "landing/js/strategy-compute.js",
+      "text": "_geprueft: function(ds, boerse) { return (boerse === 'NYSE' || boerse === 'XETRA') && this._imKalender(ds); },",
+      "phase": "V3",
+      "grund": "Prüfumfang → status(b, jahr)"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2); Rückfall entfällt mit der Seite"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;",
+      "phase": "V4",
+      "grund": "Kurzschluss, unter kalender_v1 nie NONE"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;",
+      "phase": "V4",
+      "grund": "eigene TDOM-Zählung → nummern"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2); Rückfall entfällt mit der Seite"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex === 'NONE' || SA.holidays.isTradingDay(ds, ex)) return new Date(d);",
+      "phase": "V4",
+      "grund": "Kurzschluss"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "try{ex=SA.holidays.detect(ticker||'');}catch(e){if (SA.kalenderMethode !== 'alt') throw e; ex='NONE';}",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2)"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if(ex==='NONE'||SA.holidays.isTradingDay(dStr,ex))tdom++;",
+      "phase": "V4",
+      "grund": "eigene TDOM-Zählung → nummern"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "var exD = SA.holidays.detect(currentTicker || 'NYSE');",
+      "phase": "V3",
+      "grund": "Börsenname als Ticker-Ersatz"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (SA.holidays.isTradingDay(s, 'NYSE')) return s;",
+      "phase": "V3",
+      "grund": "OPEX fest auf NYSE"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()), 'NYSE'));",
+      "phase": "V3",
+      "grund": "OPEX fest auf NYSE"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex !== 'NONE') {",
+      "phase": "V3",
+      "grund": "Feiertagsanzeige"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex === 'NYSE' && holIdx >= 0 && holIdx < NYSE_NAMES.length) holName = NYSE_NAMES[holIdx];",
+      "phase": "V3",
+      "grund": "Feiertagsnamen über Listenposition → ereignisse()"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "var ex; try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2); Rückfall entfällt mit der Seite"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (ex !== 'NONE' && !SA.holidays.isTradingDay(todayStr, ex)) {",
+      "phase": "V4",
+      "grund": "heute ohne Börsenzone"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; onEx='NONE'; }",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2)"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "if (onEx !== 'NONE' && !SA.holidays.isTradingDay(onTodayStr, onEx)) {",
+      "phase": "V4",
+      "grund": "heute ohne Börsenzone"
+    },
+    {
+      "datei": "landing/pages/dashboard.html",
+      "text": "var bD = SA.holidays.detect(currentTicker || 'NYSE');",
+      "phase": "V5",
+      "grund": "Börsenname als Ticker-Ersatz"
+    },
+    {
+      "datei": "landing/pages/feiertage.html",
+      "text": "var _currentExchange = 'NYSE';",
+      "phase": "V3",
+      "grund": "Vorgabebörse der Feiertagsseite"
+    },
+    {
+      "datei": "landing/pages/monatszyklus.html",
+      "text": "try { ex = SA.holidays.detect(ticker || ''); } catch(e) { if (SA.kalenderMethode !== 'alt') throw e; ex = 'NONE'; }",
+      "phase": "V4",
+      "grund": "methodenabhängig (V2)"
+    },
+    {
+      "datei": "landing/pages/monatszyklus.html",
+      "text": "if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;",
+      "phase": "V4",
+      "grund": "eigene TDOM-Zählung → nummern"
+    },
+    {
+      "datei": "landing/pages/opex.html",
+      "text": "if (SA.holidays.isTradingDay(calStr, 'NYSE')) return calStr;",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/opex.html",
+      "text": "while (dow === 0 || dow === 6 || !SA.holidays.isTradingDay(s, 'NYSE')) {",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/opex.html",
+      "text": "var fridayHoliday    = !SA.holidays.isTradingDay(calFridayStr, 'NYSE');",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/opex.html",
+      "text": "var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,       'NYSE');",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/plain-vanilla.html",
+      "text": "if (_exchange === 'NYSE') {",
+      "phase": "V3",
+      "grund": "Feiertagssignale nur NYSE"
+    },
+    {
+      "datei": "landing/pages/plain-vanilla.html",
+      "text": "var futureHols = SA.holidays.get(Y, 'NYSE').concat(SA.holidays.get(Y+1, 'NYSE')).filter(function(d){return d >= todayStr}).sort();",
+      "phase": "V3",
+      "grund": "Feiertagssignale nur NYSE"
+    },
+    {
+      "datei": "landing/pages/plain-vanilla.html",
+      "text": "while (count < 2) { dt.setDate(dt.getDate() - 1); var ds = SA.holidays._ds(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); if (SA.holidays.isTradingDay(ds, 'NYSE')) count++; }",
+      "phase": "V3",
+      "grund": "Feiertagssignale nur NYSE"
+    },
+    {
+      "datei": "landing/pages/plain-vanilla.html",
+      "text": "while (!SA.holidays.isTradingDay(SA.holidays._ds(dt2.getFullYear(), dt2.getMonth()+1, dt2.getDate()), 'NYSE')) dt2.setDate(dt2.getDate() - 1);",
+      "phase": "V3",
+      "grund": "Feiertagssignale nur NYSE"
+    },
+    {
+      "datei": "landing/pages/tdom-analyse.html",
+      "text": "var exchange = SA.holidays ? SA.holidays.detect(currentTicker) : 'NYSE';",
+      "phase": "V4",
+      "grund": "NYSE-Rückfall ohne SA.holidays"
+    },
+    {
+      "datei": "landing/pages/tdom-analyse.html",
+      "text": "var exchange = SA.holidays ? SA.holidays.detect(currentTicker) : 'NYSE';",
+      "phase": "V4",
+      "grund": "NYSE-Rückfall ohne SA.holidays"
+    },
+    {
+      "datei": "landing/pages/vixpiration.html",
+      "text": "if (SA.holidays.isTradingDay(calStr, 'NYSE')) return calStr;",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/vixpiration.html",
+      "text": "while (dow === 0 || dow === 6 || !SA.holidays.isTradingDay(s, 'NYSE')) {",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/vixpiration.html",
+      "text": "var fridayHoliday    = !SA.holidays.isTradingDay(calFridayStr, 'NYSE');",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/vixpiration.html",
+      "text": "var wednesdayHoliday = !SA.holidays.isTradingDay(vixStr,       'NYSE');",
+      "phase": "V3",
+      "grund": "OPEX/VIX fest auf NYSE → produkttermine"
+    },
+    {
+      "datei": "landing/pages/watchlist.html",
+      "text": "var ex = SA.holidays.detect(ticker || '') || 'NYSE';",
+      "phase": "V4",
+      "grund": "Vorgabe NYSE"
+    },
+    {
+      "datei": "landing/pages/watchlist.html",
+      "text": "return ex === 'NONE' ? 'NYSE' : ex;",
+      "phase": "V4",
+      "grund": "Krypto/Forex auf NYSE"
+    },
+    {
+      "datei": "landing/pages/watchlist.html",
+      "text": "} catch (e) { if (SA.kalenderMethode !== 'alt') throw e; return 'NYSE'; }",
+      "phase": "V4",
+      "grund": "Vorgabe/Rückfall NYSE"
+    },
+    {
+      "datei": "landing/pages/watchlist.html",
+      "text": "var ex = SA.holidays.detect(ticker || 'NYSE');",
+      "phase": "V4",
+      "grund": "Börsenname als Ticker-Ersatz"
+    },
+    {
+      "datei": "landing/pages/watchlist.html",
+      "text": "if (ex !== 'NONE') {",
+      "phase": "V4",
+      "grund": "Thanksgiving-Fenster"
+    }
+  ],
+  "kommentarzeilen": "^\\s*(//|\\*|/\\*)"
+}
