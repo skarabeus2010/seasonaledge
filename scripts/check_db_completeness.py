@@ -259,7 +259,6 @@ def dim_freshness(ctx: dict) -> dict:
     specs = [
         ("prices", "date", "workday", 1),
         ("stress_scores", "date", "workday", 1),
-        ("spot_vol_beta", "event_date", "workday", 1),
         ("scanner_results", "scan_date", "calday", 8),
         ("polymarket_prices", "ts", "calday", 2),
         ("earnings_events", "report_date", "info", None),

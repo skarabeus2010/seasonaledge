@@ -507,21 +507,6 @@ def fetch_tdom_stats(
     )
 
 
-# ── Spot-Vol Beta ─────────────────────────────────
-
-def upsert_spot_vol_beta(records: list[dict]):
-    """Spot-Vol Beta Daten upserten."""
-    if not records:
-        return
-    batch_size = 500
-    client = get_client()
-    for i in range(0, len(records), batch_size):
-        batch = records[i:i + batch_size]
-        client.table("spot_vol_beta").upsert(
-            batch, on_conflict="event_date"
-        ).execute()
-
-
 # ── Historical CPI ───────────────────────────────
 
 def upsert_historical_cpi(records: list[dict]):
@@ -572,19 +557,6 @@ def search_tickers_db(query: str, limit: int = 10) -> list[dict]:
         .execute()
         .data
     )
-
-
-def fetch_spot_vol_beta(
-    start_date: str = None,
-    end_date: str = None,
-) -> list[dict]:
-    """Spot-Vol Beta aus DB laden."""
-    q = get_client().table("spot_vol_beta").select("*")
-    if start_date:
-        q = q.gte("event_date", start_date)
-    if end_date:
-        q = q.lte("event_date", end_date)
-    return q.order("event_date").execute().data
 
 
 # ── Polymarket ────────────────────────────────────

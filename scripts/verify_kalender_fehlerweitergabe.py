@@ -173,10 +173,7 @@ def block_nightly_hauptlauf() -> None:
     heute = date.today()
     _stub_supabase([{"date": (heute - timedelta(days=i)).isoformat()} for i in range(15)])
     stubs = (("shared.cpi_data", {"update_cpi_in_db": lambda: None}),
-             ("shared.stress_score", {"vollauf": lambda t, protokoll=None: {"n_scores": 1}}),
-             ("shared.spot_vol_beta", {"load_spot_vol_data": lambda: None,
-                                       "compute_spot_vol_beta": lambda df: (df, None),
-                                       "sync_spot_vol_to_db": lambda df: 0}))
+             ("shared.stress_score", {"vollauf": lambda t, protokoll=None: {"n_scores": 1}}))
     for name, attrs in stubs:
         m = types.ModuleType(name)
         for k, v in attrs.items():

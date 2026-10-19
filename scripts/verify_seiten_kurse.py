@@ -43,7 +43,9 @@ SEITEN = {
     "backtest-engine": (("wechsel", "rueckwechsel", "normal", "blockfehler"), (), 1),
     "opex": (("wechsel", "normal", "blockfehler"), (), 1),
     "vixpiration": (("wechsel", "normal", "blockfehler"), (), 1),
-    "spot-vol-beta": (("wechsel", "normal", "blockfehler"), (), 1),
+    # normal entfällt seit 2026-10-19: die Seite rechnet absichtlich anders (spot-vol-compute.js); ihre Rechnung und
+    # Darstellung prüft scripts/verify_spot_vol_beta.py.
+    "spot-vol-beta": (("wechsel", "blockfehler"), (), 1),
     "embed": (("normal", "blockfehler"), ("Saisonalitäts-Chart",), 1),
 }
 # Seiten, deren Vorher-Stand eine beabsichtigte Kürzung hatte: Vergleich gegen den alten Code ohne Kürzung

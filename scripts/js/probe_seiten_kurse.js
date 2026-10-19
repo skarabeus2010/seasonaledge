@@ -4,7 +4,7 @@
 // VOR der Umstellung und einmal gegen den Arbeitsbaum und verlangt gleiche Anzeige.
 //
 // Aufruf: node probe_seiten_kurse.js <landing-Wurzel> <seite> <fall> [--ohne-obergrenze]
-//   fall: normal | vollfehler | ttl | blockfehler | wechsel | direkt
+//   fall: normal | vollfehler | ttl | blockfehler | wechsel | direkt | kurz (nur 22 Kurszeilen je Ticker)
 //   wechsel: nach dem Start Ticker A wählen (antwortet langsam), sofort danach B — die Anzeige muss B zeigen.
 //   direkt:  nach dem Start nur B wählen (Soll für „wechsel").
 //   rueckwechsel: A (langsam), sofort zurück zum Start-Ticker — Soll: „normal".
@@ -55,6 +55,8 @@ function daten(t) {
   // LUECKE (True Seasonal): ab 2010, in 2017–2020 fehlt jeweils der März (Lücke > 14 Tage) → nur 6 vollständige
   // Vorjahre im 10-Jahres-Fenster; /embed lädt ab 2015, die Seite ab 2016 — der Rückfall muss trotzdem gleich sein.
   if (t === 'LUECKE') return (DATEN[t] = kurse(t, 2010).filter(x => !(x.date >= '2017' && x.date < '2021' && x.date.slice(5, 7) === '03')));
+  // KURZ (/spot-vol-beta): 22 Zeilen ohne Feiertag dazwischen → genau ein VRP-Wert, keine Buckets, kein Rolling
+  if (FALL === 'kurz') return (DATEN[t] = kurse(t, 2026).filter(x => x.date >= '2026-09-09'));
   return (DATEN[t] = kurse(t, t === 'SPY' ? 1993 : 1960));
 }
 

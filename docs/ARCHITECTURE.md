@@ -22,7 +22,7 @@ yahoo_downloader.py (+ Stooq-Fallback, einziger Cache)
 supabase_client.py  →  prices  (Quelle der Wahrheit: shared/symbols.py = 324 Ticker)
         ↓
 nightly_refresh.py (Mo–Fr) — Phasen A..Z: market_events, monthly_stats, ki_scores,
-   tdom/tdoy_stats, Health-Check (Gap-Fill), regime_scores, spot_vol_beta, refresh_log,
+   tdom/tdoy_stats, Health-Check (Gap-Fill), regime_scores, refresh_log,
    Weekly-Newsletter, Polymarket, Brier
 intraday_refresh.py (stündlich) — nur prices, gruppen-/zeitfenster-gesteuert
         ↓
@@ -164,7 +164,7 @@ _(Die SQL oben zeigt nur die Kern-Tabellen. Vollständige DDL: `scripts/create_*
 | tdom_stats | (ticker,tdom,direction,strategy) | ~92 Zeilen/Ticker |
 | tdoy_stats | (ticker,tdoy,direction,strategy) | ~1016 Zeilen/Ticker |
 | regime_scores | (ticker,date) | Crash-Ampel (Isolation Forest); täglich nur SPY + Subset |
-| spot_vol_beta | event_date | SPX vs VIX (nur SPX); Nightly-Phase E1b |
+| spot_vol_beta | event_date | **seit 2026-10-19 nicht mehr geschrieben** (las niemand; /spot-vol-beta rechnet selbst, `landing/js/spot-vol-compute.js`). DROP = Nutzerentscheidung |
 | market_events | (event_date,event_type,event_name,exchange) | Feiertage/OPEX/Zentralbank |
 | central_bank_dates | (bank,date) | FOMC/EZB/BoE/BoJ |
 | dividend_events | (ticker,ex_date) | Aktien — Ex-Dividenden |
@@ -214,7 +214,6 @@ count_subscribers()                          # {"active": N, "total": N, "unsubs
 | `outlier_manager.py` | Outlier-Filter (IQR, Winsorize, Isolation Forest) |
 | `significance_gauge.py` | Signifikanztest (t-Test, Cohen's d) + Radial Gauge |
 | `tdom_analysis.py` / `tdoy_analysis.py` | TDoM/TDoY Berechnungen (3 Strategien, Ranges, Heatmap) |
-| `spot_vol_beta.py` | Spot-Vol Beta (SPX vs VIX, Daily + Rolling) — Nightly Phase E1b |
 | `backtest_engine.py` | Event-/Strategie-Backtest (Walk-Forward, Grid-Search, look-ahead-bias-frei) |
 | `drawdown_analysis.py` / `streak_analysis.py` | Drawdown/Recovery + Streak-/Konsekutiv-Analyse |
 | `shock_analysis.py` / `sector_rotation.py` | Shock Analyzer (Trigger→Target) + Sektor-Rotation |
@@ -456,7 +455,7 @@ Alle Workflows laufen via SSH auf dem VPS (`appleboy/ssh-action` + `docker exec`
 |----------|-------|----------|----------|
 | Deploy | `deploy.yml` | Push auf master | git pull + SEO + Blog + Decade- & Landing-Chart-Daten + `build_en.py` + docker rebuild |
 | Intraday Update | `intraday_update.yml` | `17 * * * *` (stündl., 24/7) | Kurs-Updates (EU/US/Asien/FX/Crypto), zeitfenster-gesteuert |
-| Nightly Refresh | `nightly_refresh.yml` | `30 20 * * 1-5` | Voller Refresh: prices, monthly/ki/tdom/tdoy/regime/spot_vol, Gap-Fill, refresh_log; So zusätzl. Newsletter/Brier |
+| Nightly Refresh | `nightly_refresh.yml` | `30 20 * * 1-5` | Voller Refresh: prices, monthly/ki/tdom/tdoy/regime, Gap-Fill, refresh_log; So zusätzl. Newsletter/Brier |
 | Nightly Update | `nightly_update.yml` | `0 21 * * 1-5` | Batch-Download aller Ticker |
 | Event Data | `event_data_daily.yml` | `15 22 * * *` | Dividenden + Earnings (Yahoo Crumb-Auth) |
 | Daily Briefing | `sa-daily-briefing.timer` (systemd, seit 2026-10-12); `daily_newsletter.yml` nur Notauslöser | Mo–Fr 07:30 Europe/Berlin | Daily Morning Briefing (Brevo), ein Live-Versand je Berliner Datum (`shared/versandsperre.py`) |
