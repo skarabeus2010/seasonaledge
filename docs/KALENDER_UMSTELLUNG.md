@@ -230,8 +230,13 @@ Entwurf mit Codex in 3 Runden freigegeben ([v1](review_prompts/2026-10-18_kalend
   Mutationstest `scripts/verify_holidays_fassade_mutation.py` (21 + 2 Gegenproben).
 - **Dabei aufgefallen (eigener Posten, nicht V2):** NYSE 1960 (`ungeprueft`) setzt Presidents Day auf den 15.02.
   (damals 22.02.) und kennt den Wahltag-Schluss 08.11.1960 nicht (belegt in `election_calendar_exceptions.json`).
-- **Nach dem Deploy prüfen:** `/tools/trading-day-converter` und eine Header-Seite per HTTP — Kennung, Skriptreihenfolge,
-  Bundle mit `Content-Encoding: gzip`; EN-Seiten laden das Bundle (`verify_einbindung.py --mit-en` auf dem Host).
+- **Live nachgewiesen (Deploy `30b8abf`, 2026-10-18):** `/tools/trading-day-converter`, `/dashboard`, `/en/dashboard`,
+  `/opex` tragen `__SA_METHODE='alt'` und die Releasekennung des Commits, Reihenfolge `methode.js` →
+  `boersenkalender.js` → `holidays.js` (Converter ohne `holidays.js`), Bundle mit `Content-Encoding: gzip`. Auf dem
+  Server ist außerhalb von `landing/`, `seo/output/`, `seo/tools/` nichts verändert; `seo/tools/` trägt die gesetzte
+  Kennung und wird vom nächsten Deploy vor dem Vorspulen zurückgesetzt.
+- **Offen bis V9:** `verify_einbindung.py --mit-en` läuft im Gate ohne `landing/en/` (wird erst auf dem Host gebaut) —
+  vor der Aktivierung einmal auf dem Host bzw. im Probelauf `/opt/seasonaledge-probe` ausführen.
 
 ### Danach
 - [ ] **V3 Ereignisse** — vorher OPEX-Momentaufnahme einfrieren; `/opex`/`/vixpiration` nur belegte Termine (OPEX ab

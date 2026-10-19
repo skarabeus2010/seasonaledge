@@ -228,6 +228,9 @@ Separate Pipeline auf eigenem DB-Schema, weil die Daten nie geupdated werden (hi
 ### Runbook — Brier-Score erneuern
 
 **Kadenz:** Einmal pro Monat sinnvoll (neue Resolutions trudeln laufend ein, Polymarket-Kalibrierung ändert sich aber nicht dramatisch innerhalb Wochen).
+**Seit 2026-10-18 nur manuell** (Nutzerentscheidung): `brier_compute.yml` hat keinen Zeitplan mehr, auslösen per
+„Run workflow“. Grund: der Sonntagslauf war der einzige lange Job, den ein Deploy noch abbrechen konnte (11.10.), und die
+Brier-Stichprobe sowie B4 (Auflösungsbeleg statt `endDate`) sind offen. Während ein Lauf geht, nicht pushen.
 
 #### Initialer Run (einmalig nach Deployment)
 
