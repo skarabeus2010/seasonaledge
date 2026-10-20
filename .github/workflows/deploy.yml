@@ -163,8 +163,14 @@ jobs:
       # Freigabe, docs/review_prompts/2026-10-20_polymarket_b2_entwurf_v4.md).
       # Die Supabase-Attrappe stellt die GEMESSENE Filtersemantik nach, inklusive
       # SQL-NULL: ein blosses `neq` trifft eine Zeile mit status IS NULL nicht.
+      # PyYAML: der Waechter LIEST den Shellblock aus polymarket_daily.yml und fuehrt
+      # ihn mit Attrappen aus, statt ihn nachzubauen. Ohne das Paket ist dieser
+      # Nachweis ungeprueft, und ungepruefte Nachweise gelten nie als bestanden —
+      # der erste Gate-Lauf scheiterte genau daran.
       - name: Waechter - Polymarket Marktstatus
-        run: python3 scripts/verify_polymarket_status.py
+        run: |
+          python3 -m pip install --quiet PyYAML
+          python3 scripts/verify_polymarket_status.py
       # Events-Sektion der Morgen-Mail: VIXpiration kommt aus dem belegten
       # Produkttermin-Katalog (Nutzerentscheidung 2026-10-20), mit Feiertagsregel,
       # Fenstergrenzen und Erkenntnisgrenze ab Kontraktmonat 2015-09.

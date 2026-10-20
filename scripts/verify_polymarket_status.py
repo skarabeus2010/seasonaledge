@@ -793,17 +793,32 @@ import os as _os          # noqa: E402
 import shutil             # noqa: E402
 import tempfile           # noqa: E402
 
-import yaml as _yaml      # noqa: E402
+# PyYAML ist eine echte Voraussetzung dieses Abschnitts: der Shellblock wird aus
+# der Workflow-Datei GELESEN und ausgefuehrt, nicht nachgebaut. Fehlt das Paket,
+# ist der Nachweis UNGEPRUEFT — und ungepruefte Nachweise gelten in diesem Projekt
+# nie als bestanden. Also rot, aber mit benannter Ursache statt als Absturz: der
+# erste Gate-Lauf scheiterte genau hier, und im Protokoll stand nur ein
+# Traceback (dieselbe Klasse wie „Jinja2 fehlte im Gate", v66.23).
+try:
+    import yaml as _yaml      # noqa: E402
+except ModuleNotFoundError:
+    _yaml = None
 
-wf_text = (WURZEL / ".github" / "workflows" / "polymarket_daily.yml").read_text(encoding="utf-8")
-wf = _yaml.safe_load(wf_text)
-skript = wf["jobs"]["refresh"]["steps"][0]["with"]["script"]
+if _yaml is None:
+    pruefe(False, "PyYAML fehlt — der Workflow-Shellblock ist nicht pruefbar "
+                  "(im Gate `python3 -m pip install PyYAML` ergaenzen)")
+    skript = ""
+else:
+    wf_text = (WURZEL / ".github" / "workflows" / "polymarket_daily.yml").read_text(encoding="utf-8")
+    wf = _yaml.safe_load(wf_text)
+    skript = wf["jobs"]["refresh"]["steps"][0]["with"]["script"]
 pruefe("polymarket_discover.py --sync-db" in skript,
        "[Aufbau] der Shellblock aus der YAML enthaelt den Katalogabgleich")
 
 bash = shutil.which("bash")
-if not bash:
-    pruefe(False, "bash nicht gefunden — der Shellblock ist nicht pruefbar")
+if not bash or not skript:
+    pruefe(False, "bash oder der Shellblock fehlt — nicht pruefbar "
+                  "(bash=%r, Shellblock=%d Zeichen)" % (bool(bash), len(skript)))
 else:
     def shellblock(discover_rc: int, backfill: str = ""):
         tmp = tempfile.mkdtemp(prefix="sa-wf-")
