@@ -672,7 +672,7 @@ def fetch_current_price(condition_id: str, db_status: str | None = None) -> dict
     """
     m = fetch_market_by_condition_id(condition_id)
     if not m:
-        app_logger.debug("fetch_current_price %s: kein Markt von Gamma", condition_id)
+        app_logger.info("fetch_current_price %s: kein Markt von Gamma", condition_id)
         return None
     urteil = aktueller_snapshot(m, db_status=db_status)
     if not urteil["preis_freigegeben"]:
@@ -680,8 +680,14 @@ def fetch_current_price(condition_id: str, db_status: str | None = None) -> dict
         # `dict | None`, also kann ihn nur das Log tragen. Wer den Grund
         # auswerten will, ruft `aktueller_snapshot` direkt (Codex-Befund: der
         # zugesagte Grund war weder zurueckgegeben noch protokolliert).
-        app_logger.debug("fetch_current_price %s: kein aktueller Preis (%s, status=%s)",
-                         condition_id, urteil["grund"], urteil["endstatus"])
+        #
+        # `info`, nicht `debug`: der Dateihandler steht auf INFO und der
+        # Konsolenhandler auf WARNING (shared/logger.py) — eine `debug`-Zeile
+        # wird von BEIDEN verworfen. Sie waere also protokolliert worden, ohne
+        # irgendwo zu erscheinen; Codex hat das an den Handler-Schwellen
+        # nachgewiesen, nachdem mein erster Fix sie auf `debug` legte.
+        app_logger.info("fetch_current_price %s: kein aktueller Preis (%s, status=%s)",
+                        condition_id, urteil["grund"], urteil["endstatus"])
     return urteil.get("snapshot")
 
 

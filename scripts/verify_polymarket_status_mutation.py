@@ -149,8 +149,8 @@ MUTATIONEN = [
      "ein gescheiterter Abruf erneuert `status_checked_at` NICHT"),
 
     ("Rueckgabe des Schreibvorgangs ignoriert", R,
-     [("        records = [r for r in records if r[\"condition_id\"] in erlaubt]\n",
-       "        records = list(records)\n")],
+     [("            if cid in erlaubt:\n                behalten.append(r)\n",
+       "            if True:\n                behalten.append(r)\n")],
      # Der DB-`resolved`-Fall wird schon von `aktueller_snapshot` geblockt, also
      # kann er die Rueckgabepruefung nicht pruefen. Erst der VERALTETE Katalog
      # (gelesen als `open`, inzwischen `resolved`) trennt die zweite Linie von
@@ -256,6 +256,21 @@ MUTATIONEN = [
      [('        or not log_ok\n        or (success == 0 and zaehler["fachlich_uebersprungen"] == 0 and len(entries) > 0)\n',
        '        or (success == 0 and zaehler["fachlich_uebersprungen"] == 0 and len(entries) > 0)\n')],
      "scheitert die refresh_log-Zeile, ist der Lauf rot"),
+
+    # ── Die Auflagen der zweiten Code-Runde ────────────────────────────────
+    ("N1: bestaetigte Aufloesung wird nicht gezaehlt", R,
+     [('            elif cid in beruehrt:\n', '            elif False:\n')],
+     "bestaetigte fachliche Auslassung und kein Ausfall"),
+
+    ("B8: Ablehnungsgrund wieder auf debug", P,
+     [('        app_logger.info("fetch_current_price %s: kein aktueller Preis (%s, status=%s)",\n',
+       '        app_logger.debug("fetch_current_price %s: kein aktueller Preis (%s, status=%s)",\n')],
+     "der Ablehnungsgrund erscheint auf INFO oder hoeher"),
+
+    ("W1: Backfill dauerhaft abgeschaltet", W,
+     [('            if [ "$DOW" = "1" ] || [ "$SA_BACKFILL" = "true" ]; then\n',
+       '            if false; then\n')],
+     "mit include_backfill=true laeuft Schritt 3 wirklich"),
 ]
 
 # Mutationen, die der Waechter NICHT fangen kann und auch nicht soll — sie pruefen das
@@ -282,7 +297,7 @@ def _anwenden(original: bytes, paare, nr: int, name: str):
 # Mindestumfang des Ausgangslaufs. Ein Lauf, der vorzeitig endet, ist kein Nachweis —
 # „Exit 1 plus passende FEHL-Zeile" liess bis zum 2026-10-20 einen anschliessend
 # abgebrochenen Lauf als gueltig durchgehen (Codex, Befund W5).
-MIND_PRUEFUNGEN = 110
+MIND_PRUEFUNGEN = 125
 
 
 def _umfang(ausgabe: str) -> int:

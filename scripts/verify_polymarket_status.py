@@ -805,7 +805,7 @@ bash = shutil.which("bash")
 if not bash:
     pruefe(False, "bash nicht gefunden — der Shellblock ist nicht pruefbar")
 else:
-    def shellblock(discover_rc: int):
+    def shellblock(discover_rc: int, backfill: str = ""):
         tmp = tempfile.mkdtemp(prefix="sa-wf-")
         try:
             # `docker`-Attrappe: protokolliert jeden Aufruf und gibt fuer den
@@ -827,8 +827,8 @@ else:
             umgebung = dict(_os.environ)
             umgebung["PATH"] = tmp + _os.pathsep + umgebung.get("PATH", "")
             umgebung["SA_LOG"] = log
-            umgebung["SA_EVENT"] = "schedule"
-            umgebung["SA_BACKFILL"] = ""
+            umgebung["SA_EVENT"] = "workflow_dispatch" if backfill else "schedule"
+            umgebung["SA_BACKFILL"] = backfill
             p = subprocess.run([bash, skriptdatei], capture_output=True, text=True,
                                encoding="utf-8", timeout=120, env=umgebung, cwd=tmp)
             aufrufe = ""
@@ -852,6 +852,18 @@ else:
            "und Schritt 2 laeuft NICHT (%r)" % aufrufe_rot.replace("\n", " | ")[:90])
     pruefe("polymarket_backfill.py" not in aufrufe_rot,
            "Schritt 3 ebenfalls nicht")
+
+    # Die Abwesenheit allein beweist nichts: ein dauerhaft abgeschalteter Backfill
+    # haette dieselbe Pruefung bestanden (Codex' Gegenprobe blieb 121/121 gruen).
+    # Deshalb ZUERST der positive Fall — mit include_backfill=true muss Schritt 3
+    # wirklich laufen.
+    rc_bf, aufrufe_bf = shellblock(0, backfill="true")
+    pruefe("polymarket_backfill.py" in aufrufe_bf,
+           "mit include_backfill=true laeuft Schritt 3 wirklich (%r)"
+           % aufrufe_bf.replace("\n", " | ")[:100])
+    rc_bf2, aufrufe_bf2 = shellblock(1, backfill="true")
+    pruefe("polymarket_backfill.py" not in aufrufe_bf2,
+           "und bleibt bei gescheitertem Schritt 1 aus, OBWOHL er angefordert war")
 
 print("")
 print("18. Die Gegenfaelle aus der Code-Abnahme, als Regressionsfaelle:")
@@ -959,6 +971,58 @@ pruefe(ab.fremd == {"FOREIGN"},
        "eine fremde ID aus der Einzelnachfrage landet in `fremd` (%r)" % (ab.fremd,))
 pruefe(ab.unklar == {"A"},
        "und die angefragte bleibt `unklar` (%r)" % (ab.unklar,))
+
+# B8 der zweiten Runde: der Ablehnungsgrund muss auf einer Stufe stehen, die die
+# PRODUKTIVEN Handler ausgeben. `debug` wird vom Dateihandler (INFO) und vom
+# Konsolenhandler (WARNING) verworfen — er waere protokolliert worden, ohne
+# irgendwo zu erscheinen.
+import logging    # noqa: E402
+
+aufgezeichnet = []
+
+
+class _Sammler(logging.Handler):
+    def emit(self, satz):
+        aufgezeichnet.append((satz.levelno, satz.getMessage()))
+
+
+_sammler = _Sammler(level=logging.INFO)     # wie der produktive Dateihandler
+pd.app_logger.addHandler(_sammler)
+gamma([(("A",), [markt("A", GESCHLOSSEN)])])
+try:
+    ergebnis_fcp = pd.fetch_current_price("A")
+finally:
+    pd.app_logger.removeHandler(_sammler)
+pruefe(ergebnis_fcp is None, "[Aufbau] der geschlossene Markt liefert None")
+pruefe(any("kein aktueller Preis" in text for _, text in aufgezeichnet),
+       "der Ablehnungsgrund erscheint auf INFO oder hoeher — `debug` haetten beide "
+       "produktiven Handler verworfen (%r)" % (aufgezeichnet,))
+pruefe(all(stufe >= logging.INFO for stufe, _ in aufgezeichnet) and aufgezeichnet,
+       "und zwar auf einer Stufe, die der Dateihandler ausgibt (%r)"
+       % [stufe for stufe, _ in aufgezeichnet])
+
+# N1 der zweiten Code-Runde: eine BESTAETIGTE Auflösung darf den Lauf nicht rot
+# machen. Vorher wurde die verworfene Preiszeile nirgends gezaehlt -> 0 Preise,
+# 0 fachlich -> Exit 1, und damit fiel zusaetzlich der Backfill aus.
+db = {"polymarket_markets": [{"condition_id": "A", "status": "resolved", "active": False}],
+      "polymarket_prices": []}
+prot = []
+LOG = prot
+sc.get_client = lambda: VeralteterKatalogClient(db, prot)
+gamma([(("A",), [markt("A", OFFEN)])])
+rf.load_markets_yaml = lambda: {"markets": EINTRAEGE}
+alt_argv2 = sys.argv
+sys.argv = ["polymarket_refresh.py"]
+try:
+    rc_aufgeloest = rf.main()
+finally:
+    sys.argv = alt_argv2
+pruefe(rc_aufgeloest == 0,
+       "veralteter Katalog + inzwischen aufgeloeste Zeile: Exit 0, denn es ist eine "
+       "bestaetigte fachliche Auslassung und kein Ausfall (%r)" % rc_aufgeloest)
+pruefe(not [o for o in prot if o["art"] == "upsert"
+            and o["tabelle"] == "polymarket_prices"],
+       "und trotzdem keine Preiszeile")
 
 print("")
 print("19. Der Logpfad wird wirklich erreicht:")

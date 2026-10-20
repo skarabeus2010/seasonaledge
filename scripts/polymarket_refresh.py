@@ -210,6 +210,7 @@ def refresh_markets(
         # verschluckt. Beide Schreibwege werden GETRENNT bewertet, damit der
         # Erfolg des einen den Ausfall des anderen nicht verdeckt.
         erlaubt: set[str] = set()
+        beruehrt: set[str] = set()
         if zustaende:
             try:
                 ergebnis = update_polymarket_markt_zustand(zustaende)
@@ -217,6 +218,7 @@ def refresh_markets(
                 # darin, war seine Zeile aufgeloest (oder existiert nicht).
                 erlaubt = {z.get("condition_id")
                            for z in (ergebnis.get("freigegeben") or [])}
+                beruehrt = set(ergebnis.get("beruehrt") or set())
             except Exception as e:
                 # KEINE Freigabe. Der erste Entwurf setzte hier nur
                 # `schreiben_ok = False` und schrieb `records` anschliessend
@@ -228,13 +230,31 @@ def refresh_markets(
                 zaehler["schreiben_ok"] = False
                 errors.append(f"Zustands-Update gescheitert: {type(e).__name__}: {e}")
 
-        vorher = len(records)
-        records = [r for r in records if r["condition_id"] in erlaubt]
-        verworfen = vorher - len(records)
-        if verworfen:
-            errors.append(f"{verworfen} Preiszeile(n) verworfen: keine Freigabe aus "
-                          f"dem Zustands-Update (aufgeloest, nicht vorhanden oder "
-                          f"Update gescheitert)")
+        behalten, verworfen_aufgeloest, verworfen_sonst = [], 0, 0
+        for r in records:
+            cid = r["condition_id"]
+            if cid in erlaubt:
+                behalten.append(r)
+            elif cid in beruehrt:
+                # Die Zeile EXISTIERT und wurde nicht freigegeben — sie ist
+                # aufgeloest. Das ist eine bestaetigte fachliche Auslassung und
+                # kein Ausfall: ohne diese Zaehlung wurde ein fachlich korrekter
+                # Lauf rot und verhinderte zusaetzlich den Backfill (Codex,
+                # Befund N1 der zweiten Code-Runde, am Fall nachgewiesen).
+                verworfen_aufgeloest += 1
+            else:
+                # Keine Zeile getroffen: fehlt in der Datenbank, oder das Update
+                # ist gescheitert. Beides begruendet keinen Erfolg; der
+                # Schreibfehler macht ueber `schreiben_ok` ohnehin rot.
+                verworfen_sonst += 1
+        records = behalten
+        if verworfen_aufgeloest:
+            zaehler["fachlich_uebersprungen"] += verworfen_aufgeloest
+            errors.append(f"{verworfen_aufgeloest} Preiszeile(n) verworfen: Markt in "
+                          f"der Datenbank aufgeloest")
+        if verworfen_sonst:
+            errors.append(f"{verworfen_sonst} Preiszeile(n) verworfen: keine Zeile "
+                          f"getroffen (fehlt in der Datenbank oder Update gescheitert)")
 
         if records:
             try:
