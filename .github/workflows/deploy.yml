@@ -176,6 +176,12 @@ jobs:
       # Fenstergrenzen und Erkenntnisgrenze ab Kontraktmonat 2015-09.
       - name: Waechter - Events in der Morgen-Mail
         run: python3 scripts/verify_mail_events.py
+      # Vorbedingung von Kalender V3: die OPEX-Momentaufnahme darf sich nicht still
+      # aendern. 2 592 Monate, alle Rueckgabefelder von get_opex_date,
+      # get_all_opex_dates und populate_opex, dazu zwoelf Stichproben im Volltext —
+      # damit eine Abweichung lesbar ist und nicht nur "Hash ungleich".
+      - name: Waechter - OPEX-Momentaufnahme (Vorbedingung V3)
+        run: python3 scripts/opex_momentaufnahme.py --pruefen
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |
