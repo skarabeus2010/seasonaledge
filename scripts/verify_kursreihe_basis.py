@@ -147,7 +147,12 @@ sr.SECTOR_ETFS = {"X": "Test"}
 import shared.supabase_client as sc                                    # noqa: E402
 sc.get_client = lambda: _Client(mz)
 mon = dr._sector_monthly_avg_returns(lookback_days=10_000).get("X", {})
-pruef("Monatsmittel: Februar (Basiswechsel) fehlt, März +10 %, kein +200 %", mon == {3: 10.0}, mon)
+# Rückgabeform seit 2026-10-20: {Monat: {"avg", "n"}} — die Fallzahl gehört an jede Zahl
+# (Nutzerbefund: die Mail mischte n=8 und n=15 in einer Rangliste). Die Aussage dieses
+# Falls ist unverändert: der Februar fällt wegen des Basiswechsels weg, bleibt der März
+# mit genau einer Beobachtung und +10 %, nicht +200 %.
+pruef("Monatsmittel: Februar (Basiswechsel) fehlt, März +10 % auf n=1, kein +200 %",
+      mon == {3: {"avg": 10.0, "n": 1}}, mon)
 
 print()
 if FEHLER:

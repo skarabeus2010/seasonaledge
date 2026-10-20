@@ -152,6 +152,13 @@ jobs:
         run: |
           python3 -m pip install --quiet "jinja2>=3.1.0"
           python3 scripts/verify_kursmuster.py
+      # Sektor-Rotation der Morgen-Mail (Nutzerbefund 2026-10-20): keine erfundene
+      # Ersatztabelle, laufender Monat zaehlt nicht mit, Fallzahl an jeder Zahl,
+      # Vorzeichen und Farbe in der Vorlage. Rendert die echte Vorlage.
+      - name: Waechter - Sektor-Rotation in der Mail
+        run: |
+          python3 -m pip install --quiet "jinja2>=3.1.0" "pandas>=2.0"
+          python3 scripts/verify_sektor_rotation.py
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |

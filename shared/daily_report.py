@@ -436,10 +436,17 @@ def _signal_row_from_series(ticker: str, series: "pd.Series",
     muster = None
     try:
         from shared.exchange_holidays import letzte_session
-        from shared.kursmuster import muster_fuer
+        from shared.kursmuster import im_universum, muster_fuer
         from shared.symbols import get_exchange_for_holidays
-        if last_bar and last_bar.get("kerzen"):
-            muster = muster_fuer(ticker, last_bar["kerzen"], letzte_session(get_exchange_for_holidays(ticker)))
+        # `im_universum` zuerst, und zwar VOR `letzte_session`: die Studie deckt nur
+        # Aktien und ETFs ab, und `letzte_session` wirft fuer FOREX („Keine
+        # Schlusszeit fuer FOREX hinterlegt"). Als Argument wurde es trotzdem
+        # ausgewertet, bevor `muster_fuer` den Ticker verwerfen konnte — jeder Lauf
+        # schrieb dadurch eine ERROR-Zeile fuer einen voellig erwarteten Fall, und
+        # ein ECHTER Fehler bei einem Ticker aus dem Universum sah genauso aus.
+        if im_universum(ticker) and last_bar and last_bar.get("kerzen"):
+            muster = muster_fuer(ticker, last_bar["kerzen"],
+                                 letzte_session(get_exchange_for_holidays(ticker)))
     except Exception as e:
         error_logger.error(f"[daily_report] kursmuster {ticker}: {e}")
     return {
@@ -1240,37 +1247,67 @@ def active_strategy_signals(target_date: date | None = None) -> list[dict]:
 # Sektion 5: Sektor-Rotation
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _sector_monthly_avg_returns(lookback_days: int = 5500) -> dict[str, dict[int, float]]:
-    """
-    Historische Ø-Kalendermonats-Rendite je Sektor-ETF und Monat (1-12).
+# Wie viele abgeschlossene Monate ein Durchschnitt mindestens braucht, um in die
+# Rangfolge zu kommen. Redaktionell gesetzt, nicht gemessen: die Schwelle soll
+# verhindern, dass eine Handvoll Jahre eine Rangfolge anführt, und nicht etwa eine
+# Signifikanzaussage treffen. Die Fallzahl steht an jeder Zahl, damit der Leser
+# selbst einordnen kann (gemessen 2026-10-20: XLK 15 Oktober, XLRE 11, XLC 8).
+SEKTOR_MIN_JAHRE = 5
 
-    Echte Berechnung aus der Preis-Historie: je Jahr/Monat die Rendite vom
-    ersten zum letzten Handelstag des Monats (Close/Close - 1), dann Mittelwert
-    über alle Jahre. Eine einzige History-Query (für alle Empfänger gleich).
+
+def _sector_monthly_avg_returns(
+    lookback_days: int = 5500, heute: date | None = None
+) -> dict[str, dict[int, dict]]:
+    """
+    Historische Ø-Kalendermonats-Rendite je Sektor-ETF und Monat (1-12), mit Fallzahl.
+
+    Gerechnet wird je Jahr/Monat die Rendite **vom Schluss des Vormonats zum
+    Schluss des Monats** — nicht vom ersten zum letzten Handelstag des Monats,
+    wie der Docstring hier bis zum 2026-10-20 behauptete. Eine einzige
+    History-Query (für alle Empfänger gleich).
+
+    Der LAUFENDE Monat wird ausgelassen. Er ist nicht abgeschlossen, und ihn als
+    vollen Monatswert mitzuzählen verschiebt genau die Spalte, die in der Mail
+    „aktueller Monat" heißt: gemessen am 2026-10-20 stand XLK mit dem
+    unfertigen Oktober auf Platz 5 (+2,10 %), ohne ihn auf Platz 2 (+2,58 %).
+    Dieselbe Fehlerklasse wie „das laufende Jahr galt als abgeschlossen"
+    (Review-Welle 1).
 
     Returns:
-        {ticker: {month(1-12): avg_return_pct}} — Monate ohne Daten fehlen.
-        Bei Fehlern/keinen Daten: leeres dict (Aufrufer fällt zurück).
+        {ticker: {month(1-12): {"avg": float, "n": int}}} — Monate ohne Daten fehlen.
+        Bei Fehlern/keinen Daten: leeres dict (der Aufrufer gibt dann nichts aus).
     """
     from shared.sector_rotation import SECTOR_ETFS
 
+    if heute is None:
+        heute = datetime.now(timezone.utc).date()
+
     history = fetch_daily_close_history(list(SECTOR_ETFS), lookback_days=lookback_days)
     if not history:
+        # Dieser Zweig war stumm. Er ist der Grund, warum die Mail an manchen
+        # Tagen eine andere Sektorliste zeigte als an anderen, ohne dass in
+        # irgendeinem Log etwas stand.
+        error_logger.error(
+            "[daily_report] Sektor-Rotation: keine Kurshistorie fuer die "
+            f"{len(SECTOR_ETFS)} Sektor-ETFs — die Sektion bleibt ohne Werte"
+        )
         return {}
 
-    out: dict[str, dict[int, float]] = {}
+    out: dict[str, dict[int, dict]] = {}
     for ticker, series in history.items():
         if series is None or len(series) == 0:
             continue
         try:
             # Letzter Close je (Jahr, Monat) → Monatsrendite = pct_change innerhalb Jahr.
             grp = series.groupby([series.index.year, series.index.month]).last()
-            month_avg: dict[int, float] = {}
+            month_avg: dict[int, dict] = {}
             for month in range(1, 13):
                 rets = []
                 for (yr, mo), close_end in grp.items():
                     if mo != month:
                         continue
+                    if yr == heute.year and mo == heute.month:
+                        continue        # laufender Monat: nicht abgeschlossen
                     # Vormonat (gleiches oder Vorjahr) für Close→Close-Rendite
                     prev_key = (yr, mo - 1) if mo > 1 else (yr - 1, 12)
                     if prev_key in grp.index:
@@ -1278,7 +1315,8 @@ def _sector_monthly_avg_returns(lookback_days: int = 5500) -> dict[str, dict[int
                         if prev_close:
                             rets.append((close_end / prev_close - 1) * 100)
                 if rets:
-                    month_avg[month] = round(sum(rets) / len(rets), 2)
+                    month_avg[month] = {"avg": round(sum(rets) / len(rets), 2),
+                                        "n": len(rets)}
             if month_avg:
                 out[ticker] = month_avg
         except Exception as e:
@@ -1292,14 +1330,24 @@ def sector_rotation_signal(target_date: date | None = None, top_n: int = 5) -> d
     Top-N Sektoren saisonal: aktueller Monat UND Folge-Monat (echte Berechnung).
 
     Berechnet je SPDR-Select-Sektor-ETF die historische Ø-Kalendermonats-Rendite
-    aus der Preis-Historie (~15 Jahre) und liefert pro Monat die Top-N (desc).
+    aus der Preis-Historie (~15 Jahre) und liefert pro Monat die Top-N (desc),
+    jede Zahl mit ihrer Fallzahl.
+
+    KEINE Ersatztabelle mehr. Bis zum 2026-10-20 stand hier `HISTORIC_BEST`, eine
+    handgeschriebene Tabelle ohne Datenbezug, die stumm einsprang, wenn die
+    Rechnung nichts lieferte — ohne Logzeile und ohne Kennzeichnung in der Mail.
+    Der Nutzer hat es daran bemerkt, dass „die Ticker ständig wechseln": an guten
+    Tagen die gerechnete Rangfolge, an schlechten die erfundene. Liefert die
+    Rechnung nichts, sagt die Sektion das jetzt (`berechenbar = False`).
 
     Returns:
         {
           "current_month": int, "next_month": int,
-          "current_top": [{ticker, name, avg_return_pct}, ...],   # Top-N aktueller Monat
-          "next_top":    [{ticker, name, avg_return_pct}, ...],   # Top-N Folgemonat
-          "legend":      [{ticker, name}, ...],                   # alle Sektor-ETFs
+          "current_top": [{ticker, name, avg_return_pct, n}, ...],  # Top-N aktueller Monat
+          "next_top":    [{ticker, name, avg_return_pct, n}, ...],  # Top-N Folgemonat
+          "legend":      [{ticker, name}, ...],                     # alle Sektor-ETFs
+          "berechenbar": bool,                                      # False = keine Daten
+          "min_jahre":   int,                                       # Schwelle, redaktionell
         }
     """
     if target_date is None:
@@ -1310,53 +1358,37 @@ def sector_rotation_signal(target_date: date | None = None, top_n: int = 5) -> d
     current_month = target_date.month
     next_month = current_month % 12 + 1
 
-    # Fallback-Tabelle (3 Einträge je Monat reichen, top_n wird notfalls gekappt),
-    # falls die echte Berechnung keine Daten liefert.
-    HISTORIC_BEST = {
-        1:  [("XLK", 1.8), ("XLY", 1.5), ("XLF", 1.2), ("XLV", 1.0), ("XLI", 0.9)],
-        2:  [("XLK", 1.5), ("XLI", 1.4), ("XLV", 1.1), ("XLY", 1.0), ("XLF", 0.8)],
-        3:  [("XLI", 2.1), ("XLB", 1.9), ("XLY", 1.7), ("XLK", 1.5), ("XLE", 1.2)],
-        4:  [("XLK", 2.4), ("XLY", 2.0), ("XLI", 1.8), ("XLB", 1.6), ("XLF", 1.3)],
-        5:  [("XLV", 1.6), ("XLP", 1.3), ("XLU", 1.1), ("XLK", 1.0), ("XLY", 0.8)],
-        6:  [("XLE", 1.5), ("XLF", 1.2), ("XLV", 1.0), ("XLK", 0.9), ("XLU", 0.7)],
-        7:  [("XLK", 2.0), ("XLY", 1.6), ("XLV", 1.4), ("XLI", 1.2), ("XLF", 1.0)],
-        8:  [("XLP", 0.8), ("XLU", 0.7), ("XLV", 0.6), ("XLK", 0.5), ("XLRE", 0.4)],
-        9:  [("XLE", 0.5), ("XLU", 0.3), ("XLP", 0.2), ("XLV", 0.1), ("XLF", 0.0)],
-        10: [("XLK", 1.7), ("XLY", 1.5), ("XLF", 1.3), ("XLI", 1.1), ("XLV", 1.0)],
-        11: [("XLY", 2.5), ("XLK", 2.2), ("XLI", 1.9), ("XLF", 1.6), ("XLB", 1.4)],
-        12: [("XLK", 2.0), ("XLY", 1.8), ("XLI", 1.6), ("XLF", 1.4), ("XLV", 1.2)],
-    }
-
     try:
-        monthly = _sector_monthly_avg_returns()
+        monthly = _sector_monthly_avg_returns(heute=target_date)
     except Exception as e:
         error_logger.error(f"[daily_report] sector_rotation compute: {e}")
         monthly = {}
 
     def _top_for_month(month: int) -> list[dict]:
-        if monthly:
-            ranked = sorted(
-                (
-                    {"ticker": t, "name": SECTOR_ETFS.get(t, t),
-                     "avg_return_pct": m[month]}
-                    for t, m in monthly.items() if month in m
-                ),
-                key=lambda r: r["avg_return_pct"],
-                reverse=True,
-            )
-            if ranked:
-                return ranked[:top_n]
-        # Fallback
-        return [
-            {"ticker": t, "name": SECTOR_ETFS.get(t, t), "avg_return_pct": r}
-            for (t, r) in HISTORIC_BEST.get(month, [])[:top_n]
-        ]
+        if not monthly:
+            return []
+        ranked = sorted(
+            (
+                {"ticker": t, "name": SECTOR_ETFS.get(t, t),
+                 "avg_return_pct": m[month]["avg"], "n": m[month]["n"]}
+                for t, m in monthly.items()
+                if month in m and m[month]["n"] >= SEKTOR_MIN_JAHRE
+            ),
+            key=lambda r: r["avg_return_pct"],
+            reverse=True,
+        )
+        return ranked[:top_n]
+
+    current_top = _top_for_month(current_month)
+    next_top = _top_for_month(next_month)
 
     return {
         "current_month": current_month,
         "next_month": next_month,
-        "current_top": _top_for_month(current_month),
-        "next_top": _top_for_month(next_month),
+        "current_top": current_top,
+        "next_top": next_top,
+        "berechenbar": bool(current_top or next_top),
+        "min_jahre": SEKTOR_MIN_JAHRE,
         "legend": [
             {"ticker": t, "name": n} for t, n in SECTOR_ETFS.items()
         ],

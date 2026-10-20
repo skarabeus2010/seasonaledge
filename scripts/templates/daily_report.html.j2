@@ -252,15 +252,25 @@
     {% endif %}
 
     {% set month_names = {1:'Januar',2:'Februar',3:'März',4:'April',5:'Mai',6:'Juni',7:'Juli',8:'August',9:'September',10:'Oktober',11:'November',12:'Dezember'} %}
-    {% if rotation and (rotation.current_top or rotation.next_top) %}
+    {# Die Sektion erscheint auch ohne Werte — dann mit Hinweiszeile statt stillem
+       Verschwinden. Ein fehlender Abschnitt sieht aus wie ein fehlendes Feature. #}
+    {% if rotation %}
     <!-- ══════════════════════ SEKTION: SEKTOR-ROTATION ══════════════════════ -->
     <tr><td style="padding:24px 32px 8px;">
       <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#e8a820;margin-bottom:4px;">
         🔄 Sektor-Rotation
       </div>
       <div style="font-size:12px;color:#a89878;margin-bottom:14px;">
-        Saisonal stärkste Sektor-ETFs — aktueller Monat und Folgemonat im Vergleich
+        Ø-Monatsrendite je Sektor-ETF über die abgeschlossenen Monate der Historie,
+        Fallzahl in Klammern — aktueller Monat und Folgemonat
       </div>
+      {% if not rotation.berechenbar %}
+      {# Keine Ersatztabelle: bis zum 2026-10-20 sprang hier eine handgeschriebene
+         Liste ohne Datenbezug ein, stumm und ohne Kennzeichnung. #}
+      <div style="font-size:12px;color:#a89878;padding:8px 0;">
+        Heute nicht berechenbar — keine Kurshistorie für die Sektor-ETFs verfügbar.
+      </div>
+      {% else %}
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
         <tr>
           {# ── Aktueller Monat ── #}
@@ -272,7 +282,7 @@
             <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
               <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
               <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
-              <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
+              <span style="color:{{ '#30e878' if s.avg_return_pct >= 0 else '#ff5c5c' }};float:right;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%+.1f' % s.avg_return_pct }}% <span style="color:#a89878;font-weight:400;">({{ s.n }})</span></span>
             </div>
             {% endfor %}
           </td>
@@ -285,12 +295,17 @@
             <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;">
               <span style="color:#e8a820;font-family:'JetBrains Mono',monospace;font-weight:700;">{{ s.ticker }}</span>
               <span style="color:#cbd5e1;margin-left:6px;">{{ s.name }}</span>
-              <span style="color:#30e878;float:right;font-variant-numeric:tabular-nums;font-weight:600;">+{{ '%.1f' % s.avg_return_pct }}%</span>
+              <span style="color:{{ '#30e878' if s.avg_return_pct >= 0 else '#ff5c5c' }};float:right;font-variant-numeric:tabular-nums;font-weight:600;">{{ '%+.1f' % s.avg_return_pct }}% <span style="color:#a89878;font-weight:400;">({{ s.n }})</span></span>
             </div>
             {% endfor %}
           </td>
         </tr>
       </table>
+      <div style="margin-top:8px;font-size:11px;color:#a89878;">
+        Zahl in Klammern = Fallzahl (abgeschlossene Monate). Der laufende Monat
+        zählt nicht mit. Kein Signal, nur Historie.
+      </div>
+      {% endif %}
       {% if rotation.legend %}
       <div style="margin-top:12px;font-size:11px;color:#a89878;line-height:1.7;">
         {% for l in rotation.legend %}<span style="color:#e8a820;font-family:'JetBrains Mono',monospace;">{{ l.ticker }}</span> = {{ l.name }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
