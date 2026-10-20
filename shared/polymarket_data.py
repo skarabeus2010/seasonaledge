@@ -255,8 +255,14 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
     widerspruch: set[str] = set()
 
     def _statusfelder(m: dict) -> tuple:
-        return (m.get('closed'), m.get('acceptingOrders'),
-                m.get('archived'), m.get('enableOrderBook'))
+        # Mit dem TYP, nicht nur dem Wert: in Python ist `False == 0` und
+        # `True == 1`, waehrend `status_aus_markt` ausdruecklich auf Identitaet
+        # prueft (`is True` / `is False`). Zwei Antworten mit `closed=False` und
+        # `closed=0` ergeben einzeln `open` und `unbekannt`, waeren aber ohne den
+        # Typ als gleich durchgegangen — dann entschiede die Reihenfolge der
+        # Antworten ueber den uebernommenen Status (Codex, Befund B4 am Code).
+        return tuple((type(m.get(f)), m.get(f)) for f in
+                     ('closed', 'acceptingOrders', 'archived', 'enableOrderBook'))
 
     def _aufnehmen(m: dict, cid: str) -> None:
         vorher = je_cid.get(cid)
@@ -290,8 +296,14 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
             unklar.add(cid)              # technischer Fehler, keine Aussage
         elif einzeln:
             for m in einzeln:
-                if (m or {}).get('conditionId') == cid:
+                antwort_cid = (m or {}).get('conditionId')
+                if antwort_cid == cid:
                     _aufnehmen(m, cid)
+                elif antwort_cid and antwort_cid not in angefragt:
+                    # Auch die Einzelnachfrage kann Fremdes liefern. Ohne diesen
+                    # Zweig meldete die Abdeckung `fremd = set()`, obwohl eine
+                    # nicht angefragte ID zurueckkam (Codex, Befund B7 am Code).
+                    fremd.add(antwort_cid)
             if cid not in getroffen:
                 # Antwort da, aber die ID nicht darin — das ist keine
                 # Bestaetigung, sondern eine unpassende Antwort.
@@ -660,8 +672,17 @@ def fetch_current_price(condition_id: str, db_status: str | None = None) -> dict
     """
     m = fetch_market_by_condition_id(condition_id)
     if not m:
+        app_logger.debug("fetch_current_price %s: kein Markt von Gamma", condition_id)
         return None
-    return aktueller_snapshot(m, db_status=db_status).get("snapshot")
+    urteil = aktueller_snapshot(m, db_status=db_status)
+    if not urteil["preis_freigegeben"]:
+        # Der Grund geht hier nicht verloren: der Rueckgabevertrag ist
+        # `dict | None`, also kann ihn nur das Log tragen. Wer den Grund
+        # auswerten will, ruft `aktueller_snapshot` direkt (Codex-Befund: der
+        # zugesagte Grund war weder zurueckgegeben noch protokolliert).
+        app_logger.debug("fetch_current_price %s: kein aktueller Preis (%s, status=%s)",
+                         condition_id, urteil["grund"], urteil["endstatus"])
+    return urteil.get("snapshot")
 
 
 # ── CLOB API: Historische Preise ──────────────────────────────────────────────
@@ -819,9 +840,14 @@ if __name__ == "__main__":
             print(f"  yes_token: {norm['yes_token_id'][:20]}...  no_token: {norm['no_token_id'][:20]}...")
             print(f"  liquidity: ${norm['liquidity_usd']}")
 
-            print(f"\n[4] market_to_price_snapshot(...)")
-            snap = market_to_price_snapshot(m0)
-            print(f"  -> {snap}")
+            print(f"\n[4] aktueller_snapshot(...)")
+            # Hiess bis zum 2026-10-20 `market_to_price_snapshot`; der Name ist
+            # weg, und dieser Aufruf blieb stehen — ein NameError, sobald der
+            # Pfad einen Markt bekam (Codex, Befund B8 am Code).
+            u = aktueller_snapshot(m0)
+            print(f"  -> freigegeben={u['preis_freigegeben']} grund={u['grund']} "
+                  f"status={u['status']}")
+            print(f"  -> {u['snapshot']}")
 
             print(f"\n[5] fetch_price_history(...) interval=1d")
             if norm["yes_token_id"]:

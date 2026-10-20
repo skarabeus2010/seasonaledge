@@ -378,10 +378,15 @@ def sync_catalog_to_db(data: dict) -> dict:
         upsert_polymarket_markets(records)
         bericht["geschrieben"] = len(records)
     if zustaende:
-        getroffen = {z.get("condition_id") for z in (
-            update_polymarket_markt_zustand(zustaende) or [])}
+        ergebnis = update_polymarket_markt_zustand(zustaende)
+        # `beruehrt`, NICHT `freigegeben`: der Helfer laesst eine vorhandene
+        # `resolved`-Zeile absichtlich aus der Freigabe weg. Aus „nicht
+        # freigegeben" auf „keine Katalogzeile" zu schliessen hiesse, einen
+        # vorhandenen aufgeloesten Markt als fehlend zu melden, obwohl sein
+        # Pruefzeitpunkt gerade erneuert wurde (Codex, Befund B5 am Code).
+        beruehrt = ergebnis.get("beruehrt") or set()
         bericht["ohne_katalogzeile"] = sorted(
-            cid for cid in abdeckung.fehlt_bestaetigt if cid not in getroffen)
+            cid for cid in abdeckung.fehlt_bestaetigt if cid not in beruehrt)
 
     return bericht
 

@@ -82,6 +82,7 @@ def refresh_markets(
     zaehlen, waere ein Lauf, der keinen einzigen Markt bearbeitet hat, gruen
     (Codex, Befund N2) — heute endet derselbe Fall ueber `success == 0` rot.
     """
+    from shared.polymarket_data import STATUS_BEWERTBAR
     from shared.supabase_client import (
         fetch_polymarket_markets as _fetch_catalog,
         upsert_polymarket_prices,
@@ -99,7 +100,8 @@ def refresh_markets(
     records = []
     zustaende: list[dict] = []
     errors: list[str] = []
-    zaehler = {"preise": 0, "fachlich_uebersprungen": 0, "katalog_fehlt": 0,
+    zaehler = {"preise": 0, "preise_vorbereitet": 0, "fachlich_uebersprungen": 0,
+               "quote_unbrauchbar": 0, "katalog_fehlt": 0,
                "technische_fehler": 0, "schreiben_ok": True}
     now = datetime.now(timezone.utc)
 
@@ -171,17 +173,29 @@ def refresh_markets(
             continue
 
         if not urteil.get("preis_freigegeben"):
-            # Fachlich uebersprungen: der Markt war erreichbar, aber sein Status
-            # oder seine Quote laesst keinen aktuellen Preis zu. Kein Ausfall.
-            zaehler["fachlich_uebersprungen"] += 1
+            # Zwei verschiedene Lagen, und nur die erste begruendet einen Erfolg:
+            #
+            #   Status nicht bewertbar  -> fachlich uebersprungen. Ein Tag, an dem
+            #       alle Maerkte legitim geschlossen sind, ist kein Ausfall.
+            #   Quote unbrauchbar       -> ein MESSPROBLEM bei offenem Markt
+            #       (gekreuztes Buch, kein Preis). Das darf den fehlenden Erfolg
+            #       nicht ersetzen: sonst waere ein Tag, an dem bei allen offenen
+            #       Maerkten das Buch gekreuzt war, gruen (Codex, Befund B2 am
+            #       Code, am Fall Bid 0,80 / Ask 0,20 nachgewiesen).
+            if (urteil.get("endstatus") or "") not in STATUS_BEWERTBAR:
+                zaehler["fachlich_uebersprungen"] += 1
+                art = "UEBERSPRUNGEN"
+            else:
+                zaehler["quote_unbrauchbar"] += 1
+                art = "QUOTE"
             errors.append(f"{slug}: kein Preis ({urteil.get('grund')})")
-            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- UEBERSPRUNGEN"
+            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- {art}"
                   f": {urteil.get('grund') or '-'}")
             continue
 
         snap = urteil["snapshot"]
         records.append(build_price_record(cid, snap, now))
-        zaehler["preise"] += 1
+        zaehler["preise_vorbereitet"] += 1
         print(
             f"  [{i:2d}/{len(entries)}] {slug:40s} "
             f"YES={snap['yes_price']:.3f}  "
@@ -195,31 +209,48 @@ def refresh_markets(
         # Fehlschlag hier ist ein Fehlschlag des Laufs und wird nicht
         # verschluckt. Beide Schreibwege werden GETRENNT bewertet, damit der
         # Erfolg des einen den Ausfall des anderen nicht verdeckt.
+        erlaubt: set[str] = set()
         if zustaende:
             try:
-                geschrieben = update_polymarket_markt_zustand(zustaende)
-                # Die Rueckgabe ist die Entscheidungsgrundlage fuer die
-                # Preisfreigabe: fehlt ein Markt darin, war seine Zeile
-                # aufgeloest (oder existiert nicht). Eine solche Preiszeile wird
-                # verworfen, BEVOR sie geschrieben wird.
-                erlaubt = {z.get("condition_id") for z in (geschrieben or [])}
-                vorher = len(records)
-                records = [r for r in records if r["condition_id"] in erlaubt]
-                verworfen = vorher - len(records)
-                if verworfen:
-                    zaehler["preise"] -= verworfen
-                    zaehler["fachlich_uebersprungen"] += verworfen
-                    errors.append(f"{verworfen} Preiszeile(n) verworfen: Markt in der "
-                                  f"Datenbank aufgeloest oder nicht vorhanden")
+                ergebnis = update_polymarket_markt_zustand(zustaende)
+                # `freigegeben` ist die Entscheidungsgrundlage: fehlt ein Markt
+                # darin, war seine Zeile aufgeloest (oder existiert nicht).
+                erlaubt = {z.get("condition_id")
+                           for z in (ergebnis.get("freigegeben") or [])}
             except Exception as e:
+                # KEINE Freigabe. Der erste Entwurf setzte hier nur
+                # `schreiben_ok = False` und schrieb `records` anschliessend
+                # trotzdem — bei veraltetem Katalogstatus `open` und einer
+                # inzwischen aufgeloesten Zeile entstand genau die Preiszeile,
+                # die der ganze Mechanismus verhindern soll. Der spaetere rote
+                # Exit nimmt einen Schreibvorgang nicht zurueck (Codex, Befund
+                # B1 am Code, am Fall nachgewiesen).
                 zaehler["schreiben_ok"] = False
                 errors.append(f"Zustands-Update gescheitert: {type(e).__name__}: {e}")
+
+        vorher = len(records)
+        records = [r for r in records if r["condition_id"] in erlaubt]
+        verworfen = vorher - len(records)
+        if verworfen:
+            errors.append(f"{verworfen} Preiszeile(n) verworfen: keine Freigabe aus "
+                          f"dem Zustands-Update (aufgeloest, nicht vorhanden oder "
+                          f"Update gescheitert)")
+
         if records:
             try:
                 upsert_polymarket_prices(records)
+                # Erst JETZT gilt eine Preiszeile als geschrieben. Vorher zaehlte
+                # `preise` die vorbereiteten Zeilen, und ein gescheiterter Upsert
+                # meldete trotzdem „1/1 Snapshots" — im Intraday-Modus landete
+                # dieser Wert zusaetzlich als `tickers_success` im refresh_log
+                # (Codex, Befund B6 am Code).
+                zaehler["preise"] = len(records)
             except Exception as e:
                 zaehler["schreiben_ok"] = False
                 errors.append(f"Preis-Upsert gescheitert: {type(e).__name__}: {e}")
+    else:
+        # Trockenlauf: nichts wird geschrieben, also gilt das Vorbereitete.
+        zaehler["preise"] = zaehler["preise_vorbereitet"]
 
     return zaehler, errors
 
@@ -291,7 +322,8 @@ def main():
         zaehler, errors = refresh_markets(entries, dry_run=args.dry_run)
     except Exception as e:
         # Schreibfehler der Snapshots: frueher ungefangen ohne Log-Zeile.
-        zaehler = {"preise": 0, "fachlich_uebersprungen": 0, "katalog_fehlt": 0,
+        zaehler = {"preise": 0, "preise_vorbereitet": 0, "fachlich_uebersprungen": 0,
+                   "quote_unbrauchbar": 0, "katalog_fehlt": 0,
                    "technische_fehler": 1, "schreiben_ok": False}
         errors = [f"upsert/abruf abgebrochen: {e}"]
     success = zaehler["preise"]
@@ -299,8 +331,10 @@ def main():
 
     print(f"\n{'=' * 60}")
     print(f"  Fertig! {success}/{len(entries)} Snapshots in {elapsed:.1f}s")
-    print(f"  Preise {success} · fachlich uebersprungen "
-          f"{zaehler['fachlich_uebersprungen']} · nicht im Katalog "
+    print(f"  Preise geschrieben {success} (vorbereitet "
+          f"{zaehler['preise_vorbereitet']}) · fachlich uebersprungen "
+          f"{zaehler['fachlich_uebersprungen']} · Quote unbrauchbar "
+          f"{zaehler['quote_unbrauchbar']} · nicht im Katalog "
           f"{zaehler['katalog_fehlt']} · technische Fehler "
           f"{zaehler['technische_fehler']} · Schreiben "
           f"{'ok' if zaehler['schreiben_ok'] else 'GESCHEITERT'}")
@@ -328,7 +362,8 @@ def main():
     # einzigen Markt bearbeitet hat (alle 26 fehlen im Katalog), gruen — heute
     # endet derselbe Fall ueber `success == 0` rot. Es ist aber auch kein
     # technischer Fehler, sonst waere jeder Lauf vor dem ersten Katalogabgleich
-    # rot.
+    # rot. `quote_unbrauchbar` begruendet aus demselben Grund keinen Erfolg: ein
+    # gekreuztes Buch bei offenem Markt ist ein Messproblem, kein Normalzustand.
     rot = (
         zaehler["technische_fehler"] > 0
         or not zaehler["schreiben_ok"]

@@ -51,6 +51,15 @@ fehler = 0
 anzahl = 0
 
 
+def _json_leer(text) -> bool:
+    """Trug `missing_details` einen Skip-Vermerk? Dann wurde der Pfad nicht erreicht."""
+    import json as _j
+    try:
+        return "skip" in (_j.loads(text) or {})
+    except Exception:
+        return False
+
+
 def pruefe(bed, was):
     global fehler, anzahl
     anzahl += 1
@@ -79,6 +88,12 @@ class FakeTabelle:
     def update(self, payload):
         self.op = {"art": "update", "tabelle": self.name,
                    "payload": dict(payload), "filter": {}}
+        return self
+
+    def insert(self, rows):
+        self.op = {"art": "insert", "tabelle": self.name,
+                   "rows": [dict(rows)] if isinstance(rows, dict) else
+                           [dict(r) for r in rows], "filter": {}}
         return self
 
     def upsert(self, rows, on_conflict=None):
@@ -145,6 +160,9 @@ class FakeTabelle:
         self.protokoll.append(self.op)
         if self.op["art"] == "select":
             return Antwort([dict(z) for z in self.db.get(self.name, [])])
+        if self.op["art"] == "insert":
+            self.db.setdefault(self.name, []).extend(self.op["rows"])
+            return Antwort(self.op["rows"])
         if self.op["art"] == "upsert":
             for r in self.op["rows"]:
                 bestand = self.db.setdefault(self.name, [])
@@ -173,11 +191,23 @@ class FakeClient:
 
 
 def mit_db(zeilen):
-    """Setzt die Supabase-Attrappe und gibt (db, protokoll) zurueck."""
+    """Setzt die Supabase-Attrappe und gibt (db, protokoll) zurueck.
+
+    Das Protokoll ist GEMEINSAM mit den Gamma-Abrufen (siehe `gamma`): nur in
+    einer Liste laesst sich „alle Abrufe vor dem ersten Schreibvorgang" wirklich
+    messen. Mit zwei getrennten Listen wurden nur Anzahl und Vorhandensein
+    geprueft, und ein Schreibvorgang zwischen zwei Abrufen waere durchgegangen
+    (Codex, Befund W3).
+    """
     db = {"polymarket_markets": [dict(z) for z in zeilen], "polymarket_prices": []}
     protokoll = []
+    global LOG
+    LOG = protokoll
     sc.get_client = lambda: FakeClient(db, protokoll)
     return db, protokoll
+
+
+LOG: list = []
 
 
 # ── Attrappe: Gamma ────────────────────────────────────────────────────────
@@ -207,12 +237,22 @@ def gamma(antworten):
     Schreiben pruefbar ist.
     """
     rufe = []
+    verbraucht: dict = {}
 
     def _ein_stapel(batch):
         rufe.append(tuple(batch))
-        for schluessel, wert in antworten:
-            if set(schluessel) == set(batch):
-                return wert
+        LOG.append({"art": "gamma", "batch": tuple(batch)})
+        # Mehrere Eintraege mit demselben Schluessel werden der REIHE NACH
+        # verbraucht — sonst liesse sich „Stapel scheitert, Einzelnachfrage
+        # antwortet anders" nicht nachstellen: meine erste Fassung nahm immer den
+        # ersten Treffer, und der Testfall fuer fremde IDs in der Einzelnachfrage
+        # pruefte dadurch nichts.
+        passend = [w for s, w in antworten if set(s) == set(batch)]
+        if passend:
+            schluessel = frozenset(batch)
+            i = verbraucht.get(schluessel, 0)
+            verbraucht[schluessel] = i + 1
+            return passend[min(i, len(passend) - 1)]
         # Standard: jede ID als offener Markt
         return [markt(c) for c in batch]
 
@@ -313,8 +353,11 @@ pruefe(zeile["status"] == "closed",
        "Status gesetzt, obwohl er vorher NULL war (%r)" % zeile["status"])
 pruefe(zeile["active"] is False,
        "und `active` gleich mit (%r)" % zeile["active"])
-pruefe(len(getroffen) == 1 and getroffen[0]["condition_id"] == "A",
-       "die Rueckgabe nennt den Markt (%r)" % getroffen)
+pruefe(len(getroffen["freigegeben"]) == 1
+       and getroffen["freigegeben"][0]["condition_id"] == "A",
+       "die Freigabe nennt den Markt (%r)" % getroffen["freigegeben"])
+pruefe(getroffen["beruehrt"] == {"A"},
+       "und `beruehrt` ebenso (%r)" % (getroffen["beruehrt"],))
 
 print("")
 print("6. `resolved` ueberlebt, der Pruefzeitpunkt wird trotzdem erneuert:")
@@ -333,8 +376,12 @@ pruefe(zeile["status_checked_at"] == "NEU",
 pruefe(zeile["last_fetch_state"] == "ok" and zeile["last_fetch_at"] == "NEU",
        "die Abruffelder gehen NICHT verloren (%r/%r)"
        % (zeile["last_fetch_state"], zeile["last_fetch_at"]))
-pruefe(getroffen == [],
-       "die Rueckgabe ist leer — fuer die Preisfreigabe eine Ablehnung (%r)" % getroffen)
+pruefe(getroffen["freigegeben"] == [],
+       "die Freigabe ist leer — fuer den Preis eine Ablehnung (%r)"
+       % getroffen["freigegeben"])
+pruefe(getroffen["beruehrt"] == {"A"},
+       "`beruehrt` nennt die Zeile trotzdem — sie EXISTIERT, und daraus darf "
+       "niemand „keine Katalogzeile\" ableiten (%r)" % (getroffen["beruehrt"],))
 
 print("")
 print("7. Fetch-only auf einer aufgeloesten Zeile:")
@@ -379,10 +426,16 @@ rufe = gamma([(("A", "B", "C"), [markt("A", OFFEN), markt("B", GESCHLOSSEN)]),
 bericht = disc.sync_catalog_to_db(DATEN)
 
 schreibend = [i for i, o in enumerate(prot) if o["art"] in ("update", "upsert")]
-pruefe(bool(rufe), "[Aufbau] Gamma wurde ueberhaupt gerufen (%d Abrufe)" % len(rufe))
+abrufend = [i for i, o in enumerate(prot) if o["art"] == "gamma"]
+pruefe(bool(abrufend), "[Aufbau] Gamma wurde ueberhaupt gerufen (%d Abrufe)" % len(abrufend))
 pruefe(bool(schreibend), "[Aufbau] es wurde geschrieben (%d Anweisungen)" % len(schreibend))
 pruefe(len(rufe) == 2,
        "beide Abrufe (Stapel + Einzelnachfrage) fanden statt (%r)" % (rufe,))
+# Die eigentliche Reihenfolgepruefung, im GEMEINSAMEN Protokoll: der letzte Abruf
+# muss vor dem ersten Schreibvorgang liegen.
+pruefe(max(abrufend) < min(schreibend),
+       "der LETZTE Gamma-Abruf liegt vor dem ERSTEN Schreibvorgang (%d < %d)"
+       % (max(abrufend), min(schreibend)))
 pruefe(bericht["gefunden"] == 2 and bericht["fehlt_bestaetigt"] == 1
        and bericht["unklar"] == 0,
        "Bericht: gefunden 2, bestaetigt nicht vorhanden 1, ungeprueft 0 (%r)"
@@ -579,6 +632,12 @@ def main_mit(katalog, eintraege, gamma_antworten, fehlerhaft=None):
                 t.execute = execute
             return t
 
+    # Das GEMEINSAME Protokoll umsetzen. Ohne diese Zeile las die Pruefung „keine
+    # Preiszeile nach gescheitertem Zustands-Update" ein VERALTETES Protokoll aus
+    # einem frueheren Abschnitt und bestand immer — die zugehoerige Mutation blieb
+    # unbemerkt, gemeldet vom Mutationstest.
+    global LOG
+    LOG = protokoll
     sc.get_client = lambda: Client(db, protokoll)
     gamma(gamma_antworten)
     pd.load_markets_yaml = lambda: {"markets": eintraege}
@@ -627,6 +686,18 @@ rc = main_mit(KAT_A, EINTRAEGE, [(("A",), [markt("A", OFFEN)])],
               fehlerhaft={"arten": ("upsert",), "tabellen": ("polymarket_prices",)})
 pruefe(rc == 1, "Preis-Upsert scheitert -> Exit 1 (%r)" % rc)
 
+# Der Fall, in dem AUSSCHLIESSLICH `schreiben_ok` rot macht: ein Markt ist legitim
+# geschlossen (fachlich uebersprungen, also waere der Lauf sonst gruen), der andere
+# offen, und sein Preis-Upsert scheitert. Ohne diesen Fall war die Mutation
+# „Schreibfehler nicht in der Exit-Regel" aequivalent, weil der letzte Term den
+# Lauf ohnehin rot machte — gemeldet vom Mutationstest.
+rc = main_mit(KAT_AB, E2,
+              [(("A",), [markt("A", GESCHLOSSEN)]), (("B",), [markt("B", OFFEN)])],
+              fehlerhaft={"arten": ("upsert",), "tabellen": ("polymarket_prices",)})
+pruefe(rc == 1,
+       "1 fachlich uebersprungen + gescheiterter Preis-Upsert -> Exit 1; nur "
+       "`schreiben_ok` traegt diesen Fall (%r)" % rc)
+
 print("")
 print("14. Der Workflow ruft den Katalogabgleich als Schritt 1:")
 wf = (WURZEL / ".github" / "workflows" / "polymarket_daily.yml").read_text(encoding="utf-8")
@@ -644,19 +715,309 @@ pruefe("set -euo pipefail" in wf,
        "errexit und pipefail stehen im Shellblock")
 
 print("")
-print("15. Der Lader nimmt die Datenbankfunktion und faellt nicht zurueck:")
-js = (WURZEL / "landing" / "js" / "polymarket.js").read_text(encoding="utf-8")
-i_fn = js.find("function loadLatestPrices")
-i_end = js.find("\n  }", i_fn)
-koerper = js[i_fn:i_end] if i_fn != -1 else ""
-pruefe("rpc/polymarket_latest_prices" in koerper,
-       "er ruft rpc/polymarket_latest_prices")
-pruefe("p_condition_ids=" in koerper and "encodeURIComponent" in koerper,
-       "mit kodiertem Array-Argument")
-pruefe("Array.isArray(rows)" in koerper,
-       "die Antwortform wird geprueft (ein Fehlerobjekt ist kein Array)")
-pruefe("polymarket_prices" not in koerper,
-       "KEIN Rueckfall auf die Tabellenabfrage")
+print("15. Der Lader wird AUSGEFUEHRT, nicht im Text gesucht:")
+# Textfragmente sind hier kein Nachweis: Codex hat am Lader ein
+# `return Promise.resolve({});` direkt an den Anfang gesetzt, den restlichen Text
+# stehen gelassen — und der Waechter blieb gruen, obwohl der RPC nie gerufen
+# wurde (Befund W2). Deshalb laeuft der echte Lader in node gegen eine
+# fetch-Attrappe, und diese Probe muss ihren Endmarker erreichen.
+import subprocess    # noqa: E402
+
+LADER_PROBE = WURZEL / "scripts" / "js" / "probe_polymarket_lader.js"
+r = subprocess.run(["node", str(LADER_PROBE)], capture_output=True, text=True,
+                   encoding="utf-8", timeout=120, cwd=str(WURZEL))
+pruefe(r.returncode == 0,
+       "probe_polymarket_lader.js laeuft durch (Exit %d)" % r.returncode)
+if r.returncode != 0:
+    # Die Fehlerzeilen der Probe DURCHREICHEN, jede auf eigener Zeile. Sonst
+    # kann keine Mutation die Pruefung benennen, die sie reisst: die Zeilen
+    # steckten zusammengequetscht in einer einzigen Meldung, und der
+    # Mutationstest traf sie nur zufaellig (am Lauf gemeldet).
+    for zeile in (r.stdout or "").splitlines():
+        if zeile.startswith("  FEHL"):
+            print("  FEHL [Lader]" + zeile[6:])
+pruefe("PROBE-ENDE" in (r.stdout or ""),
+       "und erreicht ihren Endmarker")
+anz_lader = 0
+for zeile in (r.stdout or "").splitlines():
+    if zeile.startswith("PROBE-ENDE"):
+        anz_lader = int(zeile.split()[1])
+pruefe(anz_lader >= 14,
+       "mit dem erwarteten Pruefumfang (%d, erwartet mindestens 14)" % anz_lader)
+# Dass `SA.supabase.get` die Antwortform NICHT prueft, ist der Grund, warum der
+# Lader sie selbst pruefen muss. Das gehoert als eigener Posten festgehalten.
+app_js = (WURZEL / "landing" / "js" / "app.js").read_text(encoding="utf-8")
+i_get = app_js.find("  get: function(table, query) {")
+block = app_js[i_get:i_get + 900] if i_get != -1 else ""
+pruefe(i_get != -1, "[Aufbau] SA.supabase.get gefunden")
+pruefe("r.ok" not in block,
+       "SA.supabase.get prueft `r.ok` weiterhin NICHT — eigener Posten, "
+       "betrifft jede Seite; genau deshalb prueft der Lader selbst")
+
+print("")
+print("16. Der Katalogabgleich endet bei `unklar` mit Exit != 0 — am echten main:")
+# Abschnitt 10 ruft nur `sync_catalog_to_db`. Codex hat `abgleich_rot` auf
+# `return 0` geaendert und der Waechter blieb gruen (Befund W1). Also der echte
+# Einstieg mit echtem Rueckgabewert.
+db, prot = mit_db([{"condition_id": c, "status": None, "active": True,
+                    "slug": c.lower(), "question": "q", "category": "fed"}
+                   for c in ("A", "B", "C")])
+gamma([(("A", "B", "C"), None), (("A",), [markt("A")]), (("B",), []), (("C",), None)])
+disc.load_markets_yaml = lambda: DATEN
+alt_argv = sys.argv
+sys.argv = ["polymarket_discover.py", "--sync-db"]
+try:
+    rc_disc = disc.main()
+finally:
+    sys.argv = alt_argv
+pruefe(rc_disc == 1,
+       "main() --sync-db mit einer ungepruefte ID gibt 1 zurueck (%r)" % rc_disc)
+
+db, prot = mit_db([{"condition_id": c, "status": None, "active": True,
+                    "slug": c.lower(), "question": "q", "category": "fed"}
+                   for c in ("A", "B", "C")])
+gamma([(("A", "B", "C"), [markt("A"), markt("B"), markt("C")])])
+sys.argv = ["polymarket_discover.py", "--sync-db"]
+try:
+    rc_disc = disc.main()
+finally:
+    sys.argv = alt_argv
+pruefe(rc_disc in (0, None),
+       "ohne ungepruefte ID gibt es keinen Fehlerexit (%r)" % rc_disc)
+
+print("")
+print("17. Der Workflow-Shellblock wird AUSGEFUEHRT, mit Attrappen:")
+# Codex' Auflage: der Shelltest darf nicht die Textform pruefen, sondern muss
+# zeigen, dass ein Fehlschlag in Schritt 1 die Schritte 2 und 3 verhindert.
+import os as _os          # noqa: E402
+import shutil             # noqa: E402
+import tempfile           # noqa: E402
+
+import yaml as _yaml      # noqa: E402
+
+wf_text = (WURZEL / ".github" / "workflows" / "polymarket_daily.yml").read_text(encoding="utf-8")
+wf = _yaml.safe_load(wf_text)
+skript = wf["jobs"]["refresh"]["steps"][0]["with"]["script"]
+pruefe("polymarket_discover.py --sync-db" in skript,
+       "[Aufbau] der Shellblock aus der YAML enthaelt den Katalogabgleich")
+
+bash = shutil.which("bash")
+if not bash:
+    pruefe(False, "bash nicht gefunden — der Shellblock ist nicht pruefbar")
+else:
+    def shellblock(discover_rc: int):
+        tmp = tempfile.mkdtemp(prefix="sa-wf-")
+        try:
+            # `docker`-Attrappe: protokolliert jeden Aufruf und gibt fuer den
+            # Katalogabgleich den gewuenschten Code zurueck.
+            docker = _os.path.join(tmp, "docker")
+            with open(docker, "w", newline="\n", encoding="utf-8") as fh:
+                fh.write("#!/bin/sh\n"
+                         'echo "$@" >> "$SA_LOG"\n'
+                         'case "$*" in\n'
+                         "  *polymarket_discover.py*) exit %d ;;\n" % discover_rc +
+                         "esac\nexit 0\n")
+            _os.chmod(docker, 0o755)
+            for name in ("date", "tail"):
+                pass
+            log = _os.path.join(tmp, "aufrufe.txt")
+            skriptdatei = _os.path.join(tmp, "block.sh")
+            with open(skriptdatei, "w", newline="\n", encoding="utf-8") as fh:
+                fh.write(skript)
+            umgebung = dict(_os.environ)
+            umgebung["PATH"] = tmp + _os.pathsep + umgebung.get("PATH", "")
+            umgebung["SA_LOG"] = log
+            umgebung["SA_EVENT"] = "schedule"
+            umgebung["SA_BACKFILL"] = ""
+            p = subprocess.run([bash, skriptdatei], capture_output=True, text=True,
+                               encoding="utf-8", timeout=120, env=umgebung, cwd=tmp)
+            aufrufe = ""
+            if _os.path.exists(log):
+                with open(log, encoding="utf-8") as fh:
+                    aufrufe = fh.read()
+            return p.returncode, aufrufe
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    rc_ok, aufrufe_ok = shellblock(0)
+    pruefe("polymarket_discover.py" in aufrufe_ok,
+           "[Aufbau] Schritt 1 wird gerufen")
+    pruefe("polymarket_refresh.py" in aufrufe_ok,
+           "bei Erfolg laeuft Schritt 2 (%r)" % aufrufe_ok.replace("\n", " | ")[:90])
+
+    rc_rot, aufrufe_rot = shellblock(1)
+    pruefe(rc_rot != 0,
+           "scheitert Schritt 1, endet der Block mit Fehler (Exit %d)" % rc_rot)
+    pruefe("polymarket_refresh.py" not in aufrufe_rot,
+           "und Schritt 2 laeuft NICHT (%r)" % aufrufe_rot.replace("\n", " | ")[:90])
+    pruefe("polymarket_backfill.py" not in aufrufe_rot,
+           "Schritt 3 ebenfalls nicht")
+
+print("")
+print("18. Die Gegenfaelle aus der Code-Abnahme, als Regressionsfaelle:")
+
+# B1: ein gescheitertes Zustands-Update darf KEINE Preiszeile hinterlassen. Vorher
+# wurde nur Exit 1 geprueft — der Schreibvorgang selbst blieb unbemerkt, und der
+# rote Exit nimmt ihn nicht zurueck.
+rc = main_mit(KAT_A, EINTRAEGE, [(("A",), [markt("A", OFFEN)])],
+              fehlerhaft={"arten": ("update",), "tabellen": ("polymarket_markets",)})
+letzte_preise = [o for o in LOG if o["art"] == "upsert"
+                 and o["tabelle"] == "polymarket_prices"]
+pruefe(rc == 1, "[Aufbau] der Lauf ist rot (%r)" % rc)
+pruefe(not letzte_preise,
+       "nach gescheitertem Zustands-Update entsteht KEINE Preiszeile (%d Upserts)"
+       % len(letzte_preise))
+
+# B2: ein gekreuztes Buch bei OFFENEM Markt ist ein Messproblem und begruendet
+# keinen Erfolg. Vorher zaehlte es als „fachlich uebersprungen" -> Exit 0.
+db, prot, z, err = refresh_mit({"condition_id": "A", "status": None, "active": True},
+                               markt("A", OFFEN, bid=0.80, ask=0.20))
+pruefe(z["quote_unbrauchbar"] == 1 and z["fachlich_uebersprungen"] == 0,
+       "gekreuztes Buch zaehlt als Quotenproblem, nicht als fachliche Auslassung (%r)"
+       % {k: z[k] for k in ("quote_unbrauchbar", "fachlich_uebersprungen")})
+rc = main_mit(KAT_A, EINTRAEGE, [(("A",), [markt("A", OFFEN, bid=0.80, ask=0.20)])])
+pruefe(rc == 1,
+       "und macht den Lauf rot — ein Messfehler ist kein Erfolg (%r)" % rc)
+
+# B3: der Fetch-only-Zweig laeuft ohne Statusfilter und darf deshalb nur die zwei
+# Abruffelder tragen. Mit `active` konnte er einen aufgeloesten Markt sichtbar machen.
+db, prot = mit_db([{"condition_id": "A", "status": "resolved", "active": False,
+                    "status_checked_at": "ALT"}])
+try:
+    sc.update_polymarket_markt_zustand([
+        {"condition_id": "A", "last_fetch_state": "fehler", "active": True,
+         "status_checked_at": "NEU"}])
+    geworfen = None
+except ValueError as e:
+    geworfen = str(e)
+pruefe(geworfen is not None,
+       "ohne `status` wird ein Feld ausserhalb der zwei Abruffelder abgelehnt (%r)"
+       % (geworfen or "nichts geworfen")[:70])
+zeile = db["polymarket_markets"][0]
+pruefe(zeile["active"] is False and zeile["status_checked_at"] == "ALT",
+       "und der aufgeloeste Markt bleibt unsichtbar mit altem Pruefzeitpunkt (%r/%r)"
+       % (zeile["active"], zeile["status_checked_at"]))
+
+# B4: `False == 0` in Python, aber `status_aus_markt` prueft auf Identitaet. Zwei
+# Antworten mit `closed=False` und `closed=0` ergeben verschiedene Status.
+pruefe(pd.status_aus_markt(dict(OFFEN, closed=0)) != pd.status_aus_markt(dict(OFFEN)),
+       "[Aufbau] `closed=0` und `closed=False` ergeben verschiedene Status (%s / %s)"
+       % (pd.status_aus_markt(dict(OFFEN, closed=0)), pd.status_aus_markt(dict(OFFEN))))
+gamma([(("A",), [markt("A", OFFEN), markt("A", dict(OFFEN, closed=0))])])
+ab = pd.fetch_markets_mit_abdeckung(["A"])
+pruefe("A" in ab.unklar,
+       "`closed=False` gegen `closed=0` ist ein Widerspruch, kein Treffer (%r)"
+       % (sorted(ab.unklar),))
+
+# B5: eine vorhandene `resolved`-Zeile, die Gamma nicht mehr kennt, ist KEINE
+# fehlende Katalogzeile — ihr Pruefzeitpunkt wurde gerade erneuert.
+db, prot = mit_db([{"condition_id": "A", "status": "resolved", "active": False,
+                    "slug": "a", "question": "q", "category": "fed",
+                    "status_checked_at": "ALT"}])
+gamma([(("A",), [])])
+bericht = disc.sync_catalog_to_db({"markets": [
+    {"slug": "a", "category": "fed", "condition_id": "A"}]})
+pruefe(bericht["fehlt_bestaetigt"] == 1,
+       "[Aufbau] Gamma kennt den Markt nicht mehr (%r)" % bericht["fehlt_bestaetigt"])
+pruefe(bericht["ohne_katalogzeile"] == [],
+       "die vorhandene aufgeloeste Zeile wird NICHT als fehlend gemeldet (%r)"
+       % (bericht["ohne_katalogzeile"],))
+pruefe(db["polymarket_markets"][0]["status_checked_at"] != "ALT",
+       "ihr Pruefzeitpunkt wurde erneuert (%r)"
+       % db["polymarket_markets"][0]["status_checked_at"])
+
+# B6: `preise` zaehlt GESCHRIEBENE Zeilen. Vorher stieg der Zaehler vor dem Upsert,
+# und ein gescheiterter Upsert meldete trotzdem „1/1 Snapshots".
+db, prot = mit_db([{"condition_id": "A", "status": None, "active": True}])
+
+
+class UpsertFehlerClient(FakeClient):
+    def table(self, name):
+        t = FakeTabelle(self.db, self.protokoll, name)
+        echt = t.execute
+
+        def execute():
+            if (t.op or {}).get("art") == "upsert" and name == "polymarket_prices":
+                raise RuntimeError("Attrappe: Preis-Upsert scheitert")
+            return echt()
+        t.execute = execute
+        return t
+
+
+sc.get_client = lambda: UpsertFehlerClient(db, prot)
+gamma([(("A",), [markt("A", OFFEN)])])
+z, err = rf.refresh_markets(EINTRAEGE)
+pruefe(z["preise"] == 0 and z["preise_vorbereitet"] == 1,
+       "ein gescheiterter Upsert meldet 0 geschriebene bei 1 vorbereiteten (%r)"
+       % {k: z[k] for k in ("preise", "preise_vorbereitet")})
+pruefe(z["schreiben_ok"] is False, "und `schreiben_ok` ist falsch")
+
+# B7: fremde IDs auch im Zweig der Einzelnachfrage.
+gamma([(("A",), None), (("A",), [markt("FOREIGN")])])
+ab = pd.fetch_markets_mit_abdeckung(["A"])
+pruefe(ab.fremd == {"FOREIGN"},
+       "eine fremde ID aus der Einzelnachfrage landet in `fremd` (%r)" % (ab.fremd,))
+pruefe(ab.unklar == {"A"},
+       "und die angefragte bleibt `unklar` (%r)" % (ab.unklar,))
+
+print("")
+print("19. Der Logpfad wird wirklich erreicht:")
+# Alle `main`-Proben liefen ohne `--near-fomc-only`, also blieb `_log_intraday`
+# unerreicht: ein entferntes `or not log_ok` liess den Waechter gruen (Befund W4).
+
+
+def main_intraday(katalog, eintraege, gamma_antworten, log_scheitert: bool):
+    db = {"polymarket_markets": [dict(z) for z in katalog], "polymarket_prices": [],
+          "refresh_log": []}
+    protokoll = []
+
+    class Client(FakeClient):
+        def table(self, name):
+            t = FakeTabelle(self.db, self.protokoll, name)
+            echt = t.execute
+
+            def execute():
+                if log_scheitert and name == "refresh_log":
+                    raise RuntimeError("Attrappe: refresh_log scheitert")
+                return echt()
+            t.execute = execute
+            return t
+
+    global LOG
+    LOG = protokoll
+    sc.get_client = lambda: Client(db, protokoll)
+    gamma(gamma_antworten)
+    rf.load_markets_yaml = lambda: {"markets": eintraege}
+    # `is_near_fomc` wird INNERHALB von main importiert — eine Attrappe an `rf`
+    # greift nicht. Meine erste Fassung tat genau das, der Lauf nahm den
+    # FOMC-Ausstieg und protokollierte `tickers_success: 0`, und der Test haette
+    # „Logpfad erreicht" behauptet, ohne ihn zu erreichen. Dieselbe Klasse wie
+    # Befund W4, nur eine Ebene tiefer.
+    import shared.fed_dates as fd
+    fd.is_near_fomc = lambda: True
+    alt = sys.argv
+    sys.argv = ["polymarket_refresh.py", "--near-fomc-only"]
+    try:
+        return rf.main(), db
+    finally:
+        sys.argv = alt
+
+
+rc, db_i = main_intraday(KAT_A, EINTRAEGE, [(("A",), [markt("A", OFFEN)])], False)
+pruefe(rc == 0, "[Aufbau] der Intraday-Lauf ist gruen (%r)" % rc)
+pruefe(len(db_i.get("refresh_log", [])) == 1,
+       "er schreibt genau eine refresh_log-Zeile (%d)" % len(db_i.get("refresh_log", [])))
+zeile = (db_i.get("refresh_log") or [{}])[0]
+pruefe(zeile.get("run_type") == "polymarket_intraday"
+       and zeile.get("tickers_success") == 1
+       and not _json_leer(zeile.get("missing_details")),
+       "mit run_type, der ECHTEN Erfolgszahl 1 und ohne Skip-Vermerk — sonst hat der "
+       "Lauf den FOMC-Ausstieg genommen statt den Pfad (%r)"
+       % {k: zeile.get(k) for k in ("run_type", "tickers_success", "missing_details")})
+
+rc, _ = main_intraday(KAT_A, EINTRAEGE, [(("A",), [markt("A", OFFEN)])], True)
+pruefe(rc == 1,
+       "scheitert die refresh_log-Zeile, ist der Lauf rot (%r)" % rc)
 
 print("")
 print("ALLE PRUEFUNGEN BESTANDEN" if fehler == 0 else "%d FEHLER" % fehler)
