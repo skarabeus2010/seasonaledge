@@ -900,6 +900,42 @@ def events_today_tomorrow(target_date: date | None = None,
         except Exception as e:
             error_logger.error(f"[daily_report] CB event {cb_name}: {e}")
 
+    # VIXpiration — Nutzerentscheidung 2026-10-20: aufnehmen. Vorher war die
+    # Sektion auf `opex`/`triple_witching` gefiltert, und ein VIX-Settlement
+    # erschien nie, obwohl es dafuer eine eigene Seite `/vixpiration` gibt
+    # (naechstes am 21.10.2026, am Tag der Entscheidung also am Folgetag).
+    #
+    # Quelle ist `shared/produkttermine.py` (V1c-2, aus den Cboe-Belegen) und
+    # NICHT die Tabelle `market_events`: fuer neuen Kalendercode sind die
+    # gemeinsamen Bausteine verbindlich, und `produkttermine` kennt die
+    # Feiertagsregel (Mittwoch ODER Freitag geschlossen -> einmal vor den
+    # Mittwoch). `pruefdatum` ist dort Pflicht, damit die Einstufung
+    # belegt/projektion nicht am Datenstand haengt.
+    #
+    # ERKENNTNISGRENZE, ausdruecklich: belegt ist erst ab Kontraktmonat 2015-09.
+    # Fuer ein Fenster von fuenf Tagen in der Zukunft spielt das keine Rolle; wer
+    # die Funktion jemals rueckwaerts laufen laesst, bekommt vor 2015 nichts.
+    try:
+        from shared.produkttermine import produkttermine as _pt
+        von = window_start.strftime("%Y-%m")
+        bis = window_end.strftime("%Y-%m")
+        for e in _pt(von, bis, "vix", pruefdatum=today_utc):
+            sett = e.get("settlement")
+            if not sett:
+                continue
+            sett_d = datetime.strptime(sett, "%Y-%m-%d").date()
+            if not (window_start <= sett_d <= window_end):
+                continue
+            events.append({
+                "date": sett,
+                "type": "VIXPIRATION",
+                "name": "VIX-Settlement (%s)" % e.get("kontraktmonat", ""),
+                "emoji": "📅",
+                "impact": "medium",
+            })
+    except Exception as e:
+        error_logger.error(f"[daily_report] VIXpiration: {e}")
+
     # OPEX / Triple Witching (3. Freitag im Monat) — aus weekly_report.
     try:
         from shared.weekly_report import upcoming_events as _ue

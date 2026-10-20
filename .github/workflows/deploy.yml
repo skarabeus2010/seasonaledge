@@ -165,6 +165,11 @@ jobs:
       # SQL-NULL: ein blosses `neq` trifft eine Zeile mit status IS NULL nicht.
       - name: Waechter - Polymarket Marktstatus
         run: python3 scripts/verify_polymarket_status.py
+      # Events-Sektion der Morgen-Mail: VIXpiration kommt aus dem belegten
+      # Produkttermin-Katalog (Nutzerentscheidung 2026-10-20), mit Feiertagsregel,
+      # Fenstergrenzen und Erkenntnisgrenze ab Kontraktmonat 2015-09.
+      - name: Waechter - Events in der Morgen-Mail
+        run: python3 scripts/verify_mail_events.py
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |

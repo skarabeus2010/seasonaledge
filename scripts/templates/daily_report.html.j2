@@ -14,7 +14,9 @@
     etfs                list[dict]  ← Sektion 2a (Top-ETFs, score-sortiert)
     stocks              list[dict]  ← Sektion 2b (Top-Aktien, score-sortiert)
     watchlist           list[dict]  ← Sektion 2c (persönliche Watchlist, score-sortiert)
-    events              list[dict]  ← Sektion 3 (FOMC, OPEX, Earnings, Feiertage)
+    events              list[dict]  ← Sektion 3 (FOMC/Notenbanken, OPEX, VIXpiration,
+                                      Feiertage, Dividenden). Earnings bewusst NICHT:
+                                      `report_date` ist das Quartalsende, kein Termin.
     strategies          list[dict]  ← Sektion 4 (aktive Saisonal-Strategien)
     rotation            dict        ← Sektion 5 (Sektor-Rotation)
     unsubscribe_url     str (pro Recipient mit ?type=daily)
