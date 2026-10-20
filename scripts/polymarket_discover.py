@@ -19,6 +19,7 @@ import os
 import pathlib
 import json
 import re
+from datetime import datetime, timezone
 
 try:
     _project_dir = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -278,30 +279,73 @@ def find_top_candidates(entry: dict, n: int = 5) -> list[tuple[dict, int, float,
             for m, treffer, liq in bewertet[:n]]
 
 
-def sync_catalog_to_db(data: dict) -> int:
+def sync_catalog_to_db(data: dict) -> dict:
     """
-    Schreibt alle Eintraege aus YAML (mit condition_id) in Supabase
-    polymarket_markets.
-    """
-    from shared.supabase_client import upsert_polymarket_markets
+    Gleicht den YAML-Katalog mit Gamma ab und schreibt Metadaten und Status.
 
-    records = []
+    Ablauf, und die Reihenfolge ist der Kern: **alle Abrufe zuerst, danach die
+    Schreibphase.** Die Vorgaengerfassung rief Gamma je Markt einzeln und schrieb
+    nach jedem — ein Netzfehler beim zwoelften von 26 Maerkten hinterliess einen
+    halb aktualisierten Katalog. Dazu galt `active: True` unbedingt, und der
+    Status wurde gar nicht geschrieben, obwohl `normalize_market` ihn liefert.
+
+      1. Alle `condition_id` sammeln.
+      2. EIN `fetch_markets_mit_abdeckung` — mit Nachweis, welche IDs gefunden,
+         welche bestaetigt nicht vorhanden und welche ungeprueft sind. Eine
+         Mengendifferenz allein beweist keine Vollstaendigkeit.
+      3. Metadaten-Upsert fuer die gefundenen Maerkte, mit GLEICHEN Schluesseln
+         in jeder Zeile und ohne Statusfelder (`slug`, `question`, `category`
+         sind NOT NULL; eine Statuszeile ohne Metadaten waere ein ungueltiger
+         Insert).
+      4. Status je Markt per gefilterter Aktualisierung — nie per Upsert, damit
+         ein in Phase B4 belegter aufgeloester Markt nicht zurueckgedreht wird.
+
+    Returns:
+        {gefunden, fehlt_bestaetigt, unklar, fremd, geschrieben, ohne_katalogzeile}
+
+    `unklar` ist ein Fehlschlag des Laufs (der Aufrufer endet mit Exit != 0):
+    danach ist der Katalog unvollstaendig aktualisiert. `fehlt_bestaetigt`
+    dagegen wird gemeldet und auf `unavailable` gesetzt, der Lauf geht weiter —
+    heute ist diese Menge nicht leer (`fed-hike-2026`).
+    """
+    from shared.polymarket_data import (STATUS_SICHTBAR, STATUS_UNERREICHBAR,
+                                        fetch_markets_mit_abdeckung, status_aus_markt)
+    from shared.supabase_client import (update_polymarket_markt_zustand,
+                                        upsert_polymarket_markets)
+
+    je_cid: dict[str, dict] = {}
     for entry in data.get("markets", []):
         cid = (entry.get("condition_id") or "").strip()
-        if not cid:
-            continue
-        # Volle Metadata von Gamma holen (end_date, token_ids, liquiditaet)
-        raw = fetch_market_by_condition_id(cid)
-        if not raw:
-            app_logger.debug(f"skip {entry['slug']}: kein Gamma-Detail fuer {cid}")
+        if cid:
+            je_cid[cid] = entry
+
+    bericht = {"gefunden": 0, "fehlt_bestaetigt": 0, "unklar": 0, "fremd": 0,
+               "geschrieben": 0, "ohne_katalogzeile": []}
+    if not je_cid:
+        return bericht
+
+    # ── 1 + 2: alle Abrufe, VOR dem ersten Schreibvorgang ──────────────────
+    abdeckung = fetch_markets_mit_abdeckung(list(je_cid))
+    bericht["gefunden"] = len(abdeckung.markets)
+    bericht["fehlt_bestaetigt"] = len(abdeckung.fehlt_bestaetigt)
+    bericht["unklar"] = len(abdeckung.unklar)
+    bericht["fremd"] = len(abdeckung.fremd)
+
+    jetzt = datetime.now(timezone.utc).isoformat()
+    records, zustaende = [], []
+
+    for raw in abdeckung.markets:
+        cid = (raw or {}).get("conditionId") or ""
+        entry = je_cid.get(cid)
+        if not entry:
             continue
         norm = normalize_market(raw)
-        # YAML-seitige Metadata in meta mergen (event_id fuer Gruppierung im Frontend)
         meta = dict(norm["meta"] or {})
         if entry.get("event_id"):
             meta["event_id"] = entry["event_id"]
         if entry.get("refresh"):
             meta["refresh"] = entry["refresh"]
+        # Metadaten OHNE status/active/status_checked_at — die kommen in Schritt 4.
         records.append({
             "condition_id": norm["condition_id"],
             "slug": entry["slug"],
@@ -313,12 +357,33 @@ def sync_catalog_to_db(data: dict) -> int:
             "liquidity_usd": norm["liquidity_usd"],
             "volume_total_usd": norm["volume_total_usd"],
             "meta": meta,
-            "active": True,
         })
+        gemessen = status_aus_markt(raw)
+        zustaende.append({"condition_id": cid, "status": gemessen,
+                          "status_checked_at": jetzt,
+                          "active": gemessen in STATUS_SICHTBAR})
 
+    # Bestaetigt nicht vorhanden: Status setzen, aber KEINE Zeile anlegen. Eine
+    # YAML-ID ohne Katalogzeile aktualisiert null Zeilen — das wird gemeldet, denn
+    # es ist ein YAML-Problem und keine Katalogzeile.
+    for cid in sorted(abdeckung.fehlt_bestaetigt):
+        zustaende.append({"condition_id": cid, "status": STATUS_UNERREICHBAR,
+                          "status_checked_at": jetzt, "active": False})
+
+    # `unklar` bekommt KEINE Anweisung: ein technischer Fehlschlag ist keine
+    # Aussage ueber den Markt, und ein erneuerter Pruefzeitpunkt waere eine.
+
+    # ── 3 + 4: Schreibphase ────────────────────────────────────────────────
     if records:
         upsert_polymarket_markets(records)
-    return len(records)
+        bericht["geschrieben"] = len(records)
+    if zustaende:
+        getroffen = {z.get("condition_id") for z in (
+            update_polymarket_markt_zustand(zustaende) or [])}
+        bericht["ohne_katalogzeile"] = sorted(
+            cid for cid in abdeckung.fehlt_bestaetigt if cid not in getroffen)
+
+    return bericht
 
 
 def main():
@@ -390,13 +455,29 @@ def main():
             save_markets_yaml(data)
             print(f"\n  YAML aktualisiert: {changed} Eintraege")
 
+    abgleich_rot = False
     if args.sync_db:
-        print("\n  Syncing Katalog zu Supabase polymarket_markets...")
+        print("\n  Katalogabgleich mit Gamma (Metadaten + Status)...")
         if args.dry_run:
             print("  (dry-run) -- skip")
         else:
-            n = sync_catalog_to_db(data)
-            print(f"  {n} Eintraege in DB upserted")
+            b = sync_catalog_to_db(data)
+            print(f"  gefunden {b['gefunden']} · bestaetigt nicht vorhanden "
+                  f"{b['fehlt_bestaetigt']} · ungeprueft {b['unklar']} · fremd "
+                  f"{b['fremd']} · Metadaten geschrieben {b['geschrieben']}")
+            if b["ohne_katalogzeile"]:
+                # Sichtbar, aber kein Abbruch: eine YAML-ID ohne Katalogzeile ist
+                # ein YAML-Problem. Der taegliche Lauf soll daran nicht sterben.
+                print("  WARNUNG: bestaetigt nicht vorhanden UND ohne Katalogzeile "
+                      f"({len(b['ohne_katalogzeile'])}): "
+                      + ", ".join(b["ohne_katalogzeile"]))
+            if b["unklar"]:
+                # Ungeprueft heisst: der Katalog ist unvollstaendig aktualisiert.
+                # Das ist ein Fehlschlag des Laufs, und Schritt 2 und 3 des
+                # Workflows duerfen danach nicht laufen.
+                print(f"  FEHLER: {b['unklar']} condition_id(s) ungeprueft — der "
+                      "Katalog ist unvollstaendig aktualisiert")
+                abgleich_rot = True
 
     if not args.update_yaml and not args.sync_db:
         print("  (Report-only: nutze --update-yaml und/oder --sync-db fuer Aktionen)")
@@ -404,6 +485,10 @@ def main():
             print("\n  Fehlende condition_id's:")
             for e in missing:
                 print(f"    - {e['slug']:40s}  [{e['category']}]")
+
+    if abgleich_rot:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

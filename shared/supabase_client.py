@@ -616,17 +616,101 @@ def update_polymarket_fetch_state(records: list[dict]):
     entweder fehl oder erzeugt Datenmuell. Der Katalog wird vom
     Discovery-Lauf gepflegt, nicht hier.
     """
+    update_polymarket_markt_zustand(records)
+
+
+# Welche Felder dieser Helfer schreiben darf. Ausdrueckliche Weissliste, weil die
+# Vorgaengerfassung den Payload aus ZWEI fest verdrahteten Feldern baute: ein
+# Aufrufer, der `status` mitgab, bekam einen stillen No-Op und durfte glauben, es
+# sei gespeichert (Codex, Befund B3 — er haette den ganzen B2-Schreibweg
+# wirkungslos gemacht).
+_MARKT_ZUSTAND_FELDER = (
+    "last_fetch_state", "last_fetch_at", "status", "status_checked_at", "active",
+)
+
+_STATUS_AUFGELOEST = "resolved"
+
+
+def update_polymarket_markt_zustand(records: list[dict]) -> list[dict]:
+    """Schreibt Marktzustand und/oder Abrufzustand je Markt — nie per Upsert.
+
+    Bewusst ein UPDATE je Markt: ein Upsert auf `condition_id` wuerde bei einem
+    unbekannten Markt eine halbe Katalogzeile ANLEGEN (ohne slug, question,
+    category — alle NOT NULL) und entweder scheitern oder Datenmuell erzeugen.
+    Der Katalog wird vom Discovery-Lauf gepflegt, nicht hier.
+
+    **Nur tatsaechlich uebergebene Schluessel** werden geschrieben. Kein Feld wird
+    ergaenzt, keines mit `None` ueberschrieben, weil der Aufrufer es nicht nennt.
+
+    Drei Zweige, und die Bedingung steht in der ANWEISUNG, nicht in einer vorher
+    gelesenen Kopie — damit es kein Fenster zwischen Lesen und Schreiben gibt:
+
+      a) `status` wird uebergeben  -> Filter `cid AND (status IS NULL OR
+         status <> 'resolved')`. Ein in Phase B4 belegter aufgeloester Markt wird
+         also nicht zurueckgedreht.
+         ⚠️ `or_` ist hier keine Bequemlichkeit: `status <> 'resolved'` ist fuer
+         eine NULL-Zeile nicht wahr, sondern NULL. Gemessen am 2026-10-20 lesend
+         auf der laufenden Datenbank: alle 26 Katalogzeilen haben
+         `status IS NULL`, und ein blosses `neq` trifft davon GENAU NULL — der
+         erste Entwurf haette nichts geschrieben, ohne zu scheitern.
+      b) derselbe Datensatz, aber die Zeile IST aufgeloest -> Filter
+         `cid AND status = 'resolved'`, Payload ohne `status` und ohne `active`,
+         damit der Endstatus und die Sichtbarkeit erhalten bleiben. Die
+         uebergebenen Abruffelder werden trotzdem geschrieben; sie gehen sonst
+         auf aufgeloesten Maerkten verloren (Codex, Befund N1).
+      c) kein `status` uebergeben (reiner Abrufzustand) -> Filter nur `cid`.
+
+    Returns:
+        Die von (a) bzw. (c) betroffenen Zeilen. **Die Rueckgabe ist die
+        Entscheidungsgrundlage fuer die Preisfreigabe:** kommt fuer einen Markt
+        keine Zeile zurueck, war die Zeile aufgeloest (oder existiert nicht), und
+        dann darf keine aktuelle Preiszeile entstehen. Das ersetzt den vorher
+        gelesenen Status durch eine Antwort, die die Datenbank serialisiert hat.
+    """
     if not records:
-        return
+        return []
     client = get_client()
+    getroffen: list[dict] = []
     for r in records:
         cid = r.get("condition_id")
         if not cid:
             continue
-        client.table("polymarket_markets").update({
-            "last_fetch_state": r.get("last_fetch_state"),
-            "last_fetch_at": r.get("last_fetch_at"),
-        }).eq("condition_id", cid).execute()
+        payload = {f: r[f] for f in _MARKT_ZUSTAND_FELDER if f in r}
+        if not payload:
+            continue
+
+        if "status" not in payload:
+            # (c) reiner Abrufzustand — kein Statusfilter, kein status_checked_at
+            antwort = (client.table("polymarket_markets")
+                       .update(payload)
+                       .eq("condition_id", cid)
+                       .execute())
+            getroffen.extend(antwort.data or [])
+            continue
+
+        # (a) Status setzen, aber nie ueber einen aufgeloesten Markt
+        antwort = (client.table("polymarket_markets")
+                   .update(payload)
+                   .eq("condition_id", cid)
+                   .or_("status.is.null,status.neq.%s" % _STATUS_AUFGELOEST)
+                   .execute())
+        zeilen = antwort.data or []
+        if zeilen:
+            getroffen.extend(zeilen)
+            continue
+
+        # (b) nichts getroffen -> die Zeile ist aufgeloest (oder fehlt). Status und
+        #     Sichtbarkeit bleiben; was der Aufrufer sonst uebergeben hat, wird
+        #     geschrieben. Die Zeile kommt NICHT in `getroffen`: fuer die
+        #     Preisfreigabe ist sie eine Ablehnung.
+        rest = {f: v for f, v in payload.items() if f not in ("status", "active")}
+        if rest:
+            (client.table("polymarket_markets")
+             .update(rest)
+             .eq("condition_id", cid)
+             .eq("status", _STATUS_AUFGELOEST)
+             .execute())
+    return getroffen
 
 
 def fetch_polymarket_latest_prices(condition_ids: list[str] | None = None) -> list[dict]:

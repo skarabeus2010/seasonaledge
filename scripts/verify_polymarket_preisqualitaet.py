@@ -36,7 +36,6 @@ from shared.polymarket_data import (  # noqa: E402
     PREISART_MID,
     SPREAD_GRENZE,
     bewerte_quote,
-    market_to_price_snapshot,
     quote_zu_breit,
 )
 from scripts.polymarket_refresh import build_price_record  # noqa: E402
@@ -96,8 +95,13 @@ pruefe(r['status'] == 'verworfen' and r['grund'] == 'buch_gekreuzt',
        'Bid 0,80 / Ask 0,20 wird verworfen (%s/%s)' % (r['status'], r['grund']))
 pruefe(r['snapshot'] is None,
        'und liefert keinen Mittelkurs von 0,50')
-pruefe(market_to_price_snapshot({'bestBid': 0.80, 'bestAsk': 0.20}) is None,
-       'auch der alte Rueckgabevertrag liefert dafuer None')
+# Der oeffentliche Name `market_to_price_snapshot` ist am 2026-10-20 entfallen: er
+# versprach einen PREIS-Snapshot, trug aber nur eine Aussage ueber die Quote, und
+# solange er oeffentlich war, konnte daraus ein aktueller Preis fuer einen
+# geschlossenen Markt werden (Codex, Befund B6). Die Quotenaussage bleibt hier
+# geprueft; den Statusschutz pruefen verify_polymarket_status.py (Punkte 21/25).
+pruefe(bewerte_quote({'bestBid': 0.80, 'bestAsk': 0.20}).get('snapshot') is None,
+       'die Quotenbewertung liefert dafuer keinen Snapshot')
 
 # ── 3: Eine echte Null bleibt eine Null ─────────────────────────────────────
 # Das ist die andere Haelfte von Befund 1: fehlender Preis und echte Null

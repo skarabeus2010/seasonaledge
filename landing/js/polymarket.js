@@ -91,20 +91,44 @@ SA.polymarket = (function() {
   }
 
   /**
-   * Neueste Preise pro condition_id.
-   * Supabase REST hat keine eingebaute "latest per group"-Query — wir ziehen
-   * die letzten 10×n Zeilen und reduzieren client-side.
+   * Neueste Preiszeile je condition_id — SERVERSEITIG bestimmt.
+   *
+   * Vorher: die letzten n×5 Zeilen nach `ts desc` holen und im Browser die
+   * erste je Markt nehmen. Bei 26 Maerkten sind das 130 Zeilen, und ein haeufig
+   * aktualisierter Markt kann einen selten aktualisierten vollstaendig aus der
+   * Antwort draengen; ein Markt ohne Zeile im Fenster fiel ganz heraus. Beides
+   * endete im Verbraucher als Preis 0. Der Python-Lader hat denselben Fehler
+   * seit B1 nicht mehr (`fetch_polymarket_latest_prices`), das Frontend bis zum
+   * 2026-10-20 doch.
+   *
+   * Jetzt die Datenbankfunktion `polymarket_latest_prices` aus
+   * scripts/sql/polymarket_schema_2026_10.sql (DISTINCT ON je condition_id).
+   * Argumentform am 2026-10-20 lesend über HTTP mit dem Anon-Key gemessen:
+   * `p_condition_ids={a,b}` liefert genau die Teilmenge (2 von 2), eine
+   * unbekannte ID 0 Zeilen, `{}` ebenfalls 0 — ein leeres Array heisst also
+   * NICHT „alle", deshalb der frühe Rücksprung oben.
+   *
+   * KEIN Rueckfall auf die Tabellenabfrage. Ein stiller Rueckfall haette den
+   * Fehler weitergetragen, und das Projekt hat dafuer schon bezahlt. Statt
+   * dessen eine Ablehnung, die die Seite als Ladefehler zeigt — und die
+   * Antwortform wird GEPRUEFT, weil `SA.supabase.get` weder `r.ok` noch die
+   * Form prueft: ein PostgREST-Fehlerobjekt scheitert dort nur zufaellig, und
+   * `null` wuerde ueber `(rows || [])` zum leeren Erfolg (Codex, Befund B7).
    */
   function loadLatestPrices(conditionIds) {
     if (!conditionIds || !conditionIds.length) return Promise.resolve({});
-    var idsParam = conditionIds.join(',');
+    var arg = '{' + conditionIds.join(',') + '}';
     return SA.supabase.get(
-      'polymarket_prices',
-      'condition_id=in.(' + idsParam + ')&order=ts.desc&limit=' + (conditionIds.length * 5)
+      'rpc/polymarket_latest_prices',
+      'p_condition_ids=' + encodeURIComponent(arg)
     ).then(function(rows) {
+      if (!Array.isArray(rows)) {
+        throw new Error('polymarket_latest_prices: unerwartete Antwort'
+          + (rows && rows.message ? ' (' + rows.message + ')' : ''));
+      }
       var latest = {};
-      (rows || []).forEach(function(r) {
-        if (!latest[r.condition_id]) latest[r.condition_id] = r;
+      rows.forEach(function(r) {
+        if (r && r.condition_id && !latest[r.condition_id]) latest[r.condition_id] = r;
       });
       return latest;
     });

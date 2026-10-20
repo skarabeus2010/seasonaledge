@@ -159,6 +159,12 @@ jobs:
         run: |
           python3 -m pip install --quiet "jinja2>=3.1.0" "pandas>=2.0"
           python3 scripts/verify_sektor_rotation.py
+      # Polymarket B2: Marktstatus-Lebenszyklus (Entwurf in 4 Codex-Runden bis
+      # Freigabe, docs/review_prompts/2026-10-20_polymarket_b2_entwurf_v4.md).
+      # Die Supabase-Attrappe stellt die GEMESSENE Filtersemantik nach, inklusive
+      # SQL-NULL: ein blosses `neq` trifft eine Zeile mit status IS NULL nicht.
+      - name: Waechter - Polymarket Marktstatus
+        run: python3 scripts/verify_polymarket_status.py
       # scipy: die GEX-Engine (compute_gamma_exposure) importiert scipy.stats; Version wie im App-Container.
       - name: Waechter - Session der Options-Erzeuger
         run: |

@@ -66,7 +66,19 @@ jobs:
             # Die Pruefung steht im `if`, damit bei einem Fehlschlag noch eine
             # EIGENE Zeile ins Log geht. Mit blossem errexit bricht die Shell
             # stumm ab, und im Protokoll steht nur abgeschnittene Python-Ausgabe.
-            echo "[polymarket-daily] Step 1/2: snapshot (26 markets)"
+            # Schritt 1 ist der Katalogabgleich, und er ist neu (2026-10-20).
+            # Vorher rief dieser Workflow ihn GAR NICHT — ein Statusfeld haette
+            # man einfuehren und nie aktualisieren koennen. Ein Fehlschlag hier
+            # verhindert Schritt 2 und 3: danach ist der Katalog unvollstaendig
+            # aktualisiert, und ein Snapshot auf veraltetem Status ist schlechter
+            # als keiner.
+            echo "[polymarket-daily] Step 1/3: Katalogabgleich (Metadaten + Status)"
+            if ! docker exec seasonalpha-app python3 scripts/polymarket_discover.py --sync-db 2>&1 | tail -40; then
+              echo "[polymarket-daily] FEHLER: Katalogabgleich fehlgeschlagen"
+              exit 1
+            fi
+
+            echo "[polymarket-daily] Step 2/3: snapshot (26 markets)"
             if ! docker exec seasonalpha-app python3 scripts/polymarket_refresh.py 2>&1 | tail -40; then
               echo "[polymarket-daily] FEHLER: snapshot fehlgeschlagen"
               exit 1
@@ -75,13 +87,13 @@ jobs:
             # Montags ODER workflow_dispatch mit include_backfill=true: Backfill
             DOW=$(date -u +%u)  # 1 = Montag, 7 = Sonntag
             if [ "$DOW" = "1" ] || [ "$SA_BACKFILL" = "true" ]; then
-              echo "[polymarket-daily] Step 2/2: backfill (volle Historie)"
+              echo "[polymarket-daily] Step 3/3: backfill (volle Historie)"
               if ! docker exec seasonalpha-app python3 scripts/polymarket_backfill.py 2>&1 | tail -40; then
                 echo "[polymarket-daily] FEHLER: backfill fehlgeschlagen"
                 exit 1
               fi
             else
-              echo "[polymarket-daily] Step 2/2: skip backfill (nicht Montag)"
+              echo "[polymarket-daily] Step 3/3: skip backfill (nicht Montag)"
             fi
 
             echo "[polymarket-daily] Done: $(date)"

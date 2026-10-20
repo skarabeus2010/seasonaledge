@@ -240,10 +240,31 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
         return GammaAbdeckung([], set(), set(), set())
 
     angefragt = set(ids)
-    markets: list[dict] = []
     getroffen: set[str] = set()
     unklar: set[str] = set()
     fremd: set[str] = set()
+
+    # Eine conditionId kann mehrfach zurueckkommen. `getroffen` hat das bis zum
+    # 2026-10-20 nicht verhindert — jede passende Antwort wurde angehaengt, und
+    # derselbe Konfliktschluessel stand dann zweimal im Upsert. `ON CONFLICT DO
+    # UPDATE` kann dieselbe Zeile nicht zweimal treffen und bricht den GANZEN
+    # Schreibvorgang ab (Codex, Befund B2). Also hier entscheiden, nicht beim
+    # Aufrufer: erste Antwort gewinnt, eine zweite wird verglichen, und ein
+    # WIDERSPRUCH in den statustragenden Feldern ist keine Aussage.
+    je_cid: dict[str, dict] = {}
+    widerspruch: set[str] = set()
+
+    def _statusfelder(m: dict) -> tuple:
+        return (m.get('closed'), m.get('acceptingOrders'),
+                m.get('archived'), m.get('enableOrderBook'))
+
+    def _aufnehmen(m: dict, cid: str) -> None:
+        vorher = je_cid.get(cid)
+        if vorher is None:
+            je_cid[cid] = m
+            getroffen.add(cid)
+        elif _statusfelder(vorher) != _statusfelder(m):
+            widerspruch.add(cid)
 
     for i in range(0, len(ids), GAMMA_STAPEL):
         batch = ids[i:i + GAMMA_STAPEL]
@@ -256,8 +277,7 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
         for m in data:
             cid = (m or {}).get('conditionId')
             if cid in angefragt:
-                markets.append(m)
-                getroffen.add(cid)
+                _aufnehmen(m, cid)
             elif cid:
                 fremd.add(cid)
 
@@ -271,8 +291,7 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
         elif einzeln:
             for m in einzeln:
                 if (m or {}).get('conditionId') == cid:
-                    markets.append(m)
-                    getroffen.add(cid)
+                    _aufnehmen(m, cid)
             if cid not in getroffen:
                 # Antwort da, aber die ID nicht darin — das ist keine
                 # Bestaetigung, sondern eine unpassende Antwort.
@@ -280,6 +299,14 @@ def fetch_markets_mit_abdeckung(condition_ids: list[str]) -> GammaAbdeckung:
         else:
             fehlt_bestaetigt.add(cid)    # erfolgreich und leer
 
+    # Widersprechende Antworten gelten als ungeprueft, nicht als Markt.
+    for cid in widerspruch:
+        je_cid.pop(cid, None)
+        getroffen.discard(cid)
+        fehlt_bestaetigt.discard(cid)
+        unklar.add(cid)
+
+    markets = [je_cid[c] for c in ids if c in je_cid]
     return GammaAbdeckung(markets, fehlt_bestaetigt, unklar, fremd)
 
 
@@ -561,26 +588,80 @@ def quote_zu_breit(snapshot: dict | None) -> bool:
     return sp is not None and sp > SPREAD_GRENZE
 
 
-def market_to_price_snapshot(market: dict) -> dict | None:
-    """Preis-Snapshot aus dem Gamma-Market-Response.
+def _quote_snapshot(market: dict) -> dict | None:
+    """Duenne Huelle um `bewerte_quote` — NUR die Quote, kein Marktstatus.
 
-    Duenne Huelle um `bewerte_quote`, damit der bisherige Rueckgabevertrag
-    erhalten bleibt (dict oder None). Wer den Grund braucht — und der Refresh
-    braucht ihn, um einen verworfenen Abruf von einem fehlenden zu
-    unterscheiden — ruft `bewerte_quote` direkt.
+    Hiess bis zum 2026-10-20 `market_to_price_snapshot` und war oeffentlich. Der
+    Name war das Problem: er versprach einen PREIS-Snapshot, trug aber nur eine
+    Aussage ueber die Quote. Solange er oeffentlich war, konnte jeder Aufrufer
+    daraus einen aktuellen Preis machen — auch fuer einen geschlossenen Markt.
+    Das ist die Fehlerklasse „die Regel sitzt an der Aufrufstelle statt am
+    Erzeuger", fuer die das Projekt schon bezahlt hat (Codex, Befund B6).
+
+    Wer einen Snapshot will, der als AKTUELLER Preis gespeichert werden darf,
+    nimmt `aktueller_snapshot`. Wer nur die Quotenqualitaet braucht, nimmt
+    `bewerte_quote` und bekommt den Grund dazu.
     """
     return bewerte_quote(market).get("snapshot")
 
 
-def fetch_current_price(condition_id: str) -> dict | None:
+def aktueller_snapshot(raw: dict | None, db_status: str | None = None) -> dict:
+    """Der EINZIGE Weg zu einem Snapshot, der als aktueller Preis gelten darf.
+
+    Prueft beides: den Marktstatus UND die Quote. Ein geschlossener Markt
+    liefert bei Gamma `outcomePrices ["0","0"]` — eine solche Zeile als frischen
+    Preis zu speichern ist derselbe Fehler, den B1 an der Quotenseite
+    geschlossen hat.
+
+    `db_status` ist der in der Datenbank gespeicherte Status. Steht dort
+    `resolved`, gilt das: `status_aus_markt` kann `resolved` per
+    Erkenntnisgrenze nicht erkennen und wuerde einen aufgeloesten Markt sonst
+    wieder als offen behandeln. Der Endstatus ist also das Maximum an Wissen
+    aus beiden Quellen, nicht die juengere Messung.
+
+    Returns:
+        {
+          "status":            aus der Gamma-Antwort gemessen,
+          "endstatus":         nach Beruecksichtigung von `db_status`,
+          "quote":             das Urteil von `bewerte_quote` (dict),
+          "preis_freigegeben": bool,
+          "grund":             None, wenn freigegeben, sonst der Grund,
+          "snapshot":          der Snapshot NUR wenn freigegeben, sonst None,
+        }
     """
-    Convenience-Wrapper: Markt per conditionId von Gamma holen und
-    Snapshot extrahieren. Ein Request, kein CLOB-Roundtrip.
+    status = status_aus_markt(raw)
+    endstatus = STATUS_AUFGELOEST if db_status == STATUS_AUFGELOEST else status
+
+    quote = bewerte_quote(raw) if isinstance(raw, dict) else {
+        "status": "fehler", "grund": "kein_markt", "snapshot": None}
+
+    if endstatus not in STATUS_BEWERTBAR:
+        return {"status": status, "endstatus": endstatus, "quote": quote,
+                "preis_freigegeben": False, "grund": "status_%s" % endstatus,
+                "snapshot": None}
+    if quote.get("status") != "ok" or not quote.get("snapshot"):
+        return {"status": status, "endstatus": endstatus, "quote": quote,
+                "preis_freigegeben": False,
+                "grund": quote.get("grund") or quote.get("status") or "keine_quote",
+                "snapshot": None}
+    return {"status": status, "endstatus": endstatus, "quote": quote,
+            "preis_freigegeben": True, "grund": None,
+            "snapshot": quote["snapshot"]}
+
+
+def fetch_current_price(condition_id: str, db_status: str | None = None) -> dict | None:
+    """
+    Markt per conditionId von Gamma holen und den AKTUELLEN Snapshot liefern.
+    Ein Request, kein CLOB-Roundtrip.
+
+    Laeuft seit dem 2026-10-20 ueber `aktueller_snapshot`: fuer einen Markt, der
+    nicht offen ist, kommt `None` zurueck — vorher kam der Quotensnapshot, und
+    der konnte als aktueller Preis gespeichert werden.
     """
     m = fetch_market_by_condition_id(condition_id)
     if not m:
         return None
-    return market_to_price_snapshot(m)
+    return aktueller_snapshot(m, db_status=db_status).get("snapshot")
 
 
 # ── CLOB API: Historische Preise ──────────────────────────────────────────────

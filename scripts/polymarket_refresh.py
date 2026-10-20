@@ -29,7 +29,7 @@ if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
 from shared.polymarket_data import (
-    fetch_current_price,
+    STATUS_SICHTBAR,
     load_markets_yaml,
 )
 from shared.logger import app_logger, error_logger
@@ -64,25 +64,43 @@ def build_price_record(condition_id: str, snap: dict, ts: datetime) -> dict:
 def refresh_markets(
     entries: list[dict],
     dry_run: bool = False,
-) -> tuple[int, list[str]]:
+) -> tuple[dict, list[str]]:
     """
     Schreibt Preis-Snapshots fuer die gegebenen YAML-Eintraege.
-    Returns (success_count, errors).
+
+    Returns (zaehler, errors). `zaehler` hat vier Felder, und nur zwei davon
+    begruenden einen Erfolg (siehe `main`):
+
+      preise                 Preiszeile geschrieben
+      fachlich_uebersprungen Markt ERREICHT, Status gemessen, nicht bewertbar
+      katalog_fehlt          condition_id nicht im DB-Katalog — nie abgefragt
+      technische_fehler      Abruf gescheitert, Ausnahme, kein Markt
+      schreiben_ok           beide Schreibwege (Zustand, Preise) gelungen
+
+    Die Trennung von `fachlich_uebersprungen` und `katalog_fehlt` ist nicht
+    kosmetisch: wuerden fehlende Katalogeintraege als fachliche Auslassung
+    zaehlen, waere ein Lauf, der keinen einzigen Markt bearbeitet hat, gruen
+    (Codex, Befund N2) — heute endet derselbe Fall ueber `success == 0` rot.
     """
     from shared.supabase_client import (
         fetch_polymarket_markets as _fetch_catalog,
         upsert_polymarket_prices,
-        update_polymarket_fetch_state,
+        update_polymarket_markt_zustand,
     )
-    from shared.polymarket_data import bewerte_quote, fetch_market_by_condition_id
+    from shared.polymarket_data import (aktueller_snapshot, fetch_market_by_condition_id,
+                                        status_aus_markt)
 
-    # Katalog aus DB laden (token_id-Mapping liegt dort)
+    # Katalog aus DB laden (token_id-Mapping liegt dort). `active_only=False` ist
+    # Pflicht: ein geschlossener oder unerreichbarer Markt ist `active=False` und
+    # wuerde sonst als „nicht im Katalog" gelten, obwohl er dort steht.
     catalog = _fetch_catalog(active_only=False)
     by_cid = {c["condition_id"]: c for c in catalog}
 
     records = []
     zustaende: list[dict] = []
     errors: list[str] = []
+    zaehler = {"preise": 0, "fachlich_uebersprungen": 0, "katalog_fehlt": 0,
+               "technische_fehler": 0, "schreiben_ok": True}
     now = datetime.now(timezone.utc)
 
     for i, entry in enumerate(entries, 1):
@@ -94,39 +112,76 @@ def refresh_markets(
 
         cat_entry = by_cid.get(cid)
         if not cat_entry:
+            zaehler["katalog_fehlt"] += 1
             errors.append(f"{slug}: nicht im DB-Katalog (erst 'polymarket_discover --sync-db' laufen lassen)")
             continue
 
         # Die conditionId geht an den Gamma-Markets-Endpoint; yes_token_id
         # braucht nur die CLOB-Historie (Backfill).
         #
-        # `bewerte_quote` statt `fetch_current_price`, weil der GRUND zaehlt:
-        # „kein Preis geliefert" und „Preis verworfen, weil das Buch gekreuzt
-        # war" sind verschiedene Lagen. Vorher endeten beide in `continue`, die
-        # zuletzt gespeicherte Zeile blieb stehen und galt weiter als jung.
+        # `aktueller_snapshot` statt `bewerte_quote`, weil zwei Dinge zu pruefen
+        # sind und die Regel zum ERZEUGER gehoert: die Quotenqualitaet UND der
+        # Marktstatus. Ein geschlossener Markt liefert bei Gamma
+        # `outcomePrices ["0","0"]`; diese Zeile als frischen Preis zu speichern
+        # waere derselbe Fehler, den B1 an der Quotenseite geschlossen hat.
+        # Der GRUND bleibt erhalten: „kein Preis geliefert", „Buch gekreuzt" und
+        # „Markt geschlossen" sind verschiedene Lagen.
+        db_status = cat_entry.get("status")
         try:
             markt = fetch_market_by_condition_id(cid)
-            urteil = bewerte_quote(markt) if markt else {
-                "status": "fehler", "grund": "kein_markt", "snapshot": None}
+            if markt:
+                urteil = aktueller_snapshot(markt, db_status=db_status)
+            else:
+                urteil = {"status": None, "endstatus": None, "preis_freigegeben": False,
+                          "grund": "kein_markt",
+                          "quote": {"status": "fehler", "grund": "kein_markt"},
+                          "snapshot": None}
+                markt = None
         except Exception as e:                     # Netz, Zeitueberschreitung
-            urteil = {"status": "fehler", "grund": type(e).__name__,
+            markt = None
+            urteil = {"status": None, "endstatus": None, "preis_freigegeben": False,
+                      "grund": type(e).__name__,
+                      "quote": {"status": "fehler", "grund": type(e).__name__},
                       "snapshot": None}
 
-        zustand = urteil["status"] if urteil["status"] in (
-            "ok", "kein_preis", "verworfen") else "fehler"
-        zustaende.append({"condition_id": cid,
-                          "last_fetch_state": zustand,
-                          "last_fetch_at": now.isoformat()})
+        quote_status = (urteil.get("quote") or {}).get("status")
+        zustand = quote_status if quote_status in ("ok", "kein_preis", "verworfen") else "fehler"
+        satz = {"condition_id": cid,
+                "last_fetch_state": zustand,
+                "last_fetch_at": now.isoformat()}
+        if markt is not None:
+            # Status nur, wenn wir wirklich eine Antwort hatten. Ein gescheiterter
+            # Abruf erneuert `status_checked_at` NICHT — geprueft wurde nichts.
+            gemessen = status_aus_markt(markt)
+            satz["status"] = gemessen
+            satz["status_checked_at"] = now.isoformat()
+            # `active` gehoert in dieselbe Anweisung: Frontend und Newsletter
+            # filtern ausschliesslich darauf, ein geschlossener Markt bliebe
+            # sonst bis zum naechsten Katalogabgleich sichtbar und ein
+            # wiederaufgetauchter unsichtbar (Codex, Befund B4).
+            satz["active"] = gemessen in STATUS_SICHTBAR
+        zustaende.append(satz)
 
-        if zustand != "ok":
-            errors.append(f"{slug}: Abruf {zustand}"
+        if zustand == "fehler":
+            zaehler["technische_fehler"] += 1
+            errors.append(f"{slug}: Abruf fehler"
                           + (f" ({urteil.get('grund')})" if urteil.get("grund") else ""))
-            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- {zustand.upper()}"
+            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- FEHLER"
+                  f": {urteil.get('grund') or '-'}")
+            continue
+
+        if not urteil.get("preis_freigegeben"):
+            # Fachlich uebersprungen: der Markt war erreichbar, aber sein Status
+            # oder seine Quote laesst keinen aktuellen Preis zu. Kein Ausfall.
+            zaehler["fachlich_uebersprungen"] += 1
+            errors.append(f"{slug}: kein Preis ({urteil.get('grund')})")
+            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- UEBERSPRUNGEN"
                   f": {urteil.get('grund') or '-'}")
             continue
 
         snap = urteil["snapshot"]
         records.append(build_price_record(cid, snap, now))
+        zaehler["preise"] += 1
         print(
             f"  [{i:2d}/{len(entries)}] {slug:40s} "
             f"YES={snap['yes_price']:.3f}  "
@@ -138,13 +193,35 @@ def refresh_markets(
         # Die Zustaende werden AUCH dann geschrieben, wenn keine einzige
         # Preiszeile entstand — gerade dann sind sie die Information. Ein
         # Fehlschlag hier ist ein Fehlschlag des Laufs und wird nicht
-        # verschluckt.
+        # verschluckt. Beide Schreibwege werden GETRENNT bewertet, damit der
+        # Erfolg des einen den Ausfall des anderen nicht verdeckt.
         if zustaende:
-            update_polymarket_fetch_state(zustaende)
+            try:
+                geschrieben = update_polymarket_markt_zustand(zustaende)
+                # Die Rueckgabe ist die Entscheidungsgrundlage fuer die
+                # Preisfreigabe: fehlt ein Markt darin, war seine Zeile
+                # aufgeloest (oder existiert nicht). Eine solche Preiszeile wird
+                # verworfen, BEVOR sie geschrieben wird.
+                erlaubt = {z.get("condition_id") for z in (geschrieben or [])}
+                vorher = len(records)
+                records = [r for r in records if r["condition_id"] in erlaubt]
+                verworfen = vorher - len(records)
+                if verworfen:
+                    zaehler["preise"] -= verworfen
+                    zaehler["fachlich_uebersprungen"] += verworfen
+                    errors.append(f"{verworfen} Preiszeile(n) verworfen: Markt in der "
+                                  f"Datenbank aufgeloest oder nicht vorhanden")
+            except Exception as e:
+                zaehler["schreiben_ok"] = False
+                errors.append(f"Zustands-Update gescheitert: {type(e).__name__}: {e}")
         if records:
-            upsert_polymarket_prices(records)
+            try:
+                upsert_polymarket_prices(records)
+            except Exception as e:
+                zaehler["schreiben_ok"] = False
+                errors.append(f"Preis-Upsert gescheitert: {type(e).__name__}: {e}")
 
-    return len(records), errors
+    return zaehler, errors
 
 
 def filter_entries(
@@ -211,14 +288,22 @@ def main():
         return 0
 
     try:
-        success, errors = refresh_markets(entries, dry_run=args.dry_run)
+        zaehler, errors = refresh_markets(entries, dry_run=args.dry_run)
     except Exception as e:
         # Schreibfehler der Snapshots: frueher ungefangen ohne Log-Zeile.
-        success, errors = 0, [f"upsert/abruf abgebrochen: {e}"]
+        zaehler = {"preise": 0, "fachlich_uebersprungen": 0, "katalog_fehlt": 0,
+                   "technische_fehler": 1, "schreiben_ok": False}
+        errors = [f"upsert/abruf abgebrochen: {e}"]
+    success = zaehler["preise"]
     elapsed = time.time() - t0
 
     print(f"\n{'=' * 60}")
     print(f"  Fertig! {success}/{len(entries)} Snapshots in {elapsed:.1f}s")
+    print(f"  Preise {success} · fachlich uebersprungen "
+          f"{zaehler['fachlich_uebersprungen']} · nicht im Katalog "
+          f"{zaehler['katalog_fehlt']} · technische Fehler "
+          f"{zaehler['technische_fehler']} · Schreiben "
+          f"{'ok' if zaehler['schreiben_ok'] else 'GESCHEITERT'}")
     if errors:
         print(f"  Fehler ({len(errors)}):")
         for err in errors:
@@ -232,11 +317,25 @@ def main():
     if args.near_fomc_only:
         log_ok = _log_intraday(len(entries), success, errors, t0, skip=False, dry_run=args.dry_run)
 
-    # Gescheitert = gar kein Snapshot geschrieben. Einzelne Maerkte ohne Preis
-    # (z. B. noch nicht im DB-Katalog) sind Dauerzustand und kein Ausfall.
-    if success == 0 or not log_ok:
-        return 1
-    return 0
+    # Exit-Regel mit vier Zaehlern (Codex-Freigabe 2026-10-20, Runde 4).
+    #
+    # Fachliches Ueberspringen allein ist GRUEN: ein Tag, an dem alle Maerkte
+    # legitim geschlossen sind, darf den Backfill nicht verhindern. Es
+    # neutralisiert aber nichts — ein einziger technischer Fehler macht rot,
+    # sonst haette „1 geschlossen, 25 Abruffehler" als Erfolg gegolten.
+    #
+    # `katalog_fehlt` begruendet KEINEN Erfolg: sonst waere ein Lauf, der keinen
+    # einzigen Markt bearbeitet hat (alle 26 fehlen im Katalog), gruen — heute
+    # endet derselbe Fall ueber `success == 0` rot. Es ist aber auch kein
+    # technischer Fehler, sonst waere jeder Lauf vor dem ersten Katalogabgleich
+    # rot.
+    rot = (
+        zaehler["technische_fehler"] > 0
+        or not zaehler["schreiben_ok"]
+        or not log_ok
+        or (success == 0 and zaehler["fachlich_uebersprungen"] == 0 and len(entries) > 0)
+    )
+    return 1 if rot else 0
 
 
 def _log_intraday(total: int, success: int, errors: list[str], t0: float,
