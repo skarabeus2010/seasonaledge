@@ -219,6 +219,11 @@ jobs:
         run: python3 scripts/verify_holidays_fassade.py
       # Tabellen-Sortierung (jsdom, braucht das npm ci darüber): SA.makeSortable laesst die Kopfzeile oben, auch im
       # impliziten <tbody>; /skew Vol-Kennzahlen sortiert beide Haelften gemeinsam (2026-10-17).
+      # TDOM- und Zwei-Wochen-Nenner im Dashboard: der TDOM-Nenner war das historische
+      # Maximum statt der Handelstage des laufenden Monats, und ein `return` in der
+      # .map-Rueckruffunktion warf Dezember H2 fuer alle Jahre weg (Rang 5/23 statt 1-24).
+      - name: Waechter - TDOM- und Phasen-Nenner (Dashboard)
+        run: node scripts/js/probe_tdom_nenner.js
       - name: Waechter - Tabellen-Sortierung
         run: node scripts/js/probe_sortierer.js
       # True Seasonal auf /jahreszyklus (Plan docs/review_prompts/2026-10-16_true_seasonal_plan_v3.md): Standard wie

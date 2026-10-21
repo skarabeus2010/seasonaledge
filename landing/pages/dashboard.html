@@ -581,7 +581,17 @@
       }
       if (!im || !im.tdomStats || !im.tdomStats[tdom]) return null;
       var ts = im.tdomStats[tdom];
-      var maxTdom = Math.max.apply(null, Object.keys(im.tdomStats).map(Number));
+      // Nenner = Handelstage DIESES Monats, aus demselben Kalender wie der Zaehler.
+      // Vorher stand hier das Maximum ueber alle Jahre: die Karte zeigte "15 / 23",
+      // waehrend der Oktober 2026 nur 22 Handelstage hat — der Leser rechnet damit
+      // einen Tag zu viel Rest aus. Die historische Spannweite ist 21-23.
+      var maxTdom = 0;
+      var letzterTag = new Date(year, month, 0).getDate();   // Tag 0 des Folgemonats
+      for (var mt = 1; mt <= letzterTag; mt++) {
+        var mStr = year+'-'+pad2(month)+'-'+pad2(mt);
+        if (ex === 'NONE' || SA.holidays.isTradingDay(mStr, ex)) maxTdom++;
+      }
+      if (!maxTdom) maxTdom = Math.max.apply(null, Object.keys(im.tdomStats).map(Number));
       // Win-Rate an diesem TDOM ueber alle Curves
       var pos = 0, total = 0;
       for (var i = 0; i < im.allCurves.length; i++) {
@@ -840,7 +850,11 @@
           if (parseInt(y) === currentYear) continue;
           var c = yearData[y].full_365;
           var lad = yearData[y].last_actual_day || 365;
-          if (p.end > lad) return { name:p.name, avg:null, n:0, start:p.start, end:p.end };
+          // `continue`, NICHT `return`: hier wird ein Jahr ohne Abdeckung uebersprungen.
+          // Mit `return` fiel die ganze PHASE fuer alle Jahre weg, sobald ein einziges
+          // Jahr vor dem Periodenende endete — Dezember H2 bekam deshalb nie einen Rang
+          // (8 von 27 Jahren enden vor dem 31.12.), und der Nenner war 23 statt 24.
+          if (p.end > lad) continue;
           var s = c[p.start], e = c[p.end-1];
           if (s != null && e != null && s > 0) rets.push((e/s - 1) * 100);
         }

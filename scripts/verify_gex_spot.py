@@ -60,6 +60,38 @@ def _absturz(typ, wert, tb):
 
 sys.excepthook = _absturz
 
+# streamlit nur ersetzen, wenn es fehlt (Muster aus verify_gex_session.py:54).
+# shared/yahoo_downloader importiert es wegen st.cache_data; der Gate-Runner hat es
+# nicht installiert, der App-Container schon. Ohne das schlaegt der Gate-Schritt mit
+# ModuleNotFoundError fehl — genau daran war der Deploy von e7e881f rot.
+try:
+    import streamlit  # noqa: F401
+except ImportError:
+    import types
+
+    def _cache_data(*a, **k):
+        def deko(f):
+            f.clear = lambda: None
+            return f
+        return deko(a[0]) if a and callable(a[0]) else deko
+
+    sys.modules["streamlit"] = types.SimpleNamespace(cache_data=_cache_data)
+    # ... und dasselbe als DATEI fuer Kindprozesse: die Faelle mit echtem Unterprozess
+    # (Sperreintritt) starten scripts/snapshot_gex_massive.py neu, und dort gilt die
+    # Attrappe aus sys.modules nicht. Ohne das scheitert der Kindprozess am Import und
+    # meldet Exit 1 statt der erwarteten 75.
+    _STUB = _TMP / "stub"
+    _STUB.mkdir(parents=True, exist_ok=True)
+    (_STUB / "streamlit.py").write_text(
+        "def cache_data(*a, **k):\n"
+        "    def deko(f):\n"
+        "        f.clear = lambda: None\n"
+        "        return f\n"
+        "    return deko(a[0]) if a and callable(a[0]) else deko\n",
+        encoding="utf-8")
+    os.environ["PYTHONPATH"] = (str(_STUB) + os.pathsep
+                                + os.environ.get("PYTHONPATH", "")).rstrip(os.pathsep)
+
 NY = ZoneInfo("America/New_York")
 UTC = ZoneInfo("UTC")
 FEHLER: list[str] = []
@@ -900,6 +932,18 @@ pruef("[27] Wartebudget der Key Levels wirkt (es wird gewartet, aber begrenzt)",
       _mit_pause > 0 and _summe_kl <= _kl_budget._WARTE_BUDGET and _mit_pause < 25,
       f"{_summe_kl:.0f} s gewartet, {_mit_pause} von 25 Abrufen mit Pause")
 _kl_budget._warte_zuruecksetzen()
+
+# Der Gate-Runner hat eine schlanke Umgebung: numpy, requests, pandas, jinja2 — kein
+# streamlit. snapshot_gex_massive zieht es aber ueber shared/yahoo_downloader, und zwar
+# auf MODULEBENE. Daran war der Deploy von e7e881f rot. Diese Pruefung haelt fest, dass
+# die Attrappe fuer BEIDE Wege vorhanden ist: fuer diesen Prozess und fuer Kindprozesse,
+# die scripts/ neu starten (daran scheiterten [21c]/[21d] in der Gegenprobe).
+_hat_streamlit = "streamlit" in sys.modules
+_stub_datei = (_TMP / "stub" / "streamlit.py").exists()
+_stub_im_pfad = str(_TMP / "stub") in os.environ.get("PYTHONPATH", "")
+pruef("[32] streamlit: entweder echt vorhanden oder Attrappe fuer Prozess UND Kindprozesse",
+      _hat_streamlit and (_stub_datei == _stub_im_pfad),
+      f"in sys.modules {_hat_streamlit}, Attrappendatei {_stub_datei}, im PYTHONPATH {_stub_im_pfad}")
 
 print("== Vertrag: Unit, Installer, Workflow, Sperre")
 unit = (_ROOT / "deploy/systemd/sa-gex-snapshot.service").read_text(encoding="utf-8")
