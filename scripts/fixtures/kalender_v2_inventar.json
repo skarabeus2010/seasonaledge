@@ -173,7 +173,7 @@
     },
     {
       "datei": "landing/pages/dashboard.html",
-      "text": "if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;",
+      "text": "if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) {",
       "phase": "V4",
       "grund": "Kurzschluss, unter kalender_v1 nie NONE"
     },

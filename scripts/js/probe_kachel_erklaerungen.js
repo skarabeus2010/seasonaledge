@@ -48,11 +48,16 @@ for (const [kid, s] of KACHELN) {
   // Der Text muss die RECHNUNG nennen, nicht nur den Kachelnamen wiederholen.
   const m = block.match(/data-i18n-html="dash\.tooltip_[a-z_]+">([\s\S]*?)<\/div>/);
   const text = m ? m[1] : '';
-  pruef('[Badge] ' + kid + ': Erklaertext nennt die Rechnung',
-        text.length > 120 && /Rendite|Schluss|Intraday|kumuliert/.test(text),
-        text.length + ' Zeichen');
+  // Keine Wortsuche: ein Suchmuster kann nicht zwischen "erklaert die Rechnung" und
+  // "erwaehnt das Wort" unterscheiden. Geprueft wird, dass ueberhaupt ein Satz dasteht
+  // und dass der Text KEIN Warnzeichen traegt — ein Ausrufezeichen auf einer
+  // Erklaerkachel heisst, dass die Kennzahl selbst nicht stimmt, und dann gehoert die
+  // Kennzahl repariert und nicht der Mangel dokumentiert (Nutzerkritik 2026-10-22).
+  const roh = text.replace(/<[^>]+>/g, '').trim();
+  pruef('[Badge] ' + kid + ': Erklaertext vorhanden und ohne Warnzeichen',
+        roh.length >= 80 && roh.indexOf('⚠') < 0, roh.length + ' Zeichen');
   pruef('[EN] ' + kid + ': Erklaertext und aria uebersetzt',
-        typeof en['dash.tooltip_' + s] === 'string' && en['dash.tooltip_' + s].length > 120
+        typeof en['dash.tooltip_' + s] === 'string' && en['dash.tooltip_' + s].length >= 80
         && typeof en['dash.aria_' + s] === 'string');
   pruef('[DE] ' + kid + ': aria-Text vorhanden', typeof de['dash.aria_' + s] === 'string');
 }

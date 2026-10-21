@@ -228,6 +228,16 @@ jobs:
       # VRP-Kachel auf /skew: kein Wert darf nach dem Vorzeichen verworfen werden, und
       # die Kachel nennt die Aufteilung — eine leere Haelfte sah sonst aus wie ein
       # fehlender Balken (Nutzerbefund 2026-10-21; die Zahlen selbst waren korrekt).
+      # TDOM-Kacheln rechnen seit 2026-10-22 die vier Methoden von /tdom-analyse statt
+      # der kumulierten Rendite seit dem Vormonatsschluss. Sollwerte unabhaengig gesetzt,
+      # damit eine Verwechslung der Methoden auffaellt; die Auswahl geht nach
+      # Trefferquote (Nutzerentscheidung).
+      # Leere Kacheln nennen ihren Grund mit Zahl statt "Nicht genug Daten"
+      # (Nutzerwunsch 2026-10-22). Geprueft an den echten Rechenfunktionen.
+      - name: Waechter - Gruende leerer Kacheln (Dashboard)
+        run: node scripts/js/probe_leere_kacheln.js
+      - name: Waechter - TDOM-Rechenmethoden (Dashboard)
+        run: node scripts/js/probe_tdom_methoden.js
       - name: Waechter - VRP-Aufteilung (/skew)
         run: node scripts/js/probe_vrp_aufteilung.js
       - name: Waechter - Kachel-Erklaerungen (Dashboard)

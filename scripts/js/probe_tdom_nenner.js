@@ -47,6 +47,12 @@ sandbox.globalThis = sandbox;
 const vm = require('vm');
 vm.createContext(sandbox);
 sandbox.SA = { __release: function () {}, kalenderMethode: 'alt' };
+// localStorage gibt es in node nicht; die Methodenwahl faellt dann auf 'beste'.
+sandbox.localStorage = { getItem: function () { return null; }, setItem: function () {} };
+sandbox.TDOM_SPEICHER = 'sa-dash-tdom-methode';
+// Methodenliste WOERTLICH aus der Seite — nicht nachgebaut.
+vm.runInContext("    var TDOM_METHODEN = [\n      { id: 'c2c',  k: 'dash.m_c2c',  d: 'Close → Close',      lang: 'Schluss gestern → Schluss heute' },\n      { id: 'o2c',  k: 'dash.m_o2c',  d: 'Intraday',           lang: 'Eröffnung → Schluss desselben Tages' },\n      { id: 'o2no', k: 'dash.m_o2no', d: 'Overnight',          lang: 'Eröffnung → Eröffnung des nächsten Handelstags' },\n      { id: 'o2nc', k: 'dash.m_o2nc', d: 'Swing',              lang: 'Eröffnung → Schluss des nächsten Handelstags' }\n    ];", sandbox);
+sandbox.isFinite = isFinite;
 vm.runInContext(fs.readFileSync(path.join(WURZEL, 'landing', 'js', 'holidays.js'), 'utf8'), sandbox);
 
 // Hilfen, die die geschnittenen Funktionen brauchen
@@ -66,7 +72,8 @@ vm.runInContext(`
 
 
 for (const fn of ['calcIntramonthCurve', 'calcTdomPositionStreak', 'getTdomMiniStats',
-                  'computeTwoWeekPhases', 'todayDoy']) {
+                  'computeTwoWeekPhases', 'todayDoy', 'tdomMethodeGewaehlt',
+                  'besteTdomMethode', 'tdomSerie', 'calcTdomMethoden', '_zahl']) {
   try { vm.runInContext(schneide(fn), sandbox); } catch (e) {
     console.log('  FAIL Funktion ' + fn + ' nicht ladbar: ' + e.message); fehler++;
   }
@@ -100,7 +107,7 @@ for (let jahr = 1999; jahr <= 2026; jahr++) {
     if (!sandbox.SA.holidays.isTradingDay(s, 'NYSE')) continue;
     t++;
     if (jahr === 2026 && t > 15) break;          // laufender Monat bis TDOM 15
-    zeilen.push({ date: s, close: 100 + t, log_return: 0.001, year: jahr, month: 10, tdom: t });
+    zeilen.push({ date: s, open: 99.5 + t, close: 100 + t, log_return: 0.001, year: jahr, month: 10, tdom: t });
   }
 }
 const maxHistorisch = Math.max.apply(null, zeilen.filter(z => z.year < 2026).map(z => z.tdom));
@@ -109,7 +116,11 @@ pruef('[Aufbau] hoechster TDOM aller Vorjahre ist 23 (weicht von 22 ab)',
 
 const jahre = [];
 for (let j = 1999; j <= 2026; j++) jahre.push(j);
-const mini = sandbox.getTdomMiniStats(zeilen, new Date(2026, 9, 21), jahre, {});
+// Die Kennzahlen kommen jetzt aus der Methodentabelle — ohne sie liefert
+// getTdomMiniStats null. Die Fixture traegt open/close/log_return, also sind alle
+// vier Methoden rechenbar.
+const methTab = sandbox.calcTdomMethoden(zeilen, 10, jahre);
+const mini = sandbox.getTdomMiniStats(zeilen, new Date(2026, 9, 21), jahre, {}, methTab);
 pruef('TDOM-Kachel: Zaehler ist die Position im laufenden Monat',
       mini && mini.tdom === 15, mini && mini.tdom);
 pruef('TDOM-Kachel: Nenner sind die Handelstage DIESES Monats (22), nicht das historische Maximum (23)',

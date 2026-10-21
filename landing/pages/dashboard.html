@@ -103,6 +103,10 @@
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
     .bento-stat6{grid-column:span 2;min-height:180px;position:relative}
+    /* Methodenumschalter unter der TDOM-Heute-Kachel. Gilt fuer beide TDOM-Kacheln. */
+    .tdom-methode{margin-top:.5rem}
+    .tdom-methode select{width:100%;padding:.25rem .35rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:5px;font-size:.6875rem;font-family:inherit;cursor:pointer}
+    .tdom-methode select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
@@ -332,42 +336,43 @@
         <!-- 6 Stat-Cards: je 2 cols = 12 -->
         <div class="bento-card bento-stat6" id="card-month-perf">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu Monatsperformance" data-i18n-aria="dash.aria_month_perf">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_month_perf"><b>Monatsperformance</b> — Ø Rendite des laufenden Kalendermonats über die gewählten Jahre. Je Jahr vom <b>Schluss des ersten Handelstags bis zum Schluss des letzten</b>; der Eröffnungssprung des Monats (Vormonatsschluss → erster Schluss) ist also nicht enthalten. Das laufende Jahr zählt nicht mit, Monate mit weniger als fünf Kurszeilen fallen heraus.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_month_perf">Ø Rendite des laufenden Monats über die gewählten Jahre, je Jahr vom ersten bis zum letzten Handelstag. Das laufende Jahr zählt noch nicht mit.</div>
           <div class="ttl" data-i18n="dash.month_perf_title"><span class="ico">📅</span> Monatsperformance</div>
           <div id="month-perf-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-twoweek">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu 2-Wochen-Phase" data-i18n-aria="dash.aria_twoweek">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_twoweek"><b>2-Wochen-Phase</b> — jeder Monat wird in zwei Hälften geteilt (H1/H2), 24 Phasen im Jahr. Je Jahr die Rendite vom ersten bis zum letzten Kalendertag der Phase, gerechnet auf der normierten Jahreskurve. Das laufende Jahr zählt nicht mit; Jahre, die vor dem Phasenende enden, werden übersprungen. <b>Rang 1</b> = beste der 24 Phasen.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_twoweek">Jeder Monat hat zwei Hälften, macht 24 Phasen im Jahr. Gezeigt wird die Ø Rendite der laufenden Phase über die gewählten Jahre; <b>Rang 1</b> ist die stärkste der 24.</div>
           <div class="ttl" data-i18n="dash.twoweek_title"><span class="ico">📊</span> 2-Wochen-Phase</div>
           <div id="twoweek-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-weekday">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu Wochentag" data-i18n-aria="dash.aria_weekday">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_weekday"><b>Wochentag</b> — Tagesrendite <b>Schluss zu Schluss</b>: vom Schluss des vorangegangenen Handelstags zum Schluss dieses Tages, an allen Tagen dieses Wochentags im gewählten Zeitraum. Mindestens fünf Beobachtungen. Die Kästchen zeigen die aktuelle Serie je Wochentag (W = Gewinn, L = Verlust).</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_weekday">Ø Tagesrendite von Schluss zu Schluss an diesem Wochentag über die gewählten Jahre. Die Kästchen zeigen die aktuelle Serie je Wochentag — <b>W</b> Gewinn, <b>L</b> Verlust.</div>
           <div class="ttl" data-i18n="dash.weekday_title"><span class="ico">📆</span> Wochentag</div>
           <div id="weekday-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-today">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu TDOM Heute" data-i18n-aria="dash.aria_tdom_today">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_today"><b>TDOM Heute</b> — Handelstag im Monat. ⚠️ Win-Rate und Ø beziehen sich auf die <b>kumulierte</b> Rendite seit dem Schluss des Vormonats bis zu dieser Position, nicht auf die Rendite dieses einen Tages — ein großer Teil davon ist der bereits vergangene Monatsverlauf. Die Kästchen darunter zeigen dagegen die <b>Tagesrendite</b>, deshalb kann oben eine hohe Quote neben einem roten Kästchen stehen. Der Nenner sind die Handelstage dieses Monats.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_today">Der wievielte Handelstag des Monats heute ist, und wie sich dieser Tag historisch verhalten hat. Die Rechenmethode steht unter der Kachel und gilt für beide TDOM-Kacheln; <b>beste von 4</b> wählt die Methode mit der höchsten Trefferquote an dieser Position.</div>
           <div class="ttl" data-i18n="dash.tdom_today_title"><span class="ico">📌</span> TDOM Heute</div>
           <div id="tdom-today-content" class="stat6-body"></div>
+          <div id="tdom-methode" class="tdom-methode"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-overnight">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu Overnight" data-i18n-aria="dash.aria_overnight">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_overnight"><b>Overnight</b> — die Bewegung zwischen den Sessions, als Rest gerechnet: <b>Tagesrendite − Intraday</b>. Tagesrendite ist Schluss zu Schluss, Intraday ist Eröffnung → Schluss desselben Tages. Der direkte Weg (Eröffnung gegen Vortagsschluss) wird bewusst nicht genommen: er mischt zwei Anpassungsstände und erzeugt an Dividendentagen einen Versatz. <b>ON/ID</b> ist das Verhältnis beider Mittelwerte.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_overnight">Die Bewegung zwischen zwei Sessions: Tagesrendite minus Intraday. Intraday ist Eröffnung bis Schluss desselben Tages. <b>ON/ID</b> setzt beide Mittelwerte ins Verhältnis.</div>
           <div class="ttl" data-i18n="dash.overnight_title"><span class="ico">🌙</span> Overnight</div>
           <div id="overnight-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-tomorrow">
           <div class="info-badge" tabindex="0" aria-label="Erklärung zu TDOM Morgen" data-i18n-aria="dash.aria_tdom_tomorrow">i</div>
-          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_tomorrow"><b>TDOM Morgen</b> — dieselbe Rechnung wie „TDOM Heute“, für den nächsten Handelstag nach dem Börsenkalender. Win-Rate und Ø sind auch hier <b>kumuliert</b> seit dem Vormonatsschluss, die Kästchen zeigen die Tagesrendite.</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_tomorrow">Der nächste Handelstag nach dem Börsenkalender, gerechnet wie „TDOM Heute“ und mit derselben Methode.</div>
           <div class="ttl" data-i18n="dash.tdom_tomorrow_title"><span class="ico">⏭️</span> TDOM Morgen</div>
           <div id="tdom-tomorrow-content" class="stat6-body"></div>
         </div>
@@ -497,9 +502,105 @@
         var r=rows[i],k=r.date.substring(0,7);
         if(k!==lastKey){counter=0;lastKey=k;}
         counter++;
-        out.push({date:r.date,close:r.close,log_return:r.log_return,year:parseInt(r.date.substring(0,4)),month:parseInt(r.date.substring(5,7)),tdom:counter});
+        out.push({date:r.date,open:r.open,close:r.close,log_return:r.log_return,year:parseInt(r.date.substring(0,4)),month:parseInt(r.date.substring(5,7)),tdom:counter});
       }
       return out;
+    }
+
+    // ── TDOM-Methoden: dieselben vier wie auf /tdom-analyse ──────────────────────────
+    // Die Kachel zeigte frueher die KUMULIERTE Rendite seit dem Vormonatsschluss. Das ist
+    // die Basis des Monatsverlauf-Charts, nicht die eines Tages: bei QQQ T16 waren von
+    // +2,41 % fast alles der bereits vergangene Monat. Jetzt dieselben Methoden wie auf
+    // der Unterseite — eine Definition fuer die ganze Seite.
+    var TDOM_METHODEN = [
+      { id: 'c2c',  k: 'dash.m_c2c',  d: 'Close → Close',      lang: 'Schluss gestern → Schluss heute' },
+      { id: 'o2c',  k: 'dash.m_o2c',  d: 'Intraday',           lang: 'Eröffnung → Schluss desselben Tages' },
+      { id: 'o2no', k: 'dash.m_o2no', d: 'Overnight',          lang: 'Eröffnung → Eröffnung des nächsten Handelstags' },
+      { id: 'o2nc', k: 'dash.m_o2nc', d: 'Swing',              lang: 'Eröffnung → Schluss des nächsten Handelstags' }
+    ];
+    var TDOM_SPEICHER = 'sa-dash-tdom-methode';
+    var _TDOM_METHTAB = null, _TDOM_ROWS = null, _TDOM_NEUZEICHNEN = null;
+
+    function tdomMethodeGewaehlt() {
+      try { return localStorage.getItem(TDOM_SPEICHER) || 'beste'; } catch (e) { return 'beste'; }
+    }
+    function tdomMethodeMerken(v) {
+      try { if (v) localStorage.setItem(TDOM_SPEICHER, v); } catch (e) { /* privater Modus */ }
+    }
+    function tdomMethodeName(id) {
+      for (var i = 0; i < TDOM_METHODEN.length; i++) {
+        if (TDOM_METHODEN[i].id === id) return _t(TDOM_METHODEN[i].k, TDOM_METHODEN[i].d);
+      }
+      return id;
+    }
+
+    /** Eine Zahl nur, wenn sie wirklich eine ist (kein bool, endlich). */
+    function _zahl(v) {
+      return (typeof v === 'number' && isFinite(v)) ? v : null;
+    }
+
+    /**
+     * Je TDOM-Position und Methode: Werte pro Jahr, Trefferquote, Mittel.
+     * `rows` ist die VOLLE Reihe in Datumsreihenfolge — der naechste Handelstag kann im
+     * Folgemonat liegen, deshalb wird ueber den Index zugegriffen und nicht innerhalb
+     * des Monats gesucht.
+     */
+    function calcTdomMethoden(rows, targetMonth, selectedYears) {
+      var jahrOk = {}, i;
+      for (i = 0; i < selectedYears.length; i++) jahrOk[selectedYears[i]] = true;
+      var out = {};
+      function lege(t, m, jahr, v) {
+        if (v == null) return;
+        if (!out[t]) out[t] = {};
+        if (!out[t][m]) out[t][m] = { werte: [] };
+        out[t][m].werte.push({ year: jahr, v: v });
+      }
+      for (i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (r.month !== targetMonth || !jahrOk[r.year]) continue;
+        var n = rows[i + 1] || null;
+        var o = _zahl(r.open), c = _zahl(r.close), lr = _zahl(r.log_return);
+        if (lr != null) lege(r.tdom, 'c2c', r.year, (Math.exp(lr) - 1) * 100);
+        if (o != null && o > 0 && c != null) lege(r.tdom, 'o2c', r.year, (c - o) / o * 100);
+        if (o != null && o > 0 && n) {
+          var no = _zahl(n.open), nc = _zahl(n.close);
+          if (no != null && no > 0) lege(r.tdom, 'o2no', r.year, (no - o) / o * 100);
+          if (nc != null && nc > 0) lege(r.tdom, 'o2nc', r.year, (nc - o) / o * 100);
+        }
+      }
+      for (var t in out) {
+        for (var m in out[t]) {
+          var e = out[t][m], w = e.werte;
+          e.n = w.length;
+          e.win = w.length ? w.filter(function (x) { return x.v > 0; }).length / w.length * 100 : null;
+          e.avg = w.length ? mean(w.map(function (x) { return x.v; })) : null;
+        }
+      }
+      return out;
+    }
+
+    /** Beste Methode an dieser Position — nach TREFFERQUOTE (Nutzerentscheidung). */
+    function besteTdomMethode(tab, tdom) {
+      var e = tab && tab[tdom];
+      if (!e) return null;
+      var best = null;
+      for (var i = 0; i < TDOM_METHODEN.length; i++) {
+        var m = TDOM_METHODEN[i].id, s = e[m];
+        if (!s || s.n < 5 || s.win == null) continue;
+        if (!best || s.win > e[best].win) best = m;
+      }
+      return best;
+    }
+
+    /** Serie an dieser Position, rueckwaerts ab dem juengsten Jahr. */
+    function tdomSerie(eintrag) {
+      if (!eintrag || !eintrag.werte.length) return { type: 'none', count: 0 };
+      var w = eintrag.werte.slice().sort(function (a, b) { return b.year - a.year; });
+      var typ = w[0].v > 0 ? 'win' : 'loss', n = 1;
+      for (var i = 1; i < w.length; i++) {
+        if ((w[i].v > 0) === (w[0].v > 0)) n++; else break;
+      }
+      return { type: typ, count: n };
     }
 
     function calcIntramonthCurve(tdomRows,targetMonth,selectedYears){
@@ -577,13 +678,17 @@
      * gibt Win-Rate + Ø Cum-Ret + n + monthName + neighborStreaks zurueck.
      * Cache-Map vermeidet doppelte Berechnung wenn mehrere Daten im selben Monat liegen.
      */
-    function getTdomMiniStats(tdomRows, dateObj, allYearsList, intramonthCache){
+    function getTdomMiniStats(tdomRows, dateObj, allYearsList, intramonthCache, methTab, info){
+      info = info || {};
       var year = dateObj.getFullYear(), month = dateObj.getMonth()+1, day = dateObj.getDate();
       var ds = year+'-'+pad2(month)+'-'+pad2(day);
       var ex;
       try { ex = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; ex='NONE'; }
       // Wenn Boerse zu (Wochenende/Feiertag): kein TDOM
-      if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;
+      if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) {
+        info.grund = _t('dash.leer_kein_ht', 'Kein Handelstag an dieser Börse.');
+        return null;
+      }
       // TDOM = Anzahl Handelstage von Monatsanfang bis dateObj inklusive
       // EINE Schleife fuer beides: Position im Monat und Handelstage des ganzen Monats.
       // Eine zweite Schleife waere eine 67. Stelle mit dem alten Boersenalphabet, und
@@ -601,18 +706,29 @@
         im = calcIntramonthCurve(tdomRows, month, allYearsList);
         intramonthCache[month] = im;
       }
-      if (!im || !im.tdomStats || !im.tdomStats[tdom]) return null;
-      var ts = im.tdomStats[tdom];
-      // Win-Rate an diesem TDOM ueber alle Curves
-      var pos = 0, total = 0;
-      for (var i = 0; i < im.allCurves.length; i++) {
-        var idx = im.allCurves[i].tdoms.indexOf(tdom);
-        if (idx >= 0) { total++; if (im.allCurves[i].curve[idx] > 0) pos++; }
+      if (!im || !im.tdomStats || !im.tdomStats[tdom]) {
+        info.grund = _t('dash.leer_tdom_pos', 'Für den {t}. Handelstag des Monats gibt es in der Historie dieses Tickers keine Vergleichsjahre.')
+          .replace('{t}', tdom);
+        return null;
       }
-      // Streak fuer diesen TDOM
-      var streak = calcTdomPositionStreak(im.allCurves, tdom);
+      var ts = im.tdomStats[tdom];
+      // Kennzahlen aus der GEWAEHLTEN Methode. Kopfzahl und Kaestchen rechnen damit
+      // dasselbe — frueher stand oben die kumulierte Rendite seit dem Vormonatsschluss
+      // und unten die Tagesrendite, weshalb eine hohe Quote neben einem roten Kaestchen
+      // stehen konnte.
+      var wahl = tdomMethodeGewaehlt();
+      var meth = (wahl === 'beste') ? besteTdomMethode(methTab, tdom) : wahl;
+      var mEintrag = (methTab && methTab[tdom] && meth) ? methTab[tdom][meth] : null;
+      if (!mEintrag || mEintrag.n < 5) {
+        info.grund = mEintrag
+          ? _t('dash.leer_meth_n', '{m} hat an dieser Position nur {n} Vergleichsjahre — mindestens 5 werden gebraucht.')
+              .replace('{m}', tdomMethodeName(meth)).replace('{n}', mEintrag.n)
+          : _t('dash.leer_meth', 'Diese Methode braucht Eröffnungskurse, die für diesen Ticker nicht vorliegen.');
+        return null;
+      }
+      var streak = tdomSerie(mEintrag);
       // Nachbar-TDOMs: 5 Positionen zentriert auf aktuellen TDOM (wie Mo-Fr bei Wochentag)
-      var allTdoms = Object.keys(im.tdomStats).map(Number).sort(function(a,b){return a-b;});
+      var allTdoms = Object.keys(methTab || {}).map(Number).sort(function(a,b){return a-b;});
       var centerIdx = allTdoms.indexOf(tdom);
       var neighborStreaks = [];
       if (centerIdx >= 0) {
@@ -622,7 +738,7 @@
         for (var ni = start; ni <= end; ni++) {
           neighborStreaks.push({
             tdom: allTdoms[ni],
-            streak: calcTdomPositionStreak(im.allCurves, allTdoms[ni]),
+            streak: tdomSerie(methTab[allTdoms[ni]] && methTab[allTdoms[ni]][meth]),
             isCurrent: allTdoms[ni] === tdom
           });
         }
@@ -633,9 +749,12 @@
         maxTdom: maxTdom,
         month: month,
         monthName: MONTHS_DE[month-1],
-        avg: ts.avg,
-        n: ts.n,
-        winRate: total > 0 ? pos/total*100 : 0,
+        avg: mEintrag.avg,
+        n: mEintrag.n,
+        winRate: mEintrag.win,
+        methode: meth,
+        methodeAuto: wahl === 'beste',
+        kumuliert: ts.avg,
         weekday: WEEKDAYS_DE[dateObj.getDay() === 0 ? 0 : (dateObj.getDay() === 6 ? 6 : dateObj.getDay())],
         streak: streak,
         neighborStreaks: neighborStreaks
@@ -1012,7 +1131,8 @@
 
     // ── Wochentag-Stats (vereinfacht) ────────────────────────────
     /** Gibt {weekday: {win_rate, avg, n}} zurueck fuer einen einzigen Wochentag */
-    function calcWeekdayStatsSingle(rows,weekday,yearsBack){
+    function calcWeekdayStatsSingle(rows,weekday,yearsBack,info){
+      info = info || {};
       var lastDate=new Date(rows[rows.length-1].date);
       var cutoff=new Date(lastDate);cutoff.setFullYear(cutoff.getFullYear()-yearsBack);
       var cutoffStr=cutoff.toISOString().substring(0,10);
@@ -1026,13 +1146,18 @@
         var prev=rows[i-1];
         if(prev.close>0&&r.close>0)rets.push((r.close/prev.close-1)*100);
       }
-      if(rets.length<5)return null;
+      if(rets.length<5){
+        info.grund = _t('dash.leer_wochentag', 'Nur {n} Beobachtungen für diesen Wochentag im gewählten Zeitraum — mindestens 5 werden gebraucht.')
+          .replace('{n}', rets.length);
+        return null;
+      }
       var wins=rets.filter(function(r){return r>0;}).length;
       return {n:rets.length,win_rate:wins/rets.length*100,avg:mean(rets)};
     }
 
     // ── Monatsperformance fuer aktuellen Monat (historisch) ──
-    function calcCurrentMonthPerf(rows, yearsBack) {
+    function calcCurrentMonthPerf(rows, yearsBack, info) {
+      info = info || {};
       var currentMonth = new Date().getMonth() + 1;
       var lastDate = new Date(rows[rows.length - 1].date);
       var cutoff = new Date(lastDate);
@@ -1058,7 +1183,11 @@
         var first = g[0].close, last = g[g.length - 1].close;
         if (first > 0) rets.push((last / first - 1) * 100);
       }
-      if (!rets.length) return null;
+      if (!rets.length) {
+        info.grund = _t('dash.leer_monat', 'Kein abgeschlossener {m} mit mindestens fünf Handelstagen im gewählten Zeitraum.')
+          .replace('{m}', MONTHS_DE[currentMonth - 1]);
+        return null;
+      }
       var wins = rets.filter(function(r) { return r > 0; }).length;
       rets.sort(function(a, b) { return a - b; });
       return {
@@ -1102,10 +1231,17 @@
     // ── Overnight Performance (heute→morgen) aus OHLC ──
     /** Berechnet Overnight-Stats fuer den aktuellen Wochentag (close→open+1).
      *  Residual-Ansatz: overnight = total - intraday */
-    function calcOvernightStats(ohlcRows, yearsBack, targetWd) {
-      if (!ohlcRows || ohlcRows.length < 50) return null;
+    function calcOvernightStats(ohlcRows, yearsBack, targetWd, info) {
+      info = info || {};
+      if (!ohlcRows || ohlcRows.length < 50) {
+        info.grund = _t('dash.leer_on_kurse', 'Zu wenig Kurshistorie mit Eröffnungskursen — die Overnight-Rechnung braucht Open und Close.');
+        return null;
+      }
       var wd = targetWd != null ? targetWd : new Date().getDay(); // 0=So..6=Sa
-      if (wd === 0 || wd === 6) return null;
+      if (wd === 0 || wd === 6) {
+        info.grund = _t('dash.leer_on_we', 'Am Wochenende gibt es keine Session, zwischen der etwas liegen könnte.');
+        return null;
+      }
       var lastDate = new Date(ohlcRows[ohlcRows.length - 1].date);
       var cutoff = new Date(lastDate);
       cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
@@ -1124,7 +1260,11 @@
         onRets.push(overnight);
         idRets.push(intraday);
       }
-      if (onRets.length < 5) return null;
+      if (onRets.length < 5) {
+        info.grund = _t('dash.leer_on_n', 'Nur {n} auswertbare Tagespaare für diesen Wochentag — mindestens 5 werden gebraucht.')
+          .replace('{n}', onRets.length);
+        return null;
+      }
       var onWins = onRets.filter(function(r) { return r > 0; }).length;
       // Kurzform: "Mi → Do" statt "Mittwoch → Donnerstag" — die Kachel ist schmal,
       // der lange Name wurde abgeschnitten (Nutzerhinweis 2026-10-21).
@@ -1757,11 +1897,11 @@
     }
 
     // ── 7. Wochentag Card (mit 5 Streak-Blöcken Mo-Fr) ─────────
-    function renderWeekdayCard(stats, streak, allWdStreaks, displayWd, closedHint) {
+    function renderWeekdayCard(stats, streak, allWdStreaks, displayWd, closedHint, grund) {
       var el = document.getElementById('weekday-content');
       var wd = displayWd != null ? displayWd : (function(){ var w = new Date().getDay(); return w === 0 ? 6 : w - 1; })();
       var wdName = WEEKDAYS_DE[wd === 6 ? 0 : wd + 1];
-      if (!stats) { el.innerHTML = '<div class="s6-headline">' + wdName + '</div>' + STAT6_EMPTY; return; }
+      if (!stats) { el.innerHTML = '<div class="s6-headline">' + wdName + '</div>' + stat6Leer(grund); return; }
       // Streak badge inline
       var streakHtml = '';
       if (streak && streak.count > 0) {
@@ -1792,18 +1932,22 @@
     }
 
     // ── 8. TDOM-Mini Card (generisch fuer heute/morgen) ──
-    function renderTdomMiniCard(elementId, dateLabel, mini, closedHint) {
+    function renderTdomMiniCard(elementId, dateLabel, mini, closedHint, grund) {
       var el = document.getElementById(elementId);
       if (!mini) {
-        el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div><p style="color:#a89878;font-size:.75rem">Kein Handelstag</p>';
+        el.innerHTML = '<div class="s6-headline">–</div><div class="s6-sub">' + dateLabel + '</div>'
+          + stat6Leer(grund);
         return;
       }
       var html = '<div class="s6-headline">TDOM ' + mini.tdom + ' / ' + mini.maxTdom + '</div>';
-      html += '<div class="s6-sub">' + mini.monthName + ' · ' + mini.n + 'J · ' + dateLabel + '</div>';
+      var mTxt = tdomMethodeName(mini.methode)
+        + (mini.methodeAuto ? ' (' + _t('dash.m_beste_kurz', 'beste von 4') + ')' : '');
+      html += '<div class="s6-sub">' + mTxt + ' · n ' + mini.n + ' · ' + dateLabel + '</div>';
       if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
       html += '<div class="s6-kpis">';
       html += '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (mini.winRate >= 50 ? 'green' : 'red') + '">' + mini.winRate.toFixed(0) + '%</div></div>';
-      html += '<div class="kpi"><div class="kpi-label">Ø Cum-Ret</div><div class="kpi-value ' + (mini.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(mini.avg,2) + '</div></div>';
+      html += '<div class="kpi"><div class="kpi-label">' + _t('dash.m_rendite', 'Ø Rendite')
+        + '</div><div class="kpi-value ' + (mini.avg >= 0 ? 'green' : 'red') + '">' + fmtPct(mini.avg,3) + '</div></div>';
       html += '</div>';
       // Streak-Kacheln: 5 benachbarte TDOM-Positionen (wie Mo-Fr bei Wochentag)
       if (mini.neighborStreaks && mini.neighborStreaks.length > 0) {
@@ -1818,6 +1962,34 @@
         html += '</div>';
       }
       el.innerHTML = html;
+    }
+
+    /** Umschalter unter der TDOM-Heute-Kachel. Gilt fuer BEIDE TDOM-Kacheln — die
+     *  Methode ist eine Eigenschaft der Messung, nicht der einzelnen Karte. */
+    /** Beide TDOM-Kacheln neu zeichnen (nach Methodenwechsel), ohne Nachladen. */
+    function renderTdomKacheln() {
+      if (typeof _TDOM_NEUZEICHNEN === 'function') _TDOM_NEUZEICHNEN();
+    }
+
+    function renderTdomMethodenwahl(methTab, tdom) {
+      var el = document.getElementById('tdom-methode');
+      if (!el) return;
+      var wahl = tdomMethodeGewaehlt();
+      var best = besteTdomMethode(methTab, tdom);
+      var h = '<select id="tdom-methode-sel" aria-label="'
+        + _t('dash.m_aria', 'Rechenmethode der TDOM-Kacheln') + '">';
+      h += '<option value="beste"' + (wahl === 'beste' ? ' selected' : '') + '>'
+        + _t('dash.m_beste', 'Beste nach Trefferquote')
+        + (best ? ' — ' + tdomMethodeName(best) : '') + '</option>';
+      for (var i = 0; i < TDOM_METHODEN.length; i++) {
+        var m = TDOM_METHODEN[i];
+        h += '<option value="' + m.id + '"' + (wahl === m.id ? ' selected' : '') + '>'
+          + _t(m.k, m.d) + '</option>';
+      }
+      h += '</select>';
+      el.innerHTML = h;
+      var sel = document.getElementById('tdom-methode-sel');
+      if (sel) sel.onchange = function () { tdomMethodeMerken(sel.value); renderTdomKacheln(); };
     }
 
     // ── 9. Trifecta Card ─────────────────────────────────────────
@@ -1953,11 +2125,17 @@
       return html;
     }
     var STAT6_EMPTY = '<p style="color:#a89878;font-size:.8125rem;padding:.5rem 0">Nicht genug Daten</p>';
+    /** Leere Kachel MIT Grund. "Nicht genug Daten" beantwortet nichts — zu wenig wovon,
+     *  und ab wann reicht es? Der Grund kommt aus der Rechnung, samt Zahl. */
+    function stat6Leer(grund) {
+      return '<p style="color:#a89878;font-size:.8125rem;padding:.5rem 0;line-height:1.5">'
+        + (grund || _t('dash.leer_unbekannt', 'Für diesen Ticker nicht berechenbar.')) + '</p>';
+    }
 
     // ── 6b. Monatsperformance Card ─────────────────────────────────
-    function renderMonthlyPerfCard(mp) {
+    function renderMonthlyPerfCard(mp, grund) {
       var el = document.getElementById('month-perf-content');
-      if (!mp) { el.innerHTML = STAT6_EMPTY; return; }
+      if (!mp) { el.innerHTML = stat6Leer(grund); return; }
       el.innerHTML = stat6(mp.monthName, mp.n + ' Jahre historisch', [
         ['Ø Return', fmtPct(mp.avg,2), mp.avg >= 0 ? 'green' : 'red'],
         ['Win-Rate', mp.winRate.toFixed(0)+'%', mp.winRate >= 50 ? 'green' : 'red'],
@@ -1969,7 +2147,11 @@
     // ── 11b. Two-Week Phase Card (kompakt) ───────────────────────
     function renderTwoWeekPhase(tw) {
       var el = document.getElementById('twoweek-content');
-      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) { el.innerHTML = STAT6_EMPTY; return; }
+      if (!tw || tw.currentIdx < 0 || !tw.current || tw.current.avg == null) {
+        el.innerHTML = stat6Leer(_t('dash.leer_phase',
+          'Für die laufende Monatshälfte gibt es im gewählten Zeitraum kein abgeschlossenes Vergleichsjahr.'));
+        return;
+      }
       var cur = tw.current, avg = cur.avg;
       var status, statusCls;
       if (avg >= 0.5) { status = 'Bullish'; statusCls = 'green'; }
@@ -1985,9 +2167,9 @@
     }
 
     // ── Overnight Card ───────────────────────────────────────────
-    function renderOvernightCard(overnightStats, closedHint) {
+    function renderOvernightCard(overnightStats, closedHint, grund) {
       var el = document.getElementById('overnight-content');
-      if (!overnightStats) { el.innerHTML = STAT6_EMPTY; return; }
+      if (!overnightStats) { el.innerHTML = stat6Leer(grund); return; }
       var o = overnightStats;
       var hintHtml = closedHint ? '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>' : '';
       // Unterzeile sagt die RECHNUNG, nicht nur die Fallzahl (Nutzerhinweis): die
@@ -2125,8 +2307,9 @@
 
       // 4d. Historische Monatsperformance
       try {
-        var mp = calcCurrentMonthPerf(filteredRows, yearsBack);
-        renderMonthlyPerfCard(mp);
+        var mpInfo = {};
+        var mp = calcCurrentMonthPerf(filteredRows, yearsBack, mpInfo);
+        renderMonthlyPerfCard(mp, mpInfo.grund);
       } catch(e) { console.warn('MonthPerf:', e); }
 
       // 5. + 8. Month + TDOM-Mini-Cards (heute / morgen / uebermorgen)
@@ -2140,31 +2323,43 @@
       var currentTdom = getCurrentTdom(tdomRows, currentTicker);
       renderMonthChart(intramonth, currentMonthCurve, currentTicker, currentTdom);
 
-      // TDOM Heute / Morgen / Uebermorgen via Holiday-Kalender
+      // TDOM Heute / Morgen via Holiday-Kalender. Die Methodentabelle wird EINMAL
+      // gerechnet und an beide Kacheln gegeben; der Umschalter zeichnet nur neu.
+      _TDOM_METHTAB = calcTdomMethoden(tdomRows, currentMonth, allYearsList);
+      _TDOM_ROWS = tdomRows;
       var todayD = new Date(); todayD.setHours(0,0,0,0);
       var dayLbl = function(d){ return WEEKDAYS_SHORT[d.getDay()] + ' ' + pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.'; };
-      // Heute (oder nächster Handelstag wenn WE/Feiertag)
-      var miniToday = getTdomMiniStats(tdomRows, todayD, allYearsList, intramonthCache);
-      var todayLabel, tdomClosedHint = null;
-      if (miniToday) { todayLabel = 'Heute · ' + dayLbl(todayD); }
-      else {
-        var nextTd = nextTradingDate(todayD);
-        if (nextTd) {
-          miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache);
-          todayLabel = dayLbl(nextTd);
-          var todayWdRaw = new Date().getDay();
-          tdomClosedHint = (todayWdRaw === 0 || todayWdRaw === 6)
-            ? 'Börse geschlossen · nächster HT ' + dayLbl(nextTd)
-            : 'Feiertag · nächster HT ' + dayLbl(nextTd);
+      // In eine Funktion gelegt, damit der Methodenumschalter beide Kacheln neu zeichnen
+      // kann, OHNE Daten nachzuladen — die Methodentabelle liegt bereits vor.
+      _TDOM_NEUZEICHNEN = function () {
+        // Heute (oder nächster Handelstag wenn WE/Feiertag)
+        var infoHeute = {};
+        var miniToday = getTdomMiniStats(tdomRows, todayD, allYearsList, intramonthCache, _TDOM_METHTAB, infoHeute);
+        var todayLabel, tdomClosedHint = null;
+        if (miniToday) { todayLabel = 'Heute · ' + dayLbl(todayD); }
+        else {
+          var nextTd = nextTradingDate(todayD);
+          if (nextTd) {
+            miniToday = getTdomMiniStats(tdomRows, nextTd, allYearsList, intramonthCache, _TDOM_METHTAB, infoHeute);
+            todayLabel = dayLbl(nextTd);
+            var todayWdRaw = new Date().getDay();
+            tdomClosedHint = (todayWdRaw === 0 || todayWdRaw === 6)
+              ? 'Börse geschlossen · nächster HT ' + dayLbl(nextTd)
+              : 'Feiertag · nächster HT ' + dayLbl(nextTd);
+          }
+          else todayLabel = 'Heute';
         }
-        else todayLabel = 'Heute';
-      }
-      renderTdomMiniCard('tdom-today-content', todayLabel, miniToday, tdomClosedHint);
-      // Morgen = nächster Handelstag nach heute (oder nach miniToday.date)
-      var fromDate = miniToday ? new Date(miniToday.date) : todayD;
-      var d1 = nextTradingDate(fromDate);
-      var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache) : null;
-      renderTdomMiniCard('tdom-tomorrow-content', d1 ? dayLbl(d1) : 'Morgen', mini1);
+        renderTdomMethodenwahl(_TDOM_METHTAB, miniToday ? miniToday.tdom : null);
+        renderTdomMiniCard('tdom-today-content', todayLabel, miniToday, tdomClosedHint, infoHeute.grund);
+        // Morgen = nächster Handelstag nach heute (oder nach miniToday.date)
+        var fromDate = miniToday ? new Date(miniToday.date) : todayD;
+        var d1 = nextTradingDate(fromDate);
+        var infoMorgen = {};
+        var mini1 = d1 ? getTdomMiniStats(tdomRows, d1, allYearsList, intramonthCache, _TDOM_METHTAB, infoMorgen) : null;
+        renderTdomMiniCard('tdom-tomorrow-content', d1 ? dayLbl(d1) : 'Morgen', mini1, null,
+          d1 ? infoMorgen.grund : _t('dash.leer_kein_folgetag', 'Kein nächster Handelstag im Kalenderfenster.'));
+      };
+      _TDOM_NEUZEICHNEN();
 
       // 6. TruePath
       renderTruePathChart(yearData, truepath, currentYear, currentTicker);
@@ -2194,11 +2389,12 @@
           }
         }
       }
-      var wdStats = calcWeekdayStatsSingle(filteredRows, wdTarget, yearsBack);
+      var wdInfo = {};
+      var wdStats = calcWeekdayStatsSingle(filteredRows, wdTarget, yearsBack, wdInfo);
       var wdStreak = calcWeekdayStreak(filteredRows, wdTarget);
       var allWdStreaks = [];
       for (var wi = 0; wi < 5; wi++) allWdStreaks.push(calcWeekdayStreak(filteredRows, wi));
-      renderWeekdayCard(wdStats, wdStreak, allWdStreaks, wdTarget, wdClosedHint);
+      renderWeekdayCard(wdStats, wdStreak, allWdStreaks, wdTarget, wdClosedHint, wdInfo.grund);
 
       // 9. Trifecta
       try {
@@ -2220,7 +2416,9 @@
         if (onTargetWd === 0 || onTargetWd === 6) {
           var onNext = nextTradingDate(new Date());
           if (onNext) { onTargetWd = onNext.getDay(); onClosedHint = 'Börse geschlossen · nächster HT ' + dayLbl(onNext); }
-          else { renderOvernightCard(null); return; }
+          else { renderOvernightCard(null, null,
+            _t('dash.leer_on_we', 'Am Wochenende gibt es keine Session, zwischen der etwas liegen könnte.'));
+            return; }
         } else {
           var onTodayStr = new Date().getFullYear() + '-' + pad2(new Date().getMonth()+1) + '-' + pad2(new Date().getDate());
           var onEx; try { onEx = SA.holidays.detect(currentTicker||''); } catch(e){ if (SA.kalenderMethode !== 'alt') throw e; onEx='NONE'; }
@@ -2237,12 +2435,14 @@
           // neuerer Abruf ODER neuere Darstellung (Zeitraum-Regler) gewinnt — Codex M3 R1
           if (!SA.ladeKennung.aktuell(_rk) || _dn !== _darstellung) return;
           ohlc.forEach(function(r){ r.open = parseFloat(r.open); r.close = parseFloat(r.close); });
-          var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd);
-          renderOvernightCard(onStats, onClosedHint);
+          var onInfo = {};
+          var onStats = calcOvernightStats(ohlc, yearsBack, onTargetWd, onInfo);
+          renderOvernightCard(onStats, onClosedHint, onInfo.grund);
         }).catch(function(e){
           // neuerer Abruf ODER neuere Darstellung (Zeitraum-Regler) gewinnt — Codex M3 R1
           if (!SA.ladeKennung.aktuell(_rk) || _dn !== _darstellung) return;
-          console.warn('Overnight:', e); renderOvernightCard(null);
+          console.warn('Overnight:', e); renderOvernightCard(null, null,
+            _t('dash.leer_on_fehler', 'Die Kursreihe mit Eröffnungskursen ließ sich nicht laden.'));
         });
       })();
 
