@@ -222,6 +222,16 @@ jobs:
       # TDOM- und Zwei-Wochen-Nenner im Dashboard: der TDOM-Nenner war das historische
       # Maximum statt der Handelstage des laufenden Monats, und ein `return` in der
       # .map-Rueckruffunktion warf Dezember H2 fuer alle Jahre weg (Rang 5/23 statt 1-24).
+      # Info-Badges und Unterzeilen der sechs Stat-Kacheln (Nutzerwunsch 2026-10-21):
+      # jede Kachel erklaert ihre Renditerechnung, die Unterzeile nennt die Rechnung
+      # statt nur die Fallzahl, Overnight nutzt kurze Wochentage in DE und EN.
+      # VRP-Kachel auf /skew: kein Wert darf nach dem Vorzeichen verworfen werden, und
+      # die Kachel nennt die Aufteilung — eine leere Haelfte sah sonst aus wie ein
+      # fehlender Balken (Nutzerbefund 2026-10-21; die Zahlen selbst waren korrekt).
+      - name: Waechter - VRP-Aufteilung (/skew)
+        run: node scripts/js/probe_vrp_aufteilung.js
+      - name: Waechter - Kachel-Erklaerungen (Dashboard)
+        run: node scripts/js/probe_kachel_erklaerungen.js
       - name: Waechter - TDOM- und Phasen-Nenner (Dashboard)
         run: node scripts/js/probe_tdom_nenner.js
       - name: Waechter - Tabellen-Sortierung

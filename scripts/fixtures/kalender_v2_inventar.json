@@ -179,7 +179,7 @@
     },
     {
       "datei": "landing/pages/dashboard.html",
-      "text": "if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;",
+      "text": "if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) { maxTdom++; if (d <= day) tdom++; }",
       "phase": "V4",
       "grund": "eigene TDOM-Zählung → nummern"
     },

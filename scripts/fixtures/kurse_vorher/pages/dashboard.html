@@ -102,7 +102,7 @@
     .bento-drawdown{grid-column:span 6;min-height:300px}
     .bento-month{grid-column:span 6;min-height:300px}
     .bento-truepath{grid-column:span 6;min-height:300px}
-    .bento-stat6{grid-column:span 2;min-height:180px}
+    .bento-stat6{grid-column:span 2;min-height:180px;position:relative}
     .bento-risk{grid-column:span 12}
     .bento-strategies{grid-column:span 12}
     .bento-events{grid-column:span 12}
@@ -331,32 +331,44 @@
 
         <!-- 6 Stat-Cards: je 2 cols = 12 -->
         <div class="bento-card bento-stat6" id="card-month-perf">
-          <div class="ttl" data-i18n="dash.month_perf_title"><span class="ico">📅</span> Monatsperformance</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu Monatsperformance" data-i18n-aria="dash.aria_month_perf">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_month_perf"><b>Monatsperformance</b> — Ø Rendite des laufenden Kalendermonats über die gewählten Jahre. Je Jahr vom <b>Schluss des ersten Handelstags bis zum Schluss des letzten</b>; der Eröffnungssprung des Monats (Vormonatsschluss → erster Schluss) ist also nicht enthalten. Das laufende Jahr zählt nicht mit, Monate mit weniger als fünf Kurszeilen fallen heraus.</div>
+                    <div class="ttl" data-i18n="dash.month_perf_title"><span class="ico">📅</span> Monatsperformance</div>
           <div id="month-perf-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-twoweek">
-          <div class="ttl" data-i18n="dash.twoweek_title"><span class="ico">📊</span> 2-Wochen-Phase</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu 2-Wochen-Phase" data-i18n-aria="dash.aria_twoweek">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_twoweek"><b>2-Wochen-Phase</b> — jeder Monat wird in zwei Hälften geteilt (H1/H2), 24 Phasen im Jahr. Je Jahr die Rendite vom ersten bis zum letzten Kalendertag der Phase, gerechnet auf der normierten Jahreskurve. Das laufende Jahr zählt nicht mit; Jahre, die vor dem Phasenende enden, werden übersprungen. <b>Rang 1</b> = beste der 24 Phasen.</div>
+                    <div class="ttl" data-i18n="dash.twoweek_title"><span class="ico">📊</span> 2-Wochen-Phase</div>
           <div id="twoweek-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-weekday">
-          <div class="ttl" data-i18n="dash.weekday_title"><span class="ico">📆</span> Wochentag</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu Wochentag" data-i18n-aria="dash.aria_weekday">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_weekday"><b>Wochentag</b> — Tagesrendite <b>Schluss zu Schluss</b>: vom Schluss des vorangegangenen Handelstags zum Schluss dieses Tages, an allen Tagen dieses Wochentags im gewählten Zeitraum. Mindestens fünf Beobachtungen. Die Kästchen zeigen die aktuelle Serie je Wochentag (W = Gewinn, L = Verlust).</div>
+                    <div class="ttl" data-i18n="dash.weekday_title"><span class="ico">📆</span> Wochentag</div>
           <div id="weekday-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-today">
-          <div class="ttl" data-i18n="dash.tdom_today_title"><span class="ico">📌</span> TDOM Heute</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TDOM Heute" data-i18n-aria="dash.aria_tdom_today">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_today"><b>TDOM Heute</b> — Handelstag im Monat. ⚠️ Win-Rate und Ø beziehen sich auf die <b>kumulierte</b> Rendite seit dem Schluss des Vormonats bis zu dieser Position, nicht auf die Rendite dieses einen Tages — ein großer Teil davon ist der bereits vergangene Monatsverlauf. Die Kästchen darunter zeigen dagegen die <b>Tagesrendite</b>, deshalb kann oben eine hohe Quote neben einem roten Kästchen stehen. Der Nenner sind die Handelstage dieses Monats.</div>
+                    <div class="ttl" data-i18n="dash.tdom_today_title"><span class="ico">📌</span> TDOM Heute</div>
           <div id="tdom-today-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-overnight">
-          <div class="ttl" data-i18n="dash.overnight_title"><span class="ico">🌙</span> Overnight</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu Overnight" data-i18n-aria="dash.aria_overnight">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_overnight"><b>Overnight</b> — die Bewegung zwischen den Sessions, als Rest gerechnet: <b>Tagesrendite − Intraday</b>. Tagesrendite ist Schluss zu Schluss, Intraday ist Eröffnung → Schluss desselben Tages. Der direkte Weg (Eröffnung gegen Vortagsschluss) wird bewusst nicht genommen: er mischt zwei Anpassungsstände und erzeugt an Dividendentagen einen Versatz. <b>ON/ID</b> ist das Verhältnis beider Mittelwerte.</div>
+                    <div class="ttl" data-i18n="dash.overnight_title"><span class="ico">🌙</span> Overnight</div>
           <div id="overnight-content" class="stat6-body"></div>
         </div>
 
         <div class="bento-card bento-stat6" id="card-tdom-tomorrow">
-          <div class="ttl" data-i18n="dash.tdom_tomorrow_title"><span class="ico">⏭️</span> TDOM Morgen</div>
+          <div class="info-badge" tabindex="0" aria-label="Erklärung zu TDOM Morgen" data-i18n-aria="dash.aria_tdom_tomorrow">i</div>
+          <div class="info-tooltip" data-i18n-html="dash.tooltip_tdom_tomorrow"><b>TDOM Morgen</b> — dieselbe Rechnung wie „TDOM Heute“, für den nächsten Handelstag nach dem Börsenkalender. Win-Rate und Ø sind auch hier <b>kumuliert</b> seit dem Vormonatsschluss, die Kästchen zeigen die Tagesrendite.</div>
+                    <div class="ttl" data-i18n="dash.tdom_tomorrow_title"><span class="ico">⏭️</span> TDOM Morgen</div>
           <div id="tdom-tomorrow-content" class="stat6-body"></div>
         </div>
 
@@ -443,6 +455,12 @@
     var MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     var WEEKDAYS_DE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
     var WEEKDAYS_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    /** Kurzer Wochentagsname, uebersetzbar (0 = Sonntag). Die langen Namen stehen
+     *  nur auf Deutsch im Skript; fuer /en/ liefert i18n die Kuerzel. */
+    function _wdKurz(i) {
+      return (window.SA && SA.i18n && SA.i18n.t)
+        ? SA.i18n.t('dash.wd_s' + i, WEEKDAYS_SHORT[i]) : WEEKDAYS_SHORT[i];
+    }
 
     var COL_AVG = '#00CED1';
     var COL_CURRENT = '#F1C40F';
@@ -566,10 +584,14 @@
       // Wenn Boerse zu (Wochenende/Feiertag): kein TDOM
       if (ex !== 'NONE' && !SA.holidays.isTradingDay(ds, ex)) return null;
       // TDOM = Anzahl Handelstage von Monatsanfang bis dateObj inklusive
-      var tdom = 0;
-      for (var d = 1; d <= day; d++) {
+      // EINE Schleife fuer beides: Position im Monat und Handelstage des ganzen Monats.
+      // Eine zweite Schleife waere eine 67. Stelle mit dem alten Boersenalphabet, und
+      // davon darf bis zur Kalender-Umstellung keine dazukommen (verify_holidays_fassade).
+      var tdom = 0, maxTdom = 0;
+      var letzterTag = new Date(year, month, 0).getDate();   // Tag 0 des Folgemonats
+      for (var d = 1; d <= letzterTag; d++) {
         var dStr = year+'-'+pad2(month)+'-'+pad2(d);
-        if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) tdom++;
+        if (ex === 'NONE' || SA.holidays.isTradingDay(dStr, ex)) { maxTdom++; if (d <= day) tdom++; }
       }
       if (!tdom) return null;
       // Intramonth Stats fuer diesen Monat (mit Cache)
@@ -580,7 +602,6 @@
       }
       if (!im || !im.tdomStats || !im.tdomStats[tdom]) return null;
       var ts = im.tdomStats[tdom];
-      var maxTdom = Math.max.apply(null, Object.keys(im.tdomStats).map(Number));
       // Win-Rate an diesem TDOM ueber alle Curves
       var pos = 0, total = 0;
       for (var i = 0; i < im.allCurves.length; i++) {
@@ -839,7 +860,11 @@
           if (parseInt(y) === currentYear) continue;
           var c = yearData[y].full_365;
           var lad = yearData[y].last_actual_day || 365;
-          if (p.end > lad) return { name:p.name, avg:null, n:0, start:p.start, end:p.end };
+          // `continue`, NICHT `return`: hier wird ein Jahr ohne Abdeckung uebersprungen.
+          // Mit `return` fiel die ganze PHASE fuer alle Jahre weg, sobald ein einziges
+          // Jahr vor dem Periodenende endete — Dezember H2 bekam deshalb nie einen Rang
+          // (8 von 27 Jahren enden vor dem 31.12.), und der Nenner war 23 statt 24.
+          if (p.end > lad) continue;
           var s = c[p.start], e = c[p.end-1];
           if (s != null && e != null && s > 0) rets.push((e/s - 1) * 100);
         }
@@ -1100,11 +1125,13 @@
       }
       if (onRets.length < 5) return null;
       var onWins = onRets.filter(function(r) { return r > 0; }).length;
-      var wdName = WEEKDAYS_DE[wd];
+      // Kurzform: "Mi → Do" statt "Mittwoch → Donnerstag" — die Kachel ist schmal,
+      // der lange Name wurde abgeschnitten (Nutzerhinweis 2026-10-21).
+      var wdName = _wdKurz(wd);
       var avgOn = mean(onRets), avgId = mean(idRets);
       var ratio = Math.abs(avgId) > 0.0001 ? (avgOn / avgId).toFixed(1) + 'x' : '–';
       return {
-        label: wdName + ' → ' + WEEKDAYS_DE[wd < 5 ? wd + 1 : 1],
+        label: wdName + ' → ' + _wdKurz(wd < 5 ? wd + 1 : 1),
         avg: avgOn,
         avgIntraday: avgId,
         winRate: onWins / onRets.length * 100,
@@ -1741,7 +1768,8 @@
         streakHtml = ' <span class="streak-badge ' + sCls + '" style="font-size:.65rem;vertical-align:middle">' + streak.count + (streak.type === 'win' ? ' W' : ' L') + '</span>';
       }
       var html = '<div class="s6-headline">' + wdName + streakHtml + '</div>';
-      html += '<div class="s6-sub">' + stats.n + ' Beobachtungen</div>';
+      html += '<div class="s6-sub">' + _t('dash.wd_sub', 'Schluss zu Schluss')
+            + ' · n ' + stats.n + '</div>';
       if (closedHint) html += '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>';
       html += '<div class="s6-kpis">' +
         '<div class="kpi"><div class="kpi-label">Win-Rate</div><div class="kpi-value ' + (stats.win_rate >= 50 ? 'green' : 'red') + '">' + stats.win_rate.toFixed(0) + '%</div></div>' +
@@ -1961,7 +1989,11 @@
       if (!overnightStats) { el.innerHTML = STAT6_EMPTY; return; }
       var o = overnightStats;
       var hintHtml = closedHint ? '<div style="color:var(--accent);font-size:.6rem;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em">' + closedHint + '</div>' : '';
-      el.innerHTML = stat6(o.label, o.n + ' Beobachtungen', [
+      // Unterzeile sagt die RECHNUNG, nicht nur die Fallzahl (Nutzerhinweis): die
+      // blosse Anzahl beantwortet keine Frage, die jemand hat. Die Fallzahl bleibt
+      // daneben stehen — eine Zahl ohne Fallzahl ist im Projekt nicht zulaessig.
+      var onSub = _t('dash.on_sub', 'Tagesrendite − Intraday') + ' · n ' + o.n;
+      el.innerHTML = stat6(o.label, onSub, [
         ['Ø Overnight', fmtPct(o.avg,3), o.avg >= 0 ? 'green' : 'red'],
         ['Win-Rate', o.winRate.toFixed(0)+'%', o.winRate >= 50 ? 'green' : 'red'],
         ['Ø Intraday', fmtPct(o.avgIntraday,3), o.avgIntraday >= 0 ? 'green' : 'red'],

@@ -82,7 +82,6 @@
   "foot.disclaimer": "Disclaimer",
   "foot.contact": "Kontakt",
   "foot.dashboard_arrow": "→ Dashboard",
-
   "sidebar.ticker": "Ticker",
   "sidebar.period": "Zeitraum",
   "sidebar.seasonal_chart": "Saisonalchart",
@@ -104,7 +103,6 @@
   "sidebar.two_week_split": "Two-Week Split",
   "sidebar.smoothing_h3": "Glättung",
   "sidebar.decade_years": "Dekadenjahre ein/ausblenden",
-
   "common.methodology": "Methodik",
   "common.methodology_emoji": "📚 Methodik",
   "common.data_basis": "Datengrundlage",
@@ -125,7 +123,6 @@
   "common.stop_loss": "Stop-Loss",
   "common.window": "Fenster",
   "common.loading": "Lade Daten…",
-
   "section.anomaly_radar": "Anomalie-Radar",
   "section.significance_test": "Signifikanztest",
   "section.detrend": "Detrend-Indikator / Saisonaler Druck",
@@ -142,7 +139,6 @@
   "section.annual_progression": "Saisonaler Jahresverlauf",
   "section.drawdown_vola": "Drawdown & Volatilität",
   "section.stat_significance": "Statistische Signifikanz",
-
   "table.month": "Monat",
   "table.win_rate": "Win-Rate",
   "table.median": "Median",
@@ -157,7 +153,6 @@
   "table.strategy": "Strategie",
   "table.holiday": "Feiertag",
   "table.n": "n",
-
   "checkbox.show_individual": "Einzelne Jahre zeigen",
   "checkbox.confidence_band": "Konfidenzband (±1σ)",
   "checkbox.percentile_bands": "Perzentil-Bänder (25./75.)",
@@ -165,9 +160,7 @@
   "checkbox.current_own_axis": "Eigene Skala rechts (aktuelles Jahr)",
   "checkbox.show_current_yr": "Aktuelles Jahr einblenden",
   "checkbox.pressure_chart": "Gann Pressurechart",
-
   "common.activate": "Aktivieren",
-
   "moon.sidebar_phase": "Mondphase",
   "moon.days_before": "Tage vor Mondphase",
   "moon.days_after": "Tage nach Mondphase",
@@ -178,7 +171,6 @@
   "moon.section_supermoon": "Supermond vs. normaler Vollmond",
   "moon.section_lunar_cal": "Lunar-Kalender (Mondmonat 1–12)",
   "moon.section_next_phases": "Nächste Mondphasen",
-
   "war.page_title": "War Times",
   "war.sidebar_select_wars": "Kriege auswählen",
   "war.select_all_none": "Alle / Keine",
@@ -189,7 +181,6 @@
   "war.drawdown_desc": "Maximaler Rückgang vom Höchststand innerhalb des Event-Windows nach T=0.",
   "war.section_war_table": "US-Kriege mit Börseneinfluss",
   "war.section_annual_returns": "Jahresrenditen — Kriegsjahre markiert",
-
   "crash.sidebar_fixed": "Fixiert auf SPY (S&P 500)",
   "crash.page_title": "Crash-Frühwarnung",
   "crash.page_caption": "Markt-Regime-Erkennung auf Basis des S&P 500 (SPY)",
@@ -201,7 +192,6 @@
   "crash.polymarket_desc": "Unser Isolation-Forest-Modell misst das Regime aus <b>Preisdaten</b>. Polymarket zeigt was Händler auf <b>Ereignissen</b> einpreisen — zwei unterschiedliche Signale. Wenn beide rot sind, steigt die Konfidenz im Risiko-Call. Divergenz (z.B. Risk-Score niedrig, aber Recession-Markt hoch) ist selbst ein Signal.",
   "crash.section_features": "Regime-Features (aktueller Tag)",
   "crash.section_how_it_works": "So funktioniert die Crash-Frühwarnung",
-
   "pv.page_title": "Plain Vanilla Strategien",
   "pv.page_caption": "24 saisonale Trading-Strategien mit fixen Regeln",
   "pv.section_next_signals": "Nächste Signale",
@@ -227,7 +217,6 @@
   "pv.metric_sharpe": "Risikoadjustierte Rendite",
   "pv.metric_profit_factor": "Bruttogewinne / Bruttoverluste",
   "pv.methodik_disclaimer": "Ergebnisse basieren auf historischen Daten. Keine Anlageberatung.",
-
   "tri.page_title": "Januar Trifecta",
   "tri.page_caption": "Drei Signale → Jahresprognose (Yale Hirsch / Stock Trader's Almanac)",
   "tri.section_hist_stats": "Historische Auswertung",
@@ -245,7 +234,6 @@
   "tri.signal_yellow": "= 2 von 3 → leicht bullish",
   "tri.signal_orange": "= 1 von 3 → neutral",
   "tri.signal_red": "= 0 von 3 → bearish",
-
   "shock.trigger_asset": "Trigger-Asset (A)",
   "shock.target_asset": "Ziel-Asset (B)",
   "shock.direction": "Shock-Richtung",
@@ -269,7 +257,6 @@
   "shock.methodik_shock_def": "Shock-Definition",
   "shock.methodik_horizons": "Horizonte",
   "shock.methodik_viz": "Visualisierungen",
-
   "sr.sectors_heading": "Sektoren",
   "sr.all_none": "Alle / Keine",
   "sr.btn_refresh": "Aktualisieren",
@@ -279,7 +266,6 @@
   "sr.section_heatmap": "Saisonale Heatmap — Monat × Sektor",
   "sr.section_winrate": "Win-Rate Heatmap",
   "sr.ticker_overview": "Ticker-Übersicht",
-
   "ov.page_caption": "Wo entsteht die Performance — nachts (Close→Open) oder tagsüber (Open→Close)?",
   "ov.section_month": "Ø Rendite nach Monat",
   "ov.section_weekday": "Ø Rendite nach Wochentag",
@@ -288,7 +274,6 @@
   "ov.section_heatmap": "Heatmap: Monat × Wochentag",
   "ov.return_type": "Return-Typ",
   "ov.section_stats": "Gesamtstatistik",
-
   "cb.central_bank": "Zentralbank / Event",
   "cb.fomc_all": "Fed (FOMC) — alle Sitzungen",
   "cb.fomc_hike": "Fed — Zinserhöhungen",
@@ -303,7 +288,6 @@
   "cb.hike_cut_heading": "Hike vs. Cut Analyse",
   "cb.days_before": "Tage vor t0",
   "cb.days_after": "Tage nach t0",
-
   "hol.holidays_heading": "Feiertage",
   "hol.page_title": "Feiertags-Effekt",
   "hol.page_caption": "Rendite rund um Börsenfeiertage — Exchange-spezifisch (NYSE/XETRA/LSE)",
@@ -316,9 +300,7 @@
   "hol.lse_holidays": "LSE-Feiertage (8)",
   "hol.days_before": "Tage vor Feiertag",
   "hol.days_after": "Tage nach Feiertag",
-
   "dc.not_recovered": "nicht erholt",
-
   "sig.highly_significant": "Hochsignifikant",
   "sig.significant": "Signifikant",
   "sig.borderline": "Grenzwertig",
@@ -337,25 +319,21 @@
   "sig.color_green_desc": "statistisch valide",
   "sig.color_red": "Rot",
   "sig.color_red_desc": "wahrscheinlich Zufall",
-
   "out.method_off": "Aus",
   "out.method_iqr": "IQR (1.5x)",
   "out.method_iqr_strict": "IQR (3x, streng)",
   "out.method_winsorize": "Winsorize (3σ)",
-
   "str.col_group": "Gruppe",
   "str.current_streak": "Aktuelle Serie",
   "str.last_n": "Letzte {n}",
   "str.win": "Gewinn",
   "str.loss": "Verlust",
-
-  "dc2.cycle_election":      "Wahljahr",
+  "dc2.cycle_election": "Wahljahr",
   "dc2.cycle_post_election": "Nachwahljahr",
-  "dc2.cycle_midterm":       "Zwischenwahljahr",
-  "dc2.cycle_pre_election":  "Vorwahljahr",
-
+  "dc2.cycle_midterm": "Zwischenwahljahr",
+  "dc2.cycle_pre_election": "Vorwahljahr",
   "ind.btn_add_filter": "+ Filter hinzufügen",
-  "ind.param_period":    "Periode",
+  "ind.param_period": "Periode",
   "ind.param_threshold": "Schwelle",
   "dash.aria_ki": "Erklärung zum Saison-Score",
   "dash.aria_crash": "Erklärung zur Stress-Ampel",
@@ -385,12 +363,10 @@
   "scan.wl_remove": "aus Watchlist entfernen",
   "scan.wl_add": "zur Watchlist hinzufügen",
   "scan.open_dash": "Im Dashboard öffnen",
-
   "flows.glossar_title": "Begriffe &amp; Q&amp;A",
   "flows.glossar_sub": "Alle Kennzahlen, die auf dieser Seite und den Options-Seiten erscheinen — kompakt erklärt.",
   "flows.glossar_options_title": "Options-Kennzahlen",
   "flows.glossar_flows_title": "Strukturelle Flow-Begriffe",
-
   "flows.def_gex": "Market Maker haben eine aggregierte Gamma-Position, die sie durch dynamisches Kauf/Verkauf des Underlyings neutralisieren müssen (<b>Delta-Hedging</b>). Bei <b>positivem GEX (Long-Gamma-Regime)</b> kaufen Dealer Dips und verkaufen Rallys — dämpfend für Volatilität. Bei <b>negativem GEX (Short-Gamma)</b> verstärken sie Bewegungen. Der <b>Zero-Gamma-Flip</b> ist der Kursstand, an dem das Regime wechselt.",
   "flows.def_vanna": "Vanna misst, wie sich das Delta einer Option mit der Implied Volatility verändert (∂Delta/∂IV). Fällt die IV stark (z.B. nach einer Panik), verlieren OTM-Puts Delta — Dealer, die Short-Puts abgesichert haben (<b>Long Underlying</b>), müssen verkaufen. Steigt die IV, müssen Dealer kaufen. Vanna-Flows verstärken damit IV-Bewegungen prozyklisch.",
   "flows.def_charm": "Charm ist der zeitliche Verfall des Deltas (∂Delta/∂Zeit). OTM-Optionen verlieren mit dem Verfall stark an Delta, besonders in den letzten Tagen vor Ablauf — Dealer müssen ihre Hedges täglich anpassen. Die größten <b>Charm-Flows</b> entstehen in der Woche vor <b>OPEX</b> (dritter Freitag) und vor Quarterly-Expirations.",
@@ -404,18 +380,14 @@
   "flows.def_pc": "<b>Put/Call-Ratio (Open Interest)</b> = offene Puts / offene Calls. Hohe Werte = übertriebene Absicherungsnachfrage, oft <b>konträr bullish</b>. Niedrige Werte = Call-Dominanz / Sorglosigkeit, kann konträr bearish sein. <b>Equity-P/C</b> (Einzeltitel, CBOE) ist aussagekräftiger als Index-P/C, da Index-Optionen oft für institutionelles Hedging genutzt werden.",
   "flows.def_maxpain": "<b>Max Pain</b> ist der Strike, bei dem der Gesamtverlust aller Optionshalter am Verfallstag maximal wäre — wo Stillhalter (Market Maker) die meisten Prämien behalten würden. Die Hypothese: Kurs driftet gravitationell vor OPEX dorthin. Empirisch schwach, aber institutionell beobachtet. <b>OI-Walls</b> zeigen daneben Konzentrationen offener Kontrakte (potenzielle Support-/Resistance-Magnete).",
   "flows.def_0dte": "<b>0DTE (Zero Days to Expiration)</b> sind Optionen, die noch am selben Tag verfallen. Ihr Gamma ist extrem hoch und konzentriert — große 0DTE-Flows können starke Intradaybewegungen auslösen. SPY-/SPX-0DTE machen inzwischen &gt;40% des täglichen Options-Volumens aus. <b>Market Maker passen Delta-Hedges mit jedem Tick an</b> — diese Aktivität kann Intraday-Trends beschleunigen oder umkehren.",
-
   "flows.def_dealer": "Dealer sind in <b>Long-Gamma</b>, wenn Kunden ihnen Optionen <i>verkauft</i> haben — Dealer kaufen Dips und verkaufen Rallys (stabilisierend). Dealer sind in <b>Short-Gamma</b>, wenn Kunden ihnen Optionen <i>abgekauft</i> haben — Dealer verstärken Trends (destabilisierend). Der <b>Zero-Gamma-Flip-Level</b> trennt diese Regime: darüber Long-Gamma, darunter Short-Gamma.",
   "flows.def_volcontrol": "Vol-Control-Fonds halten eine Ziel-Volatilität durch dynamisches Anpassen des Hebels: steigt die realisierte Volatilität, wird <b>Leverage reduziert</b> (Verkauf). Fällt sie, erhöht sich der Hebel (Kauf). Bei VIX-Spikes entsteht so mechanischer Verkaufsdruck, der die Bewegung verstärkt — bekannt als <b>Volatility Feedback Loop</b>.",
   "flows.def_cta": "CTAs (Commodity Trading Advisors) sind systemische Trendfolge-Fonds. Starke Trend-Signale treiben ihre Positionierung — ein COT-Perzentil &gt;80 (Long) oder &lt;20 (Short) signalisiert, dass wenig Kapital für weiteres Auf-/Abbau übrig ist: <b>potenzielle Trendwende</b> bei Signaländerung. Datenbasis: wöchentliche CFTC-COT mit ~3 Tagen Meldeverzug.",
   "flows.def_buyback": "SEC Rule 10b-18 verbietet US-Unternehmen i.d.R. ab ~14 Tage vor geschätzter Earnings-Ankündigung bis 2 Tage danach eigene Aktien zurückzukaufen (<b>Blackout-Fenster</b>). Da Buybacks ein stabiler Kaufdruck-Puffer sind, erzeugt ein hoher Blackout-Anteil eine saisonale Schwächephase für diesen Stützungsmechanismus. Besonders ausgeprägt: Mitte Januar bis Mitte Februar (Q4-Earnings-Saison).",
-
   "nav.intermarket": "Intermarket-Matrix",
   "nav.vola_saisonalitaet": "Vol-Zyklus",
-
   "nav.korrelationen": "Korrelations-Radar",
-  "nav.wahlen": "Wahlen & Börse"
-,
+  "nav.wahlen": "Wahlen & Börse",
   "dash.stress_kurz": "Zu kurze Historie",
   "dc.anom_nicht": "Nicht berechenbar",
   "dc.anom_stark": "Stark auffällig",
@@ -435,5 +407,20 @@
   "dc.anom_g_zu_wenige_jahre": "weniger als 10 Vergleichsjahre",
   "dc.anom_g_keine_streuung": "keine Streuung in den Vergleichsjahren",
   "dc.anom_g_fehler": "Rechenfehler",
-  "dc.anom_laden": "Wird berechnet …"
+  "dc.anom_laden": "Wird berechnet …",
+  "dash.aria_month_perf": "Erklärung zur Monatsperformance",
+  "dash.aria_twoweek": "Erklärung zur 2-Wochen-Phase",
+  "dash.aria_weekday": "Erklärung zur Wochentag-Kachel",
+  "dash.aria_tdom_today": "Erklärung zu TDOM Heute",
+  "dash.aria_overnight": "Erklärung zur Overnight-Kachel",
+  "dash.aria_tdom_tomorrow": "Erklärung zu TDOM Morgen",
+  "dash.on_sub": "Tagesrendite − Intraday",
+  "dash.wd_sub": "Schluss zu Schluss",
+  "dash.wd_s0": "So",
+  "dash.wd_s1": "Mo",
+  "dash.wd_s2": "Di",
+  "dash.wd_s3": "Mi",
+  "dash.wd_s4": "Do",
+  "dash.wd_s5": "Fr",
+  "dash.wd_s6": "Sa"
 }

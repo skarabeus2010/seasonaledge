@@ -319,9 +319,10 @@
     // welche fehlen, mit Grund. Vorher fielen Ticker ohne Rang still aus dem Radar.
     // Kachel-Hinweis: alle Panels unter dem Radar folgen der Kategorie über dem Radar — das stand nirgends.
     function _catName(){ return SKEW_CAT==='Alle'?T('skew.cat_alle','Alle'):SKEW_CAT; }
-    function _setCatTag(id,n){
+    function _setCatTag(id,n,zusatz){
       var el=document.getElementById(id); if(!el)return;
-      el.innerHTML=T('skew.cattag','Kategorie aus dem Radar: {k} · {n} Ticker').replace('{k}','<b>'+_catName()+'</b>').replace('{n}',n);
+      el.innerHTML=T('skew.cattag','Kategorie aus dem Radar: {k} · {n} Ticker').replace('{k}','<b>'+_catName()+'</b>').replace('{n}',n)
+        + (zusatz ? ' · ' + zusatz : '');
     }
     function _datumTxt(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||''); return m?(m[3]+'.'+m[2]+'.'+m[1]):'—'; }
     function _standTxt(){
@@ -576,7 +577,10 @@
     function renderVRP(tks){
       var el=document.getElementById('sk-vrp-chart'); if(!el)return;
       var rows=(tks||[]).filter(function(t){return t.vrp_pts!=null&&_inCat(t.ticker);}).slice().sort(function(a,b){return b.vrp_pts-a.vrp_pts;});
-      _setCatTag('sk-vrp-cat',rows.length);
+      var nPos=0,nNeg=0;
+      rows.forEach(function(t){ if(t.vrp_pts>=0) nPos++; else nNeg++; });
+      _setCatTag('sk-vrp-cat',rows.length,
+        T('skew.vrp_split','{p} positiv · {n} negativ').replace('{p}',nPos).replace('{n}',nNeg));
       if(!rows.length){el.innerHTML='<div class="psub">'+T('skew.vrp_wait','VRP folgt (Daily-Cron).')+'</div>';return;}
       // Eigene HTML-Balken statt ApexCharts (Nutzerwunsch 2026-10-17): weiße Schrift auf hellgrünen Balken war kaum
       // lesbar. Beschriftung steht jetzt auf der freien Seite der Nulllinie — positive Werte links davon, negative
