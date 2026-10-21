@@ -12,8 +12,8 @@ set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")" && pwd)/systemd"
 DST=/etc/systemd/system
-SERVICES=(sa-intraday.service sa-polymarket-intraday.service sa-nightly.service sa-daily-briefing.service sa-briefing-frist.service)
-TIMERS=(sa-intraday.timer sa-polymarket-intraday.timer sa-nightly.timer sa-daily-briefing.timer sa-briefing-frist.timer)
+SERVICES=(sa-intraday.service sa-polymarket-intraday.service sa-nightly.service sa-daily-briefing.service sa-briefing-frist.service sa-gex-snapshot.service)
+TIMERS=(sa-intraday.timer sa-polymarket-intraday.timer sa-nightly.timer sa-daily-briefing.timer sa-briefing-frist.timer sa-gex-snapshot.timer)
 
 fehler() { echo "install_timers: FEHLER: $*" >&2; exit 1; }
 

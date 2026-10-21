@@ -1,0 +1,51 @@
+# SeasonAlpha — GEX-Snapshot + Key Levels (ausgeloest von sa-gex-snapshot.timer).
+#
+# Ersetzt den Zeitplan in .github/workflows/gex_snapshot.yml. GitHub startete den
+# 22:15-UTC-Cron 2-5 h verspaetet und traf damit seit dem 15.10.2026 fuenf Naechte in
+# Folge das Yahoo-Loch: zwischen etwa 00:00 und 01:10 UTC liefert Yahoo den Tagesbalken
+# der Session mit `close = null`, jeder Ticker fiel aus, der Lauf endete nach 13 s mit
+# Exit 1. Ein puenktlicher Timer trifft das Loch nicht; die Spot-Regel in
+# snapshot_gex_massive.py traegt den Fall zusaetzlich, falls ein Lauf doch spaet ist.
+# Installation/Aktualisierung: deploy/install_timers.sh (laeuft im Deploy).
+
+[Unit]
+Description=SeasonAlpha GEX-Snapshot + Key Levels
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Nach einem Deploy kann der Container gerade neu erstellt werden: begrenzt warten.
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+# EINE Huelle, ein ExecStart: scripts/gex_kette.py haelt die Produktionssperre ueber
+# BEIDE Schritte (zwei ExecStart-Zeilen gaeben den Lock dazwischen frei, und ein Deploy
+# koennte dort den Container austauschen) und entscheidet aus Exit-Code UND Marker, ob
+# compute_key_levels startet.
+#
+# Der Timeout sitzt IM Container: systemd beendet bei TimeoutStartSec nur den
+# docker-Client, nicht den Prozess im Container.
+# GEMESSEN am 21.10.2026 auf dem Server (lesend, volles Universum):
+#   snapshot --no-write    516 s
+#   key_levels --no-write   77 s
+#   Kette gesamt           593 s  (9,9 min)
+# Dazu kommen im Stoerfall, nachgerechnet:
+#   Wartebudget Snapshot   300 s (_WARTE_BUDGET in snapshot_gex_massive.py)
+#   Wartebudget Key Levels 300 s (_WARTE_BUDGET in compute_key_levels.py)
+#   warte_auf_app.sh       120 s nominell
+#   Summe                  593 + 300 + 300 + 120 = 1313 s = 21:53 min
+# Das liegt knapp unter der Containerfrist von 22 min, also OHNE Reserve fuer
+# Sperrwartezeit und Netzverzoegerung. Deshalb 28 min im Container und 33 min aussen:
+# ein Lauf, der das Budget wirklich ausschoepft, soll zu Ende laufen duerfen statt
+# mitten in der Veroeffentlichung abgeschnitten zu werden. Die Produktionssperre hat
+# selbst keine Frist (produktionssperre.py) — das bleibt die unbegrenzte Groesse und
+# ist hier ausdruecklich benannt, nicht wegdefiniert.
+# WICHTIG: weil diese Frist den Prozess im Container trifft, kann sie mitten in einem
+# Schreibvorgang ablaufen — deshalb veroeffentlichen beide Programme ueber
+# shared/atomic_json.write_json_atomic (temporaere Datei + os.replace), sonst bliebe eine
+# abgeschnittene Datei zurueck.
+ExecStart=/usr/bin/docker exec seasonalpha-app timeout --kill-after=30s 28m python3 -u scripts/gex_kette.py
+TimeoutStartSec=33min
+# Exit 75 = Produktionssperre (Kalender-Aktivierung, shared/produktionssperre.py): geplant
+# unterdrueckt, kein Fehler. Nachweis: refresh_log run_type=produktionssperre +
+# logs/sperre/unterdrueckt.log. Jeder andere Exit bleibt ein Fehler.
+SuccessExitStatus=75

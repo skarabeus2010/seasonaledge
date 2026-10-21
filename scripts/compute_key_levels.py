@@ -28,10 +28,18 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from shared.atomic_json import write_json_atomic  # noqa: E402
 from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.options_universe import CORE_OPTIONS, categories_for  # noqa: E402
 from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
+# Import-Einstieg: ein Schutz nur am __main__ ist ein Schutz fuer EINEN Aufrufer
+# (v66.12). Wer dieses Modul importiert und die Rechnung direkt aufruft, haelt den
+# geteilten Lock ab hier bis zum Prozessende.
+if __name__ != "__main__":
+    from shared.produktionssperre import modul_sperre
+    modul_sperre("compute_key_levels")
+
 
 _CTX = ssl.create_default_context(); _CTX.check_hostname = False; _CTX.verify_mode = ssl.CERT_NONE
 # Massive.com (Polygon.io) Option-Chain-Snapshot — Flatrate, 1 Ticker = ganze Chain, paginiert.
@@ -41,8 +49,22 @@ _MIN_EXP_OI = 5000                 # min. Gesamt-OI eines Verfalls, damit er als
 _DEFAULT_TICKERS = CORE_OPTIONS    # SPY, QQQ, IWM, DIA + Mag7
 
 
+# Obergrenze fuer ALLE 429-Pausen dieses Prozesses — dieselbe Regel wie im Snapshot.
+# Ohne sie waere das Budget der Kette nicht begrenzt: bis zu 45 Seiten je Ticker mit
+# je 20 s Backoff liegen weder im Snapshot-Budget noch in den gemessenen 77 s der
+# Key Levels (Codex D3). Die Containerfrist der Unit rechnet mit beiden Budgets.
+_WARTE_BUDGET = 300.0
+_gewartet_gesamt = 0.0
+
+
+def _warte_zuruecksetzen() -> None:
+    global _gewartet_gesamt
+    _gewartet_gesamt = 0.0
+
+
 def _get(url: str, key: str, tries: int = 5):
-    """GET (Massive: apiKey als Query-Param) mit 429-Backoff."""
+    """GET (Massive: apiKey als Query-Param) mit 429-Backoff und Prozess-Wartebudget."""
+    global _gewartet_gesamt
     full = url + ("&" if "?" in url else "?") + "apiKey=" + key
     for i in range(tries):
         time.sleep(_THROTTLE)
@@ -51,10 +73,14 @@ def _get(url: str, key: str, tries: int = 5):
                 urllib.request.Request(full, headers={"User-Agent": "SeasonAlpha/1.0"}),
                 timeout=30, context=_CTX).read())
         except urllib.error.HTTPError as e:
-            if e.code == 429 and i < tries - 1:
-                time.sleep(2.0 * (i + 1))
-                continue
-            raise
+            if e.code != 429 or i >= tries - 1:
+                raise
+            pause = 2.0 * (i + 1)
+            if _gewartet_gesamt + pause > _WARTE_BUDGET:
+                print(f"  [get] Wartebudget {_WARTE_BUDGET:.0f} s aufgebraucht", flush=True)
+                raise
+            _gewartet_gesamt += pause
+            time.sleep(pause)
 
 
 def _chain(sym: str, key: str, session: date) -> list:
@@ -239,7 +265,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
     }
     if write:
         p = _ROOT / "landing/data/key_levels.json"
-        p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_json_atomic(p, out, indent=2)
         print(f"\n[OK] {len(per)} Ticker → {p}")
     return out
 
@@ -258,4 +284,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    from shared.produktionssperre import produktion
+    with produktion("compute_key_levels"):
+        sys.exit(main())

@@ -313,7 +313,14 @@ PFLICHT = {
     "fix_ohlc_adjustment.py": "OHLC",
     "repair_kopierte_zeilen.py": "OHLC + log_return kopierter Zeilen (einmalige Reparatur 2026-10)",
     "full_scanner_run.py": "Saison-Score + scanner_results",
+    # Beide bestimmen die Session über den Börsenkalender (letzte_session, sitzung_info für
+    # Halbtage) und stempeln ihre Ausgaben damit — seit v66.20 ist das Kalendermethode.
+    # Nebenwirkung, die zählt: als PFLICHT halten sie den geteilten Lock, also wartet der
+    # Deploy auf einen laufenden Snapshot statt ihn per SIGKILL zu beenden.
+    "snapshot_gex_massive.py": "GEX-Snapshot: Session-Stempel + Archiv",
+    "compute_key_levels.py": "Key Levels / Max Pain, Session-Stempel",
     "compute_regime_scores.py": "Stress-Ampel",
+    "gex_kette.py": "Huelle GEX-Snapshot + Key Levels (haelt den Lock ueber beide Schritte)",
     "daily_newsletter.py": "Versand mit Tagesnummern/Statistik",
     "weekly_newsletter.py": "Versand mit Tagesnummern/Statistik",
     "build_calendar_data.py": "Kalender-JSON/ICS",
@@ -341,7 +348,6 @@ AUSNAHMEN = {
     "compute_brier_stats.py": "Polymarket-Kalibrierung",
     "compute_gamma_exposure.py": "Options-GEX",
     "compute_iv_surface.py": "Options",
-    "compute_key_levels.py": "Options",
     "compute_options_flow.py": "Options",
     "compute_options_skew.py": "Options",
     "congress_trades.py": "Congress-Filings + Alert (keine Kalendermethode)",
@@ -360,7 +366,6 @@ AUSNAHMEN = {
     "render_gex_profile.py": "Options-Grafik",
     "seed_tickers.py": "Ticker-Stammdaten",
     "snapshot_gex.py": "Options",
-    "snapshot_gex_massive.py": "Options",
     "test_supabase.py": "Verbindungstest",
     "upgrade_page_meta.py": "Seiten-Metadaten",
     "waechter_isolation.py": "Testhilfe",

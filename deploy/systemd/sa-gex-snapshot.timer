@@ -1,0 +1,19 @@
+[Unit]
+Description=SeasonAlpha GEX-Snapshot Mo-Fr um 22:15 UTC (nach US-Boersenschluss)
+
+[Timer]
+# 22:15 UTC liegt im Sommer und im Winter hinter dem regulaeren Schluss (16:00/16:15 New
+# York) und deutlich VOR dem Yahoo-Loch ab etwa 00:00 UTC.
+# Mo-Fr: an Boersenfeiertagen feuert der Timer trotzdem — die Handelstagpruefung sitzt im
+# Erzeuger (snapshot_gex_massive.py), nicht hier. Ohne sie wuerde der Lauf die Session der
+# Vornacht mit einen Tag spaeter abgerufenen Daten ueberschreiben (gemessen: Thanksgiving
+# 2026 ist ein Donnerstag, letzte_session zeigt dann auf den 25.11.).
+OnCalendar=Mon..Fri 22:15:00 UTC
+AccuracySec=1min
+# Verpasste Termine (Server aus) NICHT nachholen: ein Chain-Snapshot von spaeter ist nicht
+# derselbe Stand, und eine Nachholung ist eine ausdrueckliche Entscheidung (--reparatur).
+Persistent=false
+Unit=sa-gex-snapshot.service
+
+[Install]
+WantedBy=timers.target

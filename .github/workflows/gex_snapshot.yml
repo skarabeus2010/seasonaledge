@@ -1,46 +1,49 @@
 name: GEX Snapshot (Dealer Positioning)
 
+# KEIN Zeitplan mehr. Der regulaere Lauf ist sa-gex-snapshot.timer auf dem VPS
+# (deploy/systemd/, installiert von deploy/install_timers.sh im Deploy).
+#
+# WARUM: GitHub startete den Cron `15 22 * * 1-5` zwischen 2 und 5 Stunden verspaetet und
+# traf damit seit dem 15.10.2026 fuenf Naechte in Folge das Yahoo-Loch — zwischen etwa
+# 00:00 und 01:10 UTC liefert Yahoo den Tagesbalken der Session mit `close = null`
+# (gemessen, Proben /root/yahoo_abend). Jeder Ticker fiel aus, der Lauf endete nach 13 s
+# mit Exit 1. Ein `schedule`-Eintrag hier wuerde den Lauf zusaetzlich zum Timer starten
+# (Doppellauf) — deshalb bleibt er weg.
+#
+# Dieser Workflow ist nur noch der NOTAUSLOESER und startet dieselbe Unit. Er nutzt
+# ausdruecklich `--reparatur`: ein manuell ausgeloester Nachholauf soll auch an einem
+# Boersenfeiertag laufen, waehrend der automatische Lauf dort uebersprungen wird.
+
 on:
-  schedule:
-    # 22:15 UTC (Mo-Fr) — nach US-Boersenschluss (21:00 UTC). Erfasst den Tages-Chain-Stand
-    # (Spot + IV); OI ist OCC-Settlement des Vortags. Fuettert /dealer-positioning + baut
-    # taeglich die proprietaere GEX-Historie (landing/data/gex_history_session/<session>.json) auf. Gestempelt wird
-    # die Session, nicht der Lauftag — der Lauf startet oft erst nach Mitternacht UTC (seit 2026-10-14).
-    - cron: '15 22 * * 1-5'
   workflow_dispatch:
 
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    # 20 statt 12 Min: die Chart-Ticker bekommen seit dem Term-Struktur-Fix einen zweiten
-    # Durchlauf ueber die volle Chain (PROFILE_MAX_DAYS), das kostet ~1 Min zusaetzlich.
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
-      - name: GEX snapshot on VPS
+      - name: GEX-Kette auf dem VPS (Reparaturlauf)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 18m
+          command_timeout: 32m
           script: |
-            # pipefail ist Pflicht: ohne ihn liefert `docker exec … | tail -30` den
-            # Status von tail (immer 0). Zweite Falle: der abschliessende echo setzt
-            # den Exit-Code des Skripts — deshalb am Ende explizit `exit $fail`.
+            # pipefail ist Pflicht: ohne ihn liefert `docker exec … | tail` den Status von
+            # tail (immer 0). Deshalb den Exit-Code VOR der Pipe sichern.
             set -uo pipefail
-            fail=0
-            docker exec seasonalpha-app python3 scripts/snapshot_gex_massive.py 2>&1 | tail -30 \
-              || { echo "FEHLER: snapshot_gex_massive (Exit ${PIPESTATUS[0]})"; fail=1; }
-            echo "GEX snapshot done: $(date)"
-
-            # Key Levels & Max Pain braucht die frische gex_summary.json (Spot/Flip/Walls).
-            # Bei gescheitertem Snapshot wuerde es auf ALTEN Daten rechnen und die Seite
-            # zeigte gestrige Levels als heutige — deshalb hier abbrechen statt fortfahren.
-            if [ "$fail" -ne 0 ]; then
-              echo "UEBERSPRUNGEN: compute_key_levels (haette auf veralteter gex_summary.json gerechnet)"
-              exit 1
+            # Die Huelle scripts/gex_kette.py entscheidet aus Exit-Code UND Ergebnismarker,
+            # ob compute_key_levels startet — ein Trockenlauf oder ein uebersprungener Lauf
+            # darf den schreibenden Folgeschritt nicht ausloesen.
+            docker exec seasonalpha-app timeout --kill-after=30s 22m \
+              python3 -u scripts/gex_kette.py --reparatur 2>&1 | tail -40
+            rc=${PIPESTATUS[0]}
+            echo "GEX-Kette beendet mit Exit $rc: $(date)"
+            # Exit 75 = Produktionssperre (Kalender-Aktivierung): geplant unterdrueckt,
+            # kein Fehler. Jeder andere Exit bleibt ein Fehler.
+            if [ "$rc" -eq 75 ]; then
+              echo "Produktionssperre aktiv — Lauf geplant unterdrueckt (Exit 75 -> Erfolg)"
+              exit 0
             fi
-            docker exec seasonalpha-app python3 scripts/compute_key_levels.py 2>&1 | tail -20 \
-              || { echo "FEHLER: compute_key_levels (Exit ${PIPESTATUS[0]})"; fail=1; }
-            echo "Key Levels done: $(date)"
-            exit $fail
+            exit $rc

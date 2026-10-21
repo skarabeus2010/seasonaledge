@@ -206,6 +206,13 @@ jobs:
       # Lücken, Rolling, Stress-Schwelle, Ereignisse, Residuum, VRP = shared.realized_vol, Frische, drei Zeitzonen).
       - name: Waechter - Spot-Vol Beta
         run: python3 scripts/verify_spot_vol_beta.py
+      # GEX-Spot und Kettenvertrag (docs/review_prompts/2026-10-21_gex_abendluecke_entwurf_v5.md):
+      # Yahoo liefert den Tagesbalken der Session etwa 00:00-01:10 UTC mit close = null, der
+      # verspaetete GitHub-Cron traf das fuenf Naechte in Folge. Geprueft werden der Rueckfall auf
+      # Massive /prev (nur bei fehlendem Kurs, mit Datumspruefung), die Handelstagpruefung und der
+      # Statusvertrag der Huelle (Key Levels nur bei "veroeffentlicht").
+      - name: Waechter - GEX-Spot und Kettenvertrag
+        run: python3 scripts/verify_gex_spot.py
       # Kalender V2 (docs/review_prompts/2026-10-18_kalender_v2_*): Fassade SA.holidays, Header, Converter — braucht
       # jsdom aus dem npm ci darüber (echte Seiten, alt gegen HEAD).
       - name: Waechter - Kalender-Fassade, Header und Converter (V2)

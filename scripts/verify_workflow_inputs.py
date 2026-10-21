@@ -248,8 +248,13 @@ MATRIX: dict[str, list[Fall]] = {
         # Erfolgskontrolle, KEIN Nachweis der Fehlerweitergabe: dieser Fall
         # bleibt auch ohne den Fix gruen (Codex-Befund, Runde 2). Er steht hier,
         # damit eine zu scharfe Korrektur den Normalfall nicht mitreisst.
+        # Erwartet wird `--sync-db`: seit der B2-Arbeit (2026-10-20) ist der
+        # Katalogabgleich SCHRITT 1 des Workflows und gatet die folgenden Schritte
+        # (vorher rief der Workflow ihn gar nicht). Der Sollwert hier stand noch auf
+        # dem Stand davor — dieser Waechter laeuft NICHT im Deploy-Gate, deshalb fiel
+        # die Veralterung nicht auf (dieselbe Klasse wie probe_skew_tabelle, v66.22).
         Fall("Erfolgskontrolle (kein Fehlernachweis): normaler Lauf, Exit 0",
-             {"SA_EVENT": "schedule", "SA_BACKFILL": ""}, 0, []),
+             {"SA_EVENT": "schedule", "SA_BACKFILL": ""}, 0, ["--sync-db"]),
         # workflow_dispatch mit SA_BACKFILL=true, damit der Backfill wirklich
         # LAUFEN WUERDE. Mein erster Entwurf nahm `schedule` mit leerem Wert —
         # dann ist der Backfill ausser montags ohnehin uebersprungen und die

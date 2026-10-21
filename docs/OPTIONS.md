@@ -1046,3 +1046,138 @@ Nutzerwünsche, je Paket mit Codex bis Freigabe ([Seite R1–R3](review_prompts/
   `innerHTML` gebauten Tabelle die Kopfzeile mit — nach dem ersten Sortieren verschwanden die Überschriften, auf jeder
   so gebauten Tabelle. Wächter `scripts/js/probe_sortierer.js` (jsdom, Gegenprobe alte app.js rot) im Gate.
 - Extremblock 2×2, „79 %“ statt „P79“, „182 Tage“ statt „n 182“, Markierungen unter dem Ticker.
+
+## Der GEX-Cron lief fünf Nächte ins Yahoo-Loch (2026-10-21)
+
+**Anlass:** `GEX Snapshot (Dealer Positioning)` war vom 15. bis 21.10.2026 jede Nacht rot.
+Kein Code-Defekt — die in v66.22 diagnostizierte Abendlücke, jetzt mit Messdaten belegt.
+
+### Der Mechanismus
+
+Yahoo liefert den Tagesbalken der Session etwa **00:00–01:10 UTC mit `close = null`**.
+`regularMarketTime` bleibt dabei korrekt, der Frische-Nachweis besteht also — es fehlt
+allein der Kurs. `_spot` läuft in `snapshot_gex_massive.py` **vor** der Chain, deshalb
+fällt jeder Ticker nach einem kurzen Yahoo-Abruf aus, die Reissleine greift bei 0 von 20
+brauchbaren Tickern, Exit 1. Das erklärt die Laufzeit von 13 Sekunden.
+
+Der Cron stand auf 22:15 UTC und wäre richtig. **GitHub startete ihn 2–5 h verspätet**
+(gemessen 02:06 bis 04:46) und traf damit seit dem 15.10. jede Nacht das Loch.
+
+Proben `/root/yahoo_abend`, Nacht 16.→17.10., Session 2026-10-16, SPY:
+
+| Abruf (UTC) | `regularMarketTime` | letzter `close` |
+|---|---|---|
+| 16.10. 22:15 | 16:00 EDT | 763.25 |
+| 17.10. 00:15 | 16:00 EDT | **`null`** |
+| 17.10. 00:45 | 16:00 EDT | **`null`** |
+| 17.10. 02:00 | 16:00 EDT | 763.25 |
+
+Zwischen 00:45 und 02:00 gibt es keine Messung — das Ende des Lochs ist **nicht**
+gemessen. Jeder rote Lauf startete zwischen 00:21 und 01:04, jeder grüne außerhalb
+(13.10. 03:01 und 14.10. 01:11 waren grün).
+
+### Was Massive im Loch liefert
+
+Proben `/root/massive_abend`, zwei vollständige Nächte (19.→20. und 20.→21.10.), SPY —
+beide identisch:
+
+| Abruf (UTC) | Tagesbalken der Session | `/prev` → Balkendatum |
+|---|---|---|
+| 20:00 – 23:30 | 403 | 200, **Vorsession** |
+| 00:00 – 01:00 | 403 | 200, **Session** |
+| 01:30 | 403 | **429** |
+| 02:00 – 03:30 | 403 | 200, Session |
+| ab 04:00 (= 0 Uhr New York) | **200** | 200, Session |
+
+Die Quellen sind komplementär. **Die beobachtete Uhrzeit ist kein Vertrag** — verbindlich
+ist allein die Datumsprüfung am Balken, die unabhängig von der Uhr greift. Genau deshalb
+ist `/prev` jetzt brauchbar, obwohl es in v66.20 verworfen wurde: der damalige Befund
+(„liefert die Session DAVOR") stimmt, gilt aber nur vor 00:00 UTC.
+
+### Gebaut (Stufe 1)
+
+- **`_spot` mit zwei Quellenadaptern und benannten Ablehnungsgründen.** Yahoo zuerst
+  (Fünftagesreihe, Zeitstempel in **Sekunden**), Massive `/prev?adjusted=false` als
+  Rückfall (genau ein Aggregat, **Millisekunden**). Nur **ein** Grund öffnet den
+  Rückfall: Balken der Session vorhanden, Schluss nachgewiesen, Kurs fehlt. `rmt` vor dem
+  Sessionschluss bleibt eine Ablehnung — ein gleichdatierter Massive-Balken beweist die
+  Tageszuordnung, nicht den Schlussnachweis, und darf ihn nicht aushebeln.
+- **Benannte Grenze:** `/prev` hat kein `rmt`-Äquivalent. Akzeptiert wird ein zum
+  abgeschlossenen Sessiontag passendes Anbieteraggregat — **nicht** der Nachweis eines
+  Handels zur Schlusssekunde. Keine Zusage über einen „amtlichen" Schluss.
+- **Zahlenvertrag für beide Quellen:** `int`/`float`, kein `bool`, endlich, > 0. Die alte
+  Prüfung `c > 0` ließ `True` (= 1.0) und `inf` durch.
+- **Handelstagprüfung im Erzeuger**, nur im automatischen Modus. Ohne sie überschreibt
+  ein Werktagstimer an Börsenfeiertagen die Session der Vornacht: Thanksgiving 2026 ist
+  ein **Donnerstag**, `markt_offen` ist False (der EOD-Test lässt durch) und
+  `letzte_session` zeigt auf den 25.11. Gerechnet wird in **New York** — ein Lauf um
+  01:30 UTC liegt dort noch am Vortag. Modi: `automatisch` / `--reparatur` / `--no-write`.
+- **`scripts/gex_kette.py`** als Hülle: hält die Produktionssperre über **beide** Schritte
+  und entscheidet aus **Exit-Code und Ergebnismarker gemeinsam**, ob `compute_key_levels`
+  startet. Fünf Ergebnisse — veröffentlicht, übersprungen, trocken, unterdrückt,
+  fehlgeschlagen. Der Exit-Code hat Vorrang: `Gesperrt` erbt von `SystemExit` und entsteht
+  beim **Eintritt** in `produktion()`, also ohne Marker; „fehlender Marker =
+  fehlgeschlagen" hätte eine geplante Unterdrückung rot gemacht.
+- **`sa-gex-snapshot.timer`** Mo–Fr 22:15 UTC, Timeout **im** Container,
+  `SuccessExitStatus=75`. `gex_snapshot.yml` ist nur noch Notauslöser und ruft die Hülle
+  mit `--reparatur` — ohne das wäre ein manueller Nachholauf am Feiertag wertlos.
+- **Atomares Schreiben** (`shared/atomic_json`) für alle Zieldateien beider Programme:
+  der Timeout im Container kann mitten in einem Schreibzugriff ablaufen, und die
+  Produktionssperre schützt davor nicht — sie hält den Deploy auf, nicht die eigene Uhr.
+- **`Retry-After`** wird beachtet, begrenzt durch ein Wartebudget von 90 s je Abruf.
+- Beide Programme und die Hülle von `AUSNAHMEN` nach **`PFLICHT`**: sie bestimmen die
+  Session über den Börsenkalender, und als Pflicht-Läufe wartet der Deploy auf sie.
+
+Wächter `scripts/verify_gex_spot.py` (82 Prüfungen) im Gate, Mutationstest
+`verify_gex_spot_mutation.py`.
+
+### Datenschaden
+
+Fehlende Sessions **19.10.** und **20.10.** — zwei Handelssitzungen. Die vom 19.10. ist
+**verloren**: ein Chain-Snapshot mit OI und IV lässt sich nicht nachträglich abrufen. Die
+Session 20.10. wurde am 21.10. 06:43 UTC nachgeholt (20/20 Ticker). ⚠️ Diese Archivzeile
+ist **nicht gleichwertig**: Strikes und DTE stehen zur Session, die IV stammt aus dem
+Abruf am Folgetagmorgen. **Nutzerentscheidung 2026-10-21: die Zeile bleibt und wird nicht
+gekennzeichnet.** Folge, benannt statt verschwiegen: `ladeVorher` auf `/skew` vergleicht
+die Wall-Veränderung gegen diese Zeile, ein Teil der angezeigten Veränderung ist dort
+Abrufzeitpunkt statt Marktbewegung — einmalig, genau ein Tagespaar.
+
+### Offen (Stufe 2)
+
+1. **Exklusive GEX-Laufsperre über den ganzen Veröffentlichungsweg.** `main` schreibt
+   Summary und Profile **vor** dem Archiv; ein zweiter Lauf derselben Session ändert die
+   Live-Dateien und lässt das Archiv stehen — zwei Stände, gleicher Stempel.
+2. **Veröffentlichungszustand und Wiederaufnahme:** was gilt, wenn der Snapshot
+   erfolgreich war und Key Levels scheiterten? Beide Lesarten sind schlecht.
+3. 🔴 **Die Seiten melden Veraltung nicht, sondern rechnen weiter.**
+   `dealer-positioning.html` sagt „Dealer sind netto long Gamma", `skew.html` markiert
+   „am Flip", `key-levels.html` liest das Datum und zeigt es dort nicht. **Das ist der
+   Grund, warum fünf rote Nächte nicht auffielen** — die Seiten sahen gesund aus. Der
+   Health-Check hat korrekt gegriffen. Drei Seiten in DE und EN, eigene
+   `data-i18n`-Schlüssel, und die Frage, was eine Seite bei veralteten Daten zeigen soll.
+   **Nutzerentscheidung offen.**
+
+### Lessons
+
+- **Mein Wächter lief nur durch, weil meine lokale `.env` einen echten
+  `MASSIVE_API_KEY` hat** (nachgemessen, 32 Zeichen). Im CI-Checkout wäre `main()` sofort
+  mit Exit 1 abgebrochen und der Gate-Schritt hätte den Deploy gerissen. Isolation
+  (`SA_SPERR_DIR`, `SA_OHNE_DOTENV`, Probeschlüssel) gehört **vor** jeden
+  Produktionsimport — und muss bewiesen werden, nicht behauptet.
+- **Ein „unbemerkt" im Mutationstest hat zwei mögliche Ursachen** — eine wirkungslose
+  Prüfung oder eine lückenhafte Fixture. Ich hatte die Millisekunden-Prüfung als redundant
+  entfernt; sie fängt aber Werte, die sich gar nicht in ein Datum umrechnen lassen
+  (`NaN`, `1e30`), und ohne sie endete das in einer Ausnahme statt in einem benannten
+  Grund. Erst der zweite Blick trennte die beiden Fälle.
+- **Mein Code war nicht prüfbar:** die Handelstagprüfung nahm `datetime.now()` statt
+  `exchange_holidays._uhr` — und diese Funktion existiert ausdrücklich dafür, dass Wächter
+  die Uhr festsetzen können.
+- **Zwei Wächterprüfungen waren Substring-Fallen:** `"SuccessExitStatus=75" in unit`
+  bleibt wahr, wenn die Zeile auskommentiert wird, und `"--reparatur" in wf` findet das
+  Wort im Kommentar. Zeilenweise und am Befehl prüfen.
+- **Ein Abbruchtest, der die Hilfsfunktion direkt ruft, prüft den Erzeuger nicht.** Mein
+  erster Test wäre grün geblieben, wenn ein Programm wieder auf `write_text` zurückfällt.
+- **„Angenommen / abgelehnt / unklar" sind drei Zustände** — und ich habe in zwei
+  Entwürfen hintereinander zu wenige gebaut (erst fehlte „übersprungen", dann „trocken").
+- **Eine Prüfung, die auf einer Plattform nicht reißen kann, darf dort nicht als
+  bestanden zählen** — sie wird als übersprungen ausgewiesen.
