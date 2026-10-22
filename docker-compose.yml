@@ -49,6 +49,10 @@ services:
   certbot:
     image: certbot/certbot
     container_name: seasonalpha-certbot
+    # Ohne Policy startete der Certbot nach einem Server-Neustart NICHT wieder
+    # (Hinweis von mietwatch, 22.10.2026, vor dem Neustart am 23.10. 01:00 UTC).
+    # Er erneuert die Zertifikate beider Domains auf diesem Server alle 12 h.
+    restart: unless-stopped
     volumes:
       - ./deploy/certbot/conf:/etc/letsencrypt
       - ./deploy/certbot/www:/var/www/certbot
