@@ -118,9 +118,14 @@ class _Netz:
         raise AssertionError("unerwarteter Abruf " + url)
 
 
+# `lauf` ist seit B2 ein Laufzeitfeld wie `generated_at`: es benennt den Kettenlauf, nicht
+# die Session. Ohne diese Ausnahme verlangte der Vergleich, dass zwei Laeufe derselben
+# Session dieselbe Kennung tragen — also das Gegenteil dessen, was die Kennung leistet.
+# Alle uebrigen Felder werden weiter verglichen.
 def _ohne_laufzeit(obj):
     if isinstance(obj, dict):
-        return {k: _ohne_laufzeit(v) for k, v in obj.items() if k not in ("generated_at", "generated")}
+        return {k: _ohne_laufzeit(v) for k, v in obj.items()
+                if k not in ("generated_at", "generated", "lauf")}
     if isinstance(obj, list):
         return [_ohne_laufzeit(x) for x in obj]
     return obj

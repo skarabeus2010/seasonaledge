@@ -181,11 +181,21 @@ def _max_pain(e: dict) -> dict | None:
     }
 
 
-def _load_gex(session: date) -> tuple[dict, str]:
+class LaufFremd(RuntimeError):
+    """Die GEX-Ausgabe gehoert zu einem anderen Lauf als dem uebergebenen."""
+
+
+def _load_gex(session: date, datei: str | None = None,
+              lauf: str | None = None) -> tuple[dict, str]:
     """gex_summary.json → ({ticker: {...}}, status). Übernommen wird nur ein GEX-Lauf DERSELBEN Session mit
     Session-Stempel; sonst stünden nach einem ausgefallenen GEX-Lauf alte Walls/Flip neben frischem Max Pain unter dem
-    neuen Datum (Plan v4 B2). Status: "ok" | "fehlt" | "alter_stempel" | "andere_session:<datum>" | "defekt"."""
-    p = _ROOT / "landing/data/gex_summary.json"
+    neuen Datum (Plan v4 B2). Status: "ok" | "fehlt" | "alter_stempel" | "andere_session:<datum>" | "defekt"
+    | "anderer_lauf:<kennung>".
+
+    `datei` und `lauf` kommen von der Kette (B2). Mit ihnen wird GENAU die Ausgabe dieses
+    Laufs gelesen statt der gemeinsamen Datei nach Session: lief ein zweiter Snapshot
+    derselben Session dazwischen, hätte die Session-Prüfung allein ihn durchgelassen."""
+    p = Path(datei) if datei else _ROOT / "landing/data/gex_summary.json"
     if not p.exists():
         print("  [gex] gex_summary.json fehlt — Flip/Walls bleiben leer.")
         return {}, "fehlt"
@@ -197,6 +207,10 @@ def _load_gex(session: date) -> tuple[dict, str]:
     if d.get("stempel_art") != "session":
         print("  [gex] gex_summary.json ohne Session-Stempel — Spot/Flip/Walls werden nicht übernommen.")
         return {}, "alter_stempel"
+    if lauf and d.get("lauf") != lauf:
+        print(f"  [gex] {p.name} gehört zu Lauf {d.get('lauf')!r}, erwartet {lauf!r} — "
+              "nicht übernommen.")
+        return {}, "anderer_lauf:%s" % (d.get("lauf") or "—")
     if d.get("session") != session.isoformat():
         print(f"  [gex] gex_summary.json gehört zur Session {d.get('session')}, nicht {session} — nicht übernommen.")
         return {}, f"andere_session:{d.get('session')}"
@@ -291,13 +305,21 @@ def _nur_gex(sym: str, g: dict) -> dict:
     }
 
 
-def build(tickers: list[str], write: bool = True) -> dict:
+def build(tickers: list[str], write: bool = True, gex_datei: str | None = None,
+          lauf: str | None = None) -> dict:
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
     # Session einmal bestimmen; Schreiblauf in der Handelszeit bricht VOR dem ersten Abruf ab (MarktOffen).
     session = letzte_session("NYSE")
     if write:
         pruefe_eod_fenster("compute_key_levels")
-    gex, gex_status = _load_gex(session)
+    gex, gex_status = _load_gex(session, gex_datei, lauf)
+    # Laufgebundene Uebergabe (B2): passt die Kennung nicht, ist die Summary nicht die
+    # dieses Laufs. Dann ist jeder Wall-Wert ein fremder — weitermachen hiesse, Niveaus
+    # aus zwei Laeufen in einer Zeile zu mischen.
+    if lauf and gex_status.startswith("anderer_lauf"):
+        raise LaufFremd(
+            "gex_summary.json gehört nicht zu Lauf %s (%s) — nichts geschrieben"
+            % (lauf, gex_status))
     per = []
     if not tok:
         print("  [massive] MASSIVE_API_KEY fehlt — Max-Pain/OI übersprungen (nur gex-Felder).")
@@ -313,6 +335,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
         "generated": date.today().isoformat(),     # Laufzeitpunkt (Health-Check)
         "session": session.isoformat(),            # Handelstag der Daten = Bewertungsdatum
         "gex_status": gex_status,
+        "lauf": lauf,                              # Kennung des Kettenlaufs (B2)
         "source": "Spot/Flip/Walls/Regime + US-Option-Chain "
                   "(Max Pain, OI-by-Strike, P/C-OI). EOD, naive Dealer-Heuristik, kein Signal.",
         "tickers": per,
@@ -328,12 +351,17 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tickers", nargs="+", default=_DEFAULT_TICKERS)
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--gex-datei", help="Ausgabe GENAU dieses GEX-Laufs (Kette, B2)")
+    ap.add_argument("--lauf", help="Kennung des Kettenlaufs; muss zur Datei passen (B2)")
     a = ap.parse_args()
     try:
-        build(a.tickers, not a.no_write)
+        build(a.tickers, not a.no_write, a.gex_datei, a.lauf)
     except MarktOffen as e:
         print(f"[key-levels] ABBRUCH: {e}")
         return 2
+    except LaufFremd as e:
+        print(f"[key-levels] ABBRUCH: {e}")
+        return 3
     return 0
 
 

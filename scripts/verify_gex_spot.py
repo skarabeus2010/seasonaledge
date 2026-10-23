@@ -489,7 +489,13 @@ def _kette_lauf(rc_snap, marker, rc_kl=0):
     def laeufer(argv):
         rufe.append(argv[0])
         if "snapshot" in argv[0]:
-            return rc_snap, (M + marker + "\n" if marker else "")
+            # Seit B2 meldet der Snapshot die uebergebene Kennung zurueck; ohne sie
+            # bricht die Kette ab (keine Zuordnung der Summary zu diesem Lauf). Die
+            # Attrappe spiegelt das, statt einen Fall zu pruefen, den es nicht mehr
+            # geben darf.
+            kennung = argv[argv.index("--lauf") + 1] if "--lauf" in argv else ""
+            kopf = ("[lauf] %s 2026-10-16\n" % kennung) if (kennung and marker) else ""
+            return rc_snap, kopf + (M + marker + "\n" if marker else "")
         return rc_kl, ""
 
     alt = kette._lauf
@@ -515,6 +521,24 @@ for name, rc_snap, marker, soll_rc, soll_kl in [
 
 rc, rufe = _kette_lauf(0, "veroeffentlicht", rc_kl=75)
 pruef("[14] Key Levels unterdrueckt (75) -> Kette 75", rc == 75, rc)
+
+
+# B2: ein veroeffentlichter Snapshot OHNE Laufkennung darf den schreibenden Folgeschritt
+# nicht freigeben — sonst laese Key Levels wieder die gemeinsame Datei nach Session.
+def _ohne_kennung(argv):
+    if "snapshot" in argv[0]:
+        return 0, M + "veroeffentlicht\n"
+    return 0, ""
+
+
+_alt_lauf = kette._lauf
+kette._lauf = _ohne_kennung
+try:
+    _rc = _ruhig(kette.main, [])
+finally:
+    kette._lauf = _alt_lauf
+pruef("[14] veroeffentlicht OHNE Laufkennung -> Abbruch, Key Levels laufen NICHT",
+      _rc == 1, _rc)
 rc, rufe = _kette_lauf(0, "veroeffentlicht", rc_kl=1)
 pruef("[14] Key Levels fehlgeschlagen -> Kette rot", rc == 1, rc)
 

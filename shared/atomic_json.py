@@ -22,6 +22,7 @@ import os
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 try:
@@ -113,6 +114,48 @@ def history_lesen(pfad: str | Path, *, neu_erlaubt: bool = False) -> dict:
 _WINDOWS_GEWARNT = False
 
 
+@contextmanager
+def exklusive_sperre(sperrdatei: str | Path, *, frist_s: float = 600, name: str | None = None):
+    """Haelt eine exklusive Dateisperre, solange der Block laeuft.
+
+    Herausgeloest aus `history_aktualisieren`, damit es die Mechanik nur EINMAL gibt: die
+    GEX-Kette braucht dieselbe Sperre ueber zwei Teilschritte hinweg (docs/KEY_LEVELS_CHART.md,
+    Abschnitt 4), und eine zweite Umsetzung wuerde driften.
+
+    Nicht binnen `frist_s` zu bekommen -> SperreBelegt, der Block laeuft dann gar nicht.
+    Ohne fcntl (Windows-Entwicklung) gibt es keine Sperre, nur eine einmalige Warnung —
+    die Parallelitaet prueft der Waechter unter Linux.
+    """
+    global _WINDOWS_GEWARNT
+    sp = Path(sperrdatei)
+    sp.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(sp), os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        if fcntl is not None:
+            ende = time.monotonic() + frist_s
+            while True:
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= ende:
+                        raise SperreBelegt(
+                            f"{name or sp.name}: nach {frist_s:.0f} s noch belegt — nichts getan")
+                    time.sleep(0.5)
+        elif not _WINDOWS_GEWARNT:
+            _WINDOWS_GEWARNT = True
+            print(f"[sperre] ungeprüft: kein fcntl auf diesem System, {sp.name} wird nicht gesperrt",
+                  file=sys.stderr)
+        yield sp
+    finally:
+        if fcntl is not None:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            except OSError:
+                pass
+        os.close(fd)
+
+
 def history_aktualisieren(pfad: str | Path, aendern, *, danach=None, frist_s: float = 600,
                           neu_erlaubt: bool = False, sperrdatei: str | Path | None = None):
     """Liest `pfad` UNTER einer exklusiven Sperre frisch, wendet `aendern(hist)` an und schreibt atomar zurück.
@@ -126,24 +169,8 @@ def history_aktualisieren(pfad: str | Path, aendern, *, danach=None, frist_s: fl
     Ohne fcntl (Windows-Entwicklung) gibt es keine Sperre — einmalige Warnung; Parallelität prüft der Wächter nur
     unter Linux.
     """
-    global _WINDOWS_GEWARNT
     sp = Path(sperrdatei) if sperrdatei else sperrdatei_skew_historie()
-    sp.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(str(sp), os.O_RDWR | os.O_CREAT, 0o644)
-    try:
-        if fcntl is not None:
-            ende = time.monotonic() + frist_s
-            while True:
-                try:
-                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except BlockingIOError:
-                    if time.monotonic() >= ende:
-                        raise SperreBelegt(f"{sp.name}: nach {frist_s:.0f} s noch belegt — nichts geschrieben")
-                    time.sleep(0.5)
-        elif not _WINDOWS_GEWARNT:
-            _WINDOWS_GEWARNT = True
-            print(f"[sperre] ungeprüft: kein fcntl auf diesem System, {sp.name} wird nicht gesperrt", file=sys.stderr)
+    with exklusive_sperre(sp, frist_s=frist_s):
         hist = history_lesen(pfad, neu_erlaubt=neu_erlaubt)
         if aendern(hist) is False:
             return None
@@ -152,10 +179,3 @@ def history_aktualisieren(pfad: str | Path, aendern, *, danach=None, frist_s: fl
         if danach is not None:
             danach(hist)
         return hist
-    finally:
-        if fcntl is not None:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-            except OSError:
-                pass
-        os.close(fd)

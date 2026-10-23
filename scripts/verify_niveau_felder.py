@@ -358,7 +358,7 @@ ckl._get = lambda url, key, tries=4: {"status": "OK", "results": _kette(20),
 ckl._ROOT = _TMP
 ckl.letzte_session = lambda boerse: _SESSION
 ckl.pruefe_eod_fenster = lambda name: None
-ckl._load_gex = lambda session: ({"TEST": _gex_zeile}, "ok")
+ckl._load_gex = lambda session, datei=None, lauf=None: ({"TEST": _gex_zeile}, "ok")
 (_TMP / "landing" / "data").mkdir(parents=True, exist_ok=True)
 out = ckl.build(["TEST"], write=True)
 kl = _TMP / "landing" / "data" / "key_levels.json"

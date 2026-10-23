@@ -92,6 +92,23 @@ def _marker(ergebnis: str, warum: str = "") -> None:
     print(f"{_MARKER}{ergebnis}" + (f" ({warum})" if warum else ""), flush=True)
 
 
+_LAUF_MARKER = "[lauf] "
+
+
+def _laufkennung(session: date) -> str:
+    """Kennung dieses Laufs: Session, Startzeit und Zufall.
+
+    Sie bindet die Ausgaben an GENAU diesen Lauf. Ohne sie konnte Key Levels die
+    gemeinsame Summary nach Session lesen — lief ein zweiter Snapshot derselben Session
+    dazwischen, rechnete Key Levels von Lauf A mit der Summary von Lauf B
+    (docs/KEY_LEVELS_CHART.md, Abschnitt 4). Der Zufallsteil trennt zwei Laeufe, die in
+    derselben Sekunde starten.
+    """
+    return "%s-%s-%s" % (session.isoformat(),
+                         datetime.now(timezone.utc).strftime("%H%M%S"),
+                         os.urandom(2).hex())
+
+
 # Obergrenze fuer ALLE 429-Pausen dieses PROZESSES, nicht je Abruf. Gemessen am
 # 21.10.2026: die Kette braucht ohne Wartezeiten 593 s (Snapshot 516 + Key Levels 77).
 # Ein Budget je Abruf waere das falsche Mass — im Yahoo-Loch fragen alle 20 Ticker
@@ -481,6 +498,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tickers", help="Komma-Liste statt Voll-Universum (Verify/Teilmenge)")
     ap.add_argument("--no-write", action="store_true", help="nur rechnen + drucken, nichts schreiben")
+    ap.add_argument("--lauf", help="Kennung des Kettenlaufs (gex_kette.py setzt sie; "
+                                   "ohne Angabe erzeugt der Lauf eine eigene)")
     ap.add_argument("--reparatur", action="store_true",
                     help="ausdruecklicher Reparaturlauf: ohne Handelstagpruefung (fuer einen "
                          "Nachholauf an einem Boersenfeiertag). Der Notausloeser im Workflow "
@@ -494,6 +513,14 @@ def main() -> int:
     # Session EINMAL bestimmen: Stempel UND Bewertungsdatum. Schreibläufe in der Handelszeit brechen VOR dem ersten
     # Abruf ab (der Snapshot wäre ein Intraday-Stand mit dem Datum der Vorsession).
     session = letzte_session("NYSE")
+    # Die Kennung kommt von der Kette, damit ihr Versuchseintrag VOR dem ersten
+    # Teilschritt stehen kann (ein getoeteter Prozess schreibt hinterher nichts mehr).
+    # Ein Einzellauf ohne Kette erzeugt sich eine eigene.
+    lauf = a.lauf or _laufkennung(session)
+    # Kennung UND Session in einer Zeile: die Kette soll die Session nicht aus der
+    # Kennung schneiden muessen (eine implizite Kopplung, die beim naechsten
+    # Formatwechsel bricht).
+    print(f"{_LAUF_MARKER}{lauf} {session.isoformat()}", flush=True)
     if not a.no_write:
         try:
             pruefe_eod_fenster("snapshot_gex_massive")
@@ -569,7 +596,8 @@ def main() -> int:
                        "components": [o["ticker"] for o in idx]}
 
     stamp = session.isoformat()
-    meta = {"date": stamp, "session": stamp, "bewertung": stamp, "stempel_art": "session"}
+    meta = {"date": stamp, "session": stamp, "bewertung": stamp, "stempel_art": "session",
+            "lauf": lauf}
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         **meta, "gamma_index": gamma_index, "tickers": results, "failed": failed,

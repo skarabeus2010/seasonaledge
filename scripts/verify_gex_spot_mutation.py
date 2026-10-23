@@ -224,7 +224,9 @@ MUTATIONEN = [
      '[21a-3] Abbruch beim Schreiben der Archiv'),
 
     ("Key-Levels-CLI ignoriert --no-write", "scripts/compute_key_levels.py",
-     [("        build(a.tickers, not a.no_write)", "        build(a.tickers, True)")],
+     # Anker nachgezogen (B2): die Zeile nimmt jetzt Datei und Laufkennung mit.
+     [("        build(a.tickers, not a.no_write, a.gex_datei, a.lauf)",
+       "        build(a.tickers, True, a.gex_datei, a.lauf)")],
      "[23] compute_key_levels direkt mit --no-write"),
 
     ("grosse Ganzzahl laesst isfinite platzen", G,

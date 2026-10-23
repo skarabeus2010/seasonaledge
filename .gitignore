@@ -35,6 +35,10 @@ landing/data/gex_profile_*.json
 landing/data/gex_SPY.json
 landing/data/gex_history/
 landing/data/gex_history_session/
+# Abschlussmarke des Kettenlaufs (B2): Cron-Ausgabe, darf nie committet werden — der
+# Deploy macht `git checkout -- landing/` und wuerfe sie sonst auf einen alten Stand
+# zurueck, womit ein Leser einen fremden Lauf fuer abgeschlossen hielte.
+landing/data/gex_lauf.json
 landing/data/etf_flows.json
 landing/data/flows_rebalancing.json
 landing/data/cot_positioning.json
