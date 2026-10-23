@@ -42,7 +42,8 @@ if str(_ROOT) not in sys.path:
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from shared.atomic_json import write_json_atomic  # noqa: E402
+from shared.atomic_json import write_json_atomic
+from shared.niveau_felder import feldzustand, strike_stufe  # noqa: E402
 from shared.env_loader import load_env  # noqa: E402
 from shared.yahoo_downloader import _fetch_yahoo  # noqa: E402
 from shared.exchange_holidays import (  # noqa: E402
@@ -366,19 +367,29 @@ def _spot(sym: str, key: str, session: date) -> float | None:
     return None
 
 
-def _fetch_chain(sym: str, hi_days: int, key: str, session: date) -> list:
-    """Volle Option-Chain (≤hi_days ab der Session) als Polygon-Kontraktliste (paginiert via next_url)."""
+def _fetch_chain(sym: str, hi_days: int, key: str, session: date) -> tuple[list, bool]:
+    """Volle Option-Chain (≤hi_days ab der Session), paginiert via next_url.
+
+    Zurueck kommt (Kontrakte, vollstaendig). Vollstaendig ist der Abruf NUR, wenn er am
+    Ende der Paginierung stand (`next_url` leer). Reisst das Seiten-Cap oder antwortet
+    eine Seite unbrauchbar, ist die Kette abgeschnitten — vorher verwarf die Funktion
+    diesen Zustand und gab in beiden Faellen dieselbe Liste zurueck, womit ein aus einer
+    halben Kette gerechnetes Niveau nicht von einem vollstaendigen zu unterscheiden war
+    (Spec B1)."""
     hi = (session + timedelta(days=hi_days)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
-    out, pages = [], 0
+    out, pages, vollstaendig = [], 0, True
     while url and pages < _MAX_PAGES:
         d = _get(url, key)
         if not d or (d.get("status") not in ("OK", "DELAYED") and not d.get("results")):
+            vollstaendig = False
             break
         out += d.get("results", [])
         url = d.get("next_url")
         pages += 1
-    return out
+    if url:                      # Seiten-Cap gerissen, es gaebe noch eine Seite
+        vollstaendig = False
+    return out, vollstaendig
 
 
 def _map(raw: list, session: date) -> list:
@@ -417,7 +428,7 @@ def analyze_massive(sym: str, key: str, max_days: int,
     if not spot:
         return None
     try:
-        raw = _fetch_chain(sym, horizon, key, session)
+        raw, kette_vollstaendig = _fetch_chain(sym, horizon, key, session)
     except Exception as e:
         print(f"  [massive] {sym} Chain: {str(e)[:80]}", flush=True)
         return None
@@ -430,6 +441,8 @@ def analyze_massive(sym: str, key: str, max_days: int,
     gex, vex, cex = _exposures(spot, summary_c, _Q)
     cw, pw, ag = _walls(spot, summary_c, _Q)
     n_exp = len({c["exp"] for c in summary_c})
+    zg = _zero_gamma(spot, summary_c, _Q)
+    stufe = strike_stufe(c["K"] for c in summary_c)
     obj = {
         "ticker": sym, "session": session.isoformat(), "spot": round(spot, 2), "div_yield": round(_Q, 4),
         "net_gex_usd_bn": round(gex / 1e9, 3),
@@ -437,8 +450,20 @@ def analyze_massive(sym: str, key: str, max_days: int,
         "net_charm_usd_mn_per_day": round(cex / 1e6, 2),
         "regime": "long_gamma" if gex > 0 else "short_gamma",
         "vol_regime": "vola-reduzierend" if gex > 0 else "vola-forcierend",
-        "zero_gamma": _zero_gamma(spot, summary_c, _Q),
+        "zero_gamma": zg,
         "call_wall": cw, "put_wall": pw, "abs_gamma": ag,
+        # B1: Ladezustand, Rechenhorizont und Strike-Stufe sind Teil der Zeile. Ohne sie
+        # kann die Seite weder Feldzustaende ableiten noch die Preispruefung aus Spec 2.2a
+        # fuehren, und die Historie waere von Anfang an mehrdeutig.
+        "gex_kette_vollst": kette_vollstaendig,
+        "gex_horizont_tage": max_days,
+        "strike_stufe": stufe,
+        "strike_stufe_quelle": "gex_kette" if stufe is not None else None,
+        "felder": {
+            "call_wall": feldzustand(cw, kette_vollstaendig),
+            "put_wall": feldzustand(pw, kette_vollstaendig),
+            "vol_trigger": feldzustand(zg, kette_vollstaendig),
+        },
         "skew": _skew(spot, summary_c),
         "n_contracts": len(summary_c), "n_expiries": n_exp,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -573,7 +598,11 @@ def main() -> int:
     slim = {**meta, "gamma_index": gamma_index,
             "tickers": [{k: o[k] for k in ("ticker", "spot", "net_gex_usd_bn", "net_vanna_usd_mn",
                                            "net_charm_usd_mn_per_day", "regime", "zero_gamma",
-                                           "call_wall", "put_wall", "skew")} for o in results]}
+                                           "call_wall", "put_wall", "skew",
+                                           # B1: ohne diese vier ist eine Archivzeile als
+                                           # Vergleichswert nicht berechtigt (Spec 6.1a).
+                                           "gex_kette_vollst", "gex_horizont_tage",
+                                           "strike_stufe", "felder")} for o in results]}
     write_json_atomic(hist / f"{stamp}.json", slim, indent=None)
 
     print(f"[snapshot] {len(results)} ok / {len(failed)} fail · Gamma-Index "

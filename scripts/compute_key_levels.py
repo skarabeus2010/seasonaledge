@@ -32,6 +32,7 @@ from shared.atomic_json import write_json_atomic  # noqa: E402
 from shared.env_loader import load_env          # noqa: E402
 load_env()
 from shared.options_universe import CORE_OPTIONS, categories_for  # noqa: E402
+from shared.niveau_felder import Z_QUELLE_FEHLT, feldzustand  # noqa: E402
 from shared.exchange_holidays import letzte_session, pruefe_eod_fenster, MarktOffen  # noqa: E402
 # Import-Einstieg: ein Schutz nur am __main__ ist ein Schutz fuer EINEN Aufrufer
 # (v66.12). Wer dieses Modul importiert und die Rechnung direkt aufruft, haelt den
@@ -83,19 +84,27 @@ def _get(url: str, key: str, tries: int = 5):
             time.sleep(pause)
 
 
-def _chain(sym: str, key: str, session: date) -> list:
-    """Volle Option-Chain (≤_MAXDTE ab der Session) als Kontraktliste (paginiert)."""
+def _chain(sym: str, key: str, session: date) -> tuple[list, bool]:
+    """Volle Option-Chain (≤_MAXDTE ab der Session), paginiert.
+
+    Zurueck kommt (Kontrakte, vollstaendig) — vollstaendig nur am Ende der Paginierung.
+    Seiten-Cap oder unbrauchbare Antwort heissen abgeschnitten; ein daraus gerechnetes
+    Max Pain ist nicht beurteilbar und wird in der Zeile als `teilkette` gekennzeichnet
+    statt als Ergebnis (Spec B1)."""
     hi = (session + timedelta(days=_MAXDTE)).isoformat()
     url = _SNAP.format(sym=sym, hi=hi)
-    out, pages = [], 0
+    out, pages, vollstaendig = [], 0, True
     while url and pages < 45:
         d = _get(url, key)
         if d.get("status") not in ("OK", "DELAYED") and not d.get("results"):
+            vollstaendig = False
             break
         out += d.get("results", [])
         url = d.get("next_url")
         pages += 1
-    return out
+    if url:                      # Cap gerissen, es gaebe noch eine Seite
+        vollstaendig = False
+    return out, vollstaendig
 
 
 def _by_exp(contracts: list, session: date) -> dict:
@@ -197,10 +206,13 @@ def _load_gex(session: date) -> tuple[dict, str]:
 def _one(sym: str, key: str, gex: dict, session: date) -> dict | None:
     """Ein Ticker: gex-Felder + Max-Pain/OI aus der Chain."""
     try:
-        contracts = _chain(sym, key, session)
+        contracts, mp_kette_vollst = _chain(sym, key, session)
     except Exception as e:
         print(f"  [massive] {sym}: {str(e)[:80]}")
-        contracts = []
+        # Kein Abruf zustande gekommen: der Ladezustand ist UNBEKANNT, nicht False.
+        # `quelle_da=False` unten macht daraus `quelle_fehlt` — "nicht abgerufen" ist
+        # etwas anderes als "abgebrochen" (Spec 3).
+        contracts, mp_kette_vollst = [], None
     row = {"ticker": sym, "cats": categories_for(sym)}
     g = gex.get(sym, {})
     # gex_summary direkt übernehmen (nicht neu rechnen)
@@ -221,6 +233,23 @@ def _one(sym: str, key: str, gex: dict, session: date) -> dict | None:
                 mp["exp_dte"] = by[ex]["dte"]
                 row.update(mp)
     gc.collect()
+    # B1: Zustaende je Niveau. Walls und Vol-Trigger rechnet diese Datei NICHT selbst,
+    # sie kommen aus der GEX-Summary — ihr Zustand wird deshalb uebernommen und nicht neu
+    # erfunden. Fehlt die GEX-Zeile, ist er `quelle_fehlt`.
+    g_felder = g.get("felder") or {}
+    row["gex_kette_vollst"] = g.get("gex_kette_vollst")
+    row["mp_kette_vollst"] = mp_kette_vollst
+    row["gex_horizont_tage"] = g.get("gex_horizont_tage")
+    row["strike_stufe"] = g.get("strike_stufe")
+    row["strike_stufe_quelle"] = g.get("strike_stufe_quelle")
+    row["felder"] = {
+        "call_wall": g_felder.get("call_wall", Z_QUELLE_FEHLT),
+        "put_wall": g_felder.get("put_wall", Z_QUELLE_FEHLT),
+        "vol_trigger": g_felder.get("vol_trigger", Z_QUELLE_FEHLT),
+        "max_pain": feldzustand(row.get("max_pain"), mp_kette_vollst,
+                                quelle_da=bool(contracts),
+                                mehrdeutig=bool(row.get("max_pain_non_unique"))),
+    }
     # Abstand Spot→Vol-Trigger und Spot→Max-Pain (%), fürs Frontend
     sp = row.get("spot")
     if sp:
@@ -235,6 +264,33 @@ def _one(sym: str, key: str, gex: dict, session: date) -> dict | None:
     return row
 
 
+def _nur_gex(sym: str, g: dict) -> dict:
+    """Zeile ohne Kettenabruf (kein API-Schluessel): nur die GEX-Felder.
+
+    Max Pain ist hier nicht `kein_niveau`, sondern `quelle_fehlt` — es wurde nicht
+    gerechnet, und ein fehlender Abruf darf nicht wie ein Ergebnis aussehen (Spec 3).
+    Die Zustaende der Walls kommen wie im Normalfall aus der GEX-Zeile.
+    """
+    g_felder = g.get("felder") or {}
+    return {
+        "ticker": sym, "cats": categories_for(sym),
+        "spot": g.get("spot"), "vol_trigger": g.get("zero_gamma"),
+        "regime": g.get("regime"), "call_wall": g.get("call_wall"),
+        "put_wall": g.get("put_wall"),
+        "gex_kette_vollst": g.get("gex_kette_vollst"),
+        "mp_kette_vollst": None,
+        "gex_horizont_tage": g.get("gex_horizont_tage"),
+        "strike_stufe": g.get("strike_stufe"),
+        "strike_stufe_quelle": g.get("strike_stufe_quelle"),
+        "felder": {
+            "call_wall": g_felder.get("call_wall", Z_QUELLE_FEHLT),
+            "put_wall": g_felder.get("put_wall", Z_QUELLE_FEHLT),
+            "vol_trigger": g_felder.get("vol_trigger", Z_QUELLE_FEHLT),
+            "max_pain": Z_QUELLE_FEHLT,
+        },
+    }
+
+
 def build(tickers: list[str], write: bool = True) -> dict:
     tok = os.environ.get("MASSIVE_API_KEY") or os.environ.get("POLYGON_API_KEY", "")
     # Session einmal bestimmen; Schreiblauf in der Handelszeit bricht VOR dem ersten Abruf ab (MarktOffen).
@@ -247,9 +303,7 @@ def build(tickers: list[str], write: bool = True) -> dict:
         print("  [massive] MASSIVE_API_KEY fehlt — Max-Pain/OI übersprungen (nur gex-Felder).")
     for t in tickers:
         r = _one(t, tok, gex, session) if tok else (
-            {"ticker": t, "cats": categories_for(t), **{k: gex.get(t, {}).get(v) for k, v in
-             [("spot", "spot"), ("vol_trigger", "zero_gamma"), ("regime", "regime"),
-              ("call_wall", "call_wall"), ("put_wall", "put_wall")]}} if t in gex else None)
+            _nur_gex(t, gex[t]) if t in gex else None)
         if r:
             per.append(r)
             print(f"  {t:6} spot {r.get('spot')} · flip {r.get('vol_trigger')} · "
