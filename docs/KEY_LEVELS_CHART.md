@@ -2,6 +2,10 @@
 
 > Stand 2026-10-23 · kanonisch für dieses Vorhaben · **gebaut wird auf Grundlage dieser Spec**
 >
+> **Stand des Baus: B1 ist fertig und ausgerollt** (Commit `0d2b2df`, im Container
+> nachgewiesen). Alle fünf offenen Entscheidungen hat der Nutzer am 2026-10-23
+> getroffen, siehe Abschnitt 10.
+>
 > **Codex-Abnahme nach fünf Runden: BAUGRUNDLAGE TRAGFÄHIG mit drei Auflagen** — alle drei
 > eingearbeitet (Leserbeschriftung „innerhalb der Spot-Toleranz" statt „Preisbasis belegt",
 > `strike_stufe` samt Herkunft und maßgeblicher Kette im Historienvertrag, Sollbestand der
@@ -434,6 +438,11 @@ Pflicht dabei:
 `max-height` + `overflow-y: auto`, Kopfzeile fixiert (Muster `/skew`, v66.22). Beide
 Sprachen über `data-i18n`, `_JSON_VER` erhöhen.
 
+Dazu **Open Interest je Zeile** (Entscheidung 10.4): die Summe der ausgewerteten Kette,
+damit sichtbar ist, auf wie viel Positionierung eine Wall überhaupt steht. Keine
+Aufnahmeschwelle — bei 30 Tickern wirkte sie auf keinen, und eine Regel, die heute
+nichts tut, bindet morgen das Falsche.
+
 ## 7 Ticker-Universum
 
 Kandidaten sind alle 163 Ticker mit Kette (2.4). Für die Auswahl gilt:
@@ -490,14 +499,14 @@ unbelegte Werte als `ok` behandeln (`key_levels.json` trägt heute keine Zustän
 
 | Stufe | Inhalt | Voraussetzung |
 |---|---|---|
-| **B1** | Beide Kettenabrufe geben ihren Vollständigkeitszustand zurück statt ihn zu verwerfen (`compute_key_levels.py:86`, `snapshot_gex_massive.py:369`); `key_levels.json` **und die GEX-Summary samt Archiv** tragen `felder`, `gex_kette_vollst`, `mp_kette_vollst`, `gex_horizont_tage`, `strike_stufe` | keine |
+| ~~**B1**~~ | **fertig 2026-10-23** (`0d2b2df`): beide Kettenabrufe geben ihren Vollständigkeitszustand zurück, Summary, Session-Archiv und `key_levels.json` tragen `felder`, `gex_kette_vollst`, `mp_kette_vollst`, `gex_horizont_tage`, `strike_stufe` und `strike_stufe_quelle`. Gemeinsamer Kern `shared/niveau_felder.py`, Wächter `verify_niveau_felder.py` (55) im Gate, Mutationen 21/21. | — |
 | **B2** | Laufgebundene Übergabe an Key Levels, Abschlussmarke mit Artefakthashes, exklusive Kettensperre, Leserauswahl (4) | B1 |
-| **A** | Kurschart mit den heutigen Niveaus, eine Zeichenregel, Kopfzeile, Basisfreigabe (2.2a), scrollbare Tabelle (weiter 11 Ticker), Wall-Veränderung über die gemeinsame Funktion (6.1a) | B1, B2 |
+| **A** | Kurschart mit den heutigen Niveaus (Standard 1M, Umschalter 1M/3M/6M), eine Zeichenregel, Kopfzeile, Spot-Konsistenz (2.2a), scrollbare Tabelle (weiter 11 Ticker) mit OI je Zeile, Wall-Veränderung über die gemeinsame Funktion aus dem Bestandsarchiv (6.1a, Entscheidung 10.5) | B1, B2 |
 | **C** | `key_levels_history.json` schreiben, Verlauf der Sessionwerte, Vergleichsquelle der Klammer wechselt (6.1a) | A |
 | **D** | Backfill der Altarchive, Altpunkte als eigene Fläche | C |
 | **E1** | Die vier Liquiditätssummen in die Tickerhistorie schreiben (reine Datensammlung, ändert keine Anzeige) | keine |
 | **E2** | Laufzeit beider Pfade mit den tatsächlichen Zieltickern messen (`--messlauf`), 10 Sessions Liquidität auswerten | E1, B2 |
-| **E3** | Universum erweitern, Betrieb anpassen | E2 **und** Entscheidungen 10.2 + 10.3 |
+| **E3** | `UNIVERSE` auf 30 erweitern (Betrieb unverändert, Entscheidungen 10.2/10.3); `/dealer-positioning` und `/skew` sind Teil der Abnahme | E2 |
 
 E war in v2 ein Zirkelschluss: die Erweiterung setzte Entscheidung 10.2 voraus, und 10.2
 sollte nach der Messung aus E fallen. Jetzt sammelt E1, misst E2, und erst E3 stellt um.
@@ -560,19 +569,28 @@ jede Mutation benennt die Prüfung, die sie reißen muss, eine Ausnahme ist kein
    und der Nachweis, dass „Mittel der Tagesränge" ein anderes Ergebnis liefert als die
    vorgeschriebene Reihenfolge.
 
-## 10 Offene Nutzerentscheidungen
+## 10 Entschieden (Nutzer, 2026-10-23)
 
-1. **Standardfenster** 1M statt „ein paar Tage" (6.1).
-2. **Universumsgröße und Betrieb.** 30 Ticker passen vermutlich in die Frist, **50 nicht**
-   (2.5). Für 50 gibt es drei Wege: die Kette in zwei Timer teilen (GEX, dann Key Levels
-   mit laufgebundener Übergabe), die Containerfrist und `TimeoutStartSec` erhöhen, oder bei
-   30 bleiben. Entscheidung erst nach der Messung aus Stufe E.
-3. **Welche Seiten mitwachsen** (7): `/dealer-positioning` und `/skew` hängen an `UNIVERSE`,
-   `/options-flow` an `CORE_OPTIONS`. Mitwachsen und mitprüfen, oder Key Levels einen
-   eigenen GEX-Pfad geben.
-4. **Dünne Ticker.** 39 der 163 liegen unter 100 000 Kontrakten Open Interest. Mindestmaß
-   setzen oder alle anbieten und die Dünne an der Zeile ausweisen.
-5. **Wall-Veränderung vor Stufe C** (6.1a): die Klammer ab Stufe A aus dem Bestandsarchiv
-   zeigen, mit dem Hinweis „Vollständigkeit unbelegt" — oder erst ab Stufe C, dann aber
-   mit Abschlussnachweis. Die erste Variante zeigt die gewünschte Veränderung früher und
-   entspricht dem, was `/skew` heute schon tut; die zweite ist strenger.
+1. **Standardfenster 1 Monat**, Umschalter 1M / 3M / 6M (6.1). Begründung doppelt: fünf
+   Tagespunkte tragen keine Achse — eine Intraday-Reihe haben wir nicht —, und die
+   Dividendentreppe der gespeicherten Kurse wächst mit dem Fenster (2.2: über einen Monat
+   gemessen 0,00 %, über 200 Tage bis 0,55 % bei HYG).
+2. **30 Ticker, Betrieb unverändert.** Fortgeschrieben rund 17 von 28 Minuten; die
+   Reserve sinkt von 18 auf 11 Minuten, und beide Schritte haben je 300 s Wartebudget.
+   Die Messung aus E2 läuft trotzdem **vor** der Umstellung — 50 Ticker wären die Frist
+   selbst und sind damit vom Tisch, solange der Betrieb unverändert bleibt.
+3. **Das GEX-Universum wächst mit, `/options-flow` nicht.** `UNIVERSE` geht auf 30, damit
+   die neuen Ticker überhaupt Walls haben (Key Levels rechnet sie nicht selbst, 7);
+   `/dealer-positioning` und die GEX-Spalten auf `/skew` zeigen sie dann ebenfalls und
+   sind **Teil der Abnahme von E3**. `CORE_OPTIONS` bleibt bei 11, `/options-flow` also
+   unberührt.
+4. **Open Interest je Zeile ausweisen**, kein Mindestmaß als Aufnahmeregel. Gemessen ist
+   unter den Top 30 kein dünner Ticker — der schwächste (ETHA) hat 1,28 Mio Kontrakte,
+   die 39 Ticker unter 100 000 liegen alle jenseits von Platz 30. Die Angabe macht die
+   Aussagekraft einer Wall sichtbar und ist die Grundlage, falls das Universum später
+   doch weiter wachsen soll.
+5. **Die Wall-Veränderung kommt ab Stufe A aus dem Bestandsarchiv**, gekennzeichnet mit
+   „Vergleich aus dem Bestandsarchiv, Vollständigkeit unbelegt" (6.1a). Das ist kein neuer
+   Kompromiss, sondern der bestehende: `/skew` vergleicht heute schon so, nur unbenannt.
+   Ab Stufe C wechselt die Quelle auf `key_levels_history.json`, und die Kennzeichnung
+   entfällt für Zeilen mit Abschlussmarke.
