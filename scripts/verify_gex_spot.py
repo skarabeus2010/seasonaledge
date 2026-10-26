@@ -483,7 +483,26 @@ for name, rc, ausgabe, soll in [
 
 # 14 — Key Levels laufen NUR bei veroeffentlicht. Geprueft am echten main() der Huelle,
 #      mit ausgetauschtem Teilschritt-Laeufer: der Nachweis ist die Aufrufliste.
+def _kette_umgebung():
+    """Temp-Baum mit den drei Pflichtartefakten; Kette schreibt ihre Marke dorthin.
+
+    Ohne die Artefakte wird die Abschlussmarke nicht fertig und main() endet mit 1 —
+    richtig so (B2), aber dann prueft Fall [14] nicht mehr, was er pruefen will.
+    """
+    import tempfile
+    wurzel = Path(tempfile.mkdtemp(prefix="sa-kette-"))
+    daten = wurzel / "landing" / "data"
+    (daten / "gex_history_session").mkdir(parents=True, exist_ok=True)
+    (daten / "gex_summary.json").write_text("{}", encoding="utf-8")
+    (daten / "key_levels.json").write_text("{}", encoding="utf-8")
+    (daten / "gex_history_session" / "2026-10-16.json").write_text("{}", encoding="utf-8")
+    kette._ROOT = wurzel
+    kette._MARKE = daten / "gex_lauf.json"
+    return wurzel
+
+
 def _kette_lauf(rc_snap, marker, rc_kl=0):
+    _kette_umgebung()
     rufe = []
 
     def laeufer(argv):
@@ -531,6 +550,7 @@ def _ohne_kennung(argv):
     return 0, ""
 
 
+_kette_umgebung()
 _alt_lauf = kette._lauf
 kette._lauf = _ohne_kennung
 try:
