@@ -519,12 +519,23 @@
     function _skewMetric(tk){ var r=_rangOf(tk); return r?_pick(r.skew):null; }
     function renderSkewHist(tk){
       var el=document.getElementById('sk-hist-chart'), ttl=document.getElementById('sk-hist-title'); if(!el)return;
-      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).slice().sort(function(a,b){return a.date<b.date?-1:1});
+      // Nur die laufzeit-normierten 30-Tage-Punkte, die auch der Rang nutzt (cm/cm_extrap).
+      // Front-Monats-Punkte ('single') und Altzeilen ohne cm_mode liegen auf einer anderen
+      // Skala — gemischt erzeugten sie Sprünge, die keine Marktbewegung waren.
+      var arr=((SKEW_HIST&&SKEW_HIST[tk])||[]).filter(function(e){
+        return (e.cm_mode==='cm'||e.cm_mode==='cm_extrap')&&e.skew_pts!=null&&isFinite(e.skew_pts);
+      }).sort(function(a,b){return a.date<b.date?-1:1});
       if(!arr.length){if(ttl)ttl.innerHTML=T('skew.hist_none','Keine Historie für ')+tk+'.';el.innerHTML='';return;}
       if(ttl)ttl.innerHTML='<b style="color:'+ACC+'">'+tk+'</b> &mdash; '+T('skew.hist_label','25Δ-Skew-Verlauf (Put-IV − Call-IV, Vol-Punkte)')+' · '+arr.length+' '+T('skew.points','Punkte');
-      var cats=arr.map(function(e){return e.date}), vals=arr.map(function(e){return e.skew_pts});
+      // Datenlücken (> 10 Kalendertage) als Unterbrechung zeichnen, nicht als Kurve überbrücken.
+      var LUECKE_MS=10*864e5, cats=[], vals=[];
+      arr.forEach(function(e,i){
+        if(i>0){var t0=Date.parse(arr[i-1].date),t1=Date.parse(e.date);
+          if(t1-t0>LUECKE_MS){cats.push(new Date((t0+t1)/2).toISOString().slice(0,10));vals.push(null);}}
+        cats.push(e.date);vals.push(e.skew_pts);
+      });
       renderInto('sk-hist-chart',Object.assign(baseChart(300,'line'),{
-        series:[{name:tk,data:vals}],colors:[ACC],stroke:{width:2.4,curve:'smooth'},
+        series:[{name:tk,data:vals}],colors:[ACC],stroke:{width:2.4,curve:'straight'},
         xaxis:{type:'datetime',categories:cats,tickAmount:8,labels:{style:{colors:MUT,fontSize:'13px'}},axisBorder:{show:false}},
         yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return (v>0?'+':'')+v.toFixed(1)}},title:{text:T('skew.hist_yaxis','Skew (Vol-Punkte)'),style:{color:MUT,fontSize:'13px'}}},
         annotations:{yaxis:[{y:0,borderColor:'rgba(255,255,255,.3)',strokeDashArray:4,label:{text:'0',style:{background:'transparent',color:MUT,fontSize:'11px'}}}]},
