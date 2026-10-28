@@ -157,6 +157,8 @@ Dasselbe in groß zeigt die Intermarket-Matrix: 470 Fragen, rund 24 erwartete Zu
 
 Eine Auswertung fehlt bewusst. Die Handelsrenditen von US-Kongressabgeordneten liegen gerechnet vor, stützen sich aber bisher auf zu wenige Ereignisse von zu wenigen Personen. Jede Aussage über „die Politiker" wäre eine Aussage über zwei von ihnen. Die Regel dafür stand vor der Rechnung fest: mindestens 100 Ereignisse von mindestens fünf Personen, sonst kein Urteil. Diese Schwelle ist derzeit nicht erreicht; die laufenden Meldungen sammeln sich unter [Congress Trades](/congress).
 
+Nachgerechnet wurde seitdem auch der Zweig Breadth Thrust, ein Marktbreite-Signal mit elf Fällen seit 1971, dessen Signalzahl stark an der genauen Regel hängt. → [Zweig Breadth Thrust nachgerechnet](/blog/zweig-breadth-thrust-nachgerechnet/)
+
 ## Was diese Zahlen nicht sind
 
 Keine Anlageberatung und keine Prognose. Drei Dinge gehören beim Lesen dazu:

@@ -158,6 +158,8 @@ The same thing writ large is the intermarket matrix: 470 questions, some 24 expe
 
 One analysis is deliberately absent. The trading returns of members of the US Congress have been computed, but so far rest on too few events from too few people. Any statement about "the politicians" would be a statement about two of them. The rule was fixed before the computation: at least 100 events from at least five people, otherwise no verdict. That threshold is not currently met; the ongoing filings collect under [Congress Trades](/congress).
 
+Since then we have also recomputed the Zweig Breadth Thrust, a market breadth signal with eleven cases since 1971 whose signal count depends heavily on the exact rule. → [Zweig Breadth Thrust tested](/en/blog/zweig-breadth-thrust-tested/)
+
 ## What these figures are not
 
 Not investment advice and not a forecast. Three things belong with the reading:
