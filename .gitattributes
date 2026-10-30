@@ -2,3 +2,6 @@
 # brauchen feste Zeilenenden — sonst macht core.autocrlf=true auf Windows CRLF daraus (Codex Runde 5/6).
 landing/js/boersenkalender.js text eol=lf
 scripts/boersenkalender/api.js text eol=lf
+# Eingefrorene Datenstände (per SHA-256 geprüft): keine Zeilenendenumwandlung
+blog/daten/*.json -text
+landing/data/wahlen_snapshots/*.json -text

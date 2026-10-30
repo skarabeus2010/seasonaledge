@@ -222,6 +222,18 @@ def fenster_rendite(p: dict, x: int, y: int, n: int = FENSTER) -> Optional[dict]
     return {"vorlauf": 100 * (p0 / pm - 1), "nachlauf": 100 * (pp / p0 - 1), "fenster": 100 * (pp / pm - 1)}
 
 
+def intervall_rendite(p: Optional[dict], a: int, b: int, n: int = FENSTER) -> Optional[float]:
+    """Rendite in Prozent vom Schluss bei Offset a bis zum Schluss bei Offset b (a < b, beide relativ zu t0,
+    auch beide vor t0). None, wenn ein Kurs im Intervall [a, b] fehlt oder das Intervall den Pfad verlässt.
+    Eine einzelne Sitzungsrendite bei Offset j ist intervall_rendite(p, j − 1, j)."""
+    if not p or a >= b or n + a < 0 or n + b >= len(p["c"]):
+        return None
+    werte = p["c"][n + a: n + b + 1]
+    if any(v is None for v in werte):
+        return None
+    return 100 * (werte[-1] / werte[0] - 1)
+
+
 def kontrolljahre(jahr: int) -> list[int]:
     """US-Referenz: die beiden angrenzenden ungeraden Jahre (keine reguläre Bundeswahl)."""
     return [jahr - 1, jahr + 1]

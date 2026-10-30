@@ -218,6 +218,11 @@ jobs:
       # Lücken, Rolling, Stress-Schwelle, Ereignisse, Residuum, VRP = shared.realized_vol, Frische, drei Zeitzonen).
       - name: Waechter - Spot-Vol Beta
         run: python3 scripts/verify_spot_vol_beta.py
+      # Blogartikel 2026-10-30 (Plan docs/review_prompts/2026-10-30_down_days_midterm_plan_v2.md): SPY-Down-Days und
+      # S&P 500 in der letzten Woche vor Midterms, DE+EN. Tabellen kommen wörtlich aus den Faktenblättern, jede
+      # Fließtextzahl ist ein Faktenblatt-Wert, Datenstand per SHA-256 eingefroren, intervall_rendite gegen Sollfälle.
+      - name: Waechter - Blogzahlen Down-Days und Midterm-Woche
+        run: python3 scripts/verify_downdays_midterm_blog.py
       # GEX-Spot und Kettenvertrag (docs/review_prompts/2026-10-21_gex_abendluecke_entwurf_v5.md):
       # Yahoo liefert den Tagesbalken der Session etwa 00:00-01:10 UTC mit close = null, der
       # verspaetete GitHub-Cron traf das fuenf Naechte in Folge. Geprueft werden der Rueckfall auf
