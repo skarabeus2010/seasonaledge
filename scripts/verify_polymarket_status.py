@@ -609,6 +609,39 @@ pruefe("status_checked_at" not in zeile or zeile.get("status_checked_at") is Non
 pruefe(zeile.get("last_fetch_state") == "fehler",
        "der Abrufzustand wird trotzdem festgehalten (%r)" % zeile.get("last_fetch_state"))
 
+# Bestaetigt nicht vorhanden (`unavailable` aus dem Katalogabgleich) + Gamma ohne Markt: fachlich
+# uebersprungen, KEIN technischer Fehler — sonst macht jeder von Polymarket entfernte Markt den
+# taeglichen Lauf dauerhaft rot (fed-hike-2026, 29.–31.10.2026). Gegenprobe oben: ohne Katalogbeleg
+# (status None) bleibt es ein technischer Fehler.
+# Erfolgreich und leer (Stapel UND Einzelnachfrage `[]`) = bestaetigt nicht vorhanden.
+db, prot = mit_db([{"condition_id": "A", "status": "unavailable", "active": False}])
+gamma([(("A",), []), (("A",), [])])
+z, err = rf.refresh_markets(EINTRAEGE)
+pruefe(z["technische_fehler"] == 0 and z["fachlich_uebersprungen"] == 1,
+       "kein Markt, Katalog `unavailable`: fachlich uebersprungen, kein technischer Fehler (%r)" % z)
+pruefe(not [o for o in prot if o["art"] == "upsert" and o["tabelle"] == "polymarket_prices"],
+       "und keine Preiszeile")
+pruefe(db["polymarket_markets"][0]["status"] == "unavailable",
+       "der Status bleibt `unavailable` (%r)" % db["polymarket_markets"][0]["status"])
+db, prot, z, err = refresh_mit(
+    {"condition_id": "A", "status": "unavailable", "active": False}, markt("A", OFFEN))
+pruefe(z["preise"] == 1 and z["technische_fehler"] == 0,
+       "taucht der Markt wieder auf, wird er normal bewertet (%r)" % z)
+# Bestaetigt fehlend, aber der Katalog fuehrt den Markt (noch) nicht als `unavailable`: technischer Fehler —
+# die Ausnahme braucht BEIDE Belege (Katalogabgleich + Abruf dieses Laufs).
+db, prot = mit_db([{"condition_id": "A", "status": "open", "active": True}])
+gamma([(("A",), []), (("A",), [])])
+z, err = rf.refresh_markets(EINTRAEGE)
+pruefe(z["technische_fehler"] == 1 and z["fachlich_uebersprungen"] == 0,
+       "bestaetigt fehlend ohne Katalogbeleg `unavailable`: technischer Fehler (%r)" % z)
+
+# Technischer Fehlschlag (`None`) bei Katalog `unavailable` bleibt technisch — der Wettlauf „Markt wieder da,
+# Gamma gerade nicht erreichbar" darf nicht als bestaetigte Abwesenheit durchgehen (Codex 2026-10-31, Befund 1/2).
+db, prot, z, err = refresh_mit(
+    {"condition_id": "A", "status": "unavailable", "active": False}, None)
+pruefe(z["technische_fehler"] == 1 and z["fachlich_uebersprungen"] == 0,
+       "Abruf scheitert technisch, Katalog `unavailable`: technischer Fehler (%r)" % z)
+
 print("")
 print("13. Die Exit-Regel am echten Pfad:")
 

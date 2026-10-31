@@ -30,6 +30,7 @@ if _project_dir not in sys.path:
 
 from shared.polymarket_data import (
     STATUS_SICHTBAR,
+    STATUS_UNERREICHBAR,
     load_markets_yaml,
 )
 from shared.logger import app_logger, error_logger
@@ -88,7 +89,7 @@ def refresh_markets(
         upsert_polymarket_prices,
         update_polymarket_markt_zustand,
     )
-    from shared.polymarket_data import (aktueller_snapshot, fetch_market_by_condition_id,
+    from shared.polymarket_data import (aktueller_snapshot, fetch_markets_mit_abdeckung,
                                         status_aus_markt)
 
     # Katalog aus DB laden (token_id-Mapping liegt dort). `active_only=False` ist
@@ -130,17 +131,23 @@ def refresh_markets(
         # „Markt geschlossen" sind verschiedene Lagen.
         db_status = cat_entry.get("status")
         try:
-            markt = fetch_market_by_condition_id(cid)
+            # Abruf MIT Nachweis: nur eine erfolgreiche leere Antwort belegt „gibt es
+            # nicht" (`fehlt_bestaetigt`); ein technischer Fehlschlag ist `unklar`.
+            # Der Einzelhelfer lieferte fuer beides `None` (Codex 2026-10-31, Befund 1).
+            abdeckung = fetch_markets_mit_abdeckung([cid])
+            markt = abdeckung.markets[0] if abdeckung.markets else None
+            bestaetigt_fehlend = cid in abdeckung.fehlt_bestaetigt
             if markt:
                 urteil = aktueller_snapshot(markt, db_status=db_status)
             else:
                 urteil = {"status": None, "endstatus": None, "preis_freigegeben": False,
-                          "grund": "kein_markt",
-                          "quote": {"status": "fehler", "grund": "kein_markt"},
+                          "grund": "kein_markt" if bestaetigt_fehlend else "abruf_unklar",
+                          "quote": {"status": "fehler", "grund": "kein_markt" if bestaetigt_fehlend else "abruf_unklar"},
                           "snapshot": None}
                 markt = None
         except Exception as e:                     # Netz, Zeitueberschreitung
             markt = None
+            bestaetigt_fehlend = False
             urteil = {"status": None, "endstatus": None, "preis_freigegeben": False,
                       "grund": type(e).__name__,
                       "quote": {"status": "fehler", "grund": type(e).__name__},
@@ -163,6 +170,21 @@ def refresh_markets(
             # wiederaufgetauchter unsichtbar (Codex, Befund B4).
             satz["active"] = gemessen in STATUS_SICHTBAR
         zustaende.append(satz)
+
+        if (zustand == "fehler" and bestaetigt_fehlend
+                and db_status == STATUS_UNERREICHBAR):
+            # Der Katalogabgleich hat diesen Markt bereits als „bestaetigt nicht
+            # vorhanden" (`unavailable`) belegt — das ist dort ausdruecklich kein
+            # Fehler (B2). Derselbe Befund darf hier den Lauf nicht jede Nacht rot
+            # machen (fed-hike-2026, 29.–31.10.2026). Abgefragt wird trotzdem: taucht
+            # der Markt wieder auf, liefert Gamma ihn, und er wird normal bewertet.
+            # Nur eine IN DIESEM LAUF erfolgreich bestaetigte Abwesenheit zaehlt; ein
+            # technischer Fehlschlag (`unklar`) und ein fehlender Katalogbeleg bleiben
+            # technische Fehler.
+            zaehler["fachlich_uebersprungen"] += 1
+            print(f"  [{i:2d}/{len(entries)}] {slug:40s} -- UEBERSPRUNGEN"
+                  f": bestaetigt nicht vorhanden")
+            continue
 
         if zustand == "fehler":
             zaehler["technische_fehler"] += 1

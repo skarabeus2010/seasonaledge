@@ -28,6 +28,17 @@ W = ".github/workflows/polymarket_daily.yml"
 J = "landing/js/polymarket.js"
 
 MUTATIONEN = [
+    # ── Bestaetigt nicht vorhanden (2026-10-31, fed-hike-2026) ─────────────
+    ("unavailable + bestaetigt fehlend wieder technischer Fehler", R,
+     [('                and db_status == STATUS_UNERREICHBAR):\n', '                and False):\n')],
+     "kein Markt, Katalog `unavailable`"),
+    ("Ausnahme auch ohne Katalogbeleg", R,
+     [('                and db_status == STATUS_UNERREICHBAR):\n', '                and True):\n')],
+     "bestaetigt fehlend ohne Katalogbeleg"),
+    ("technischer Fehlschlag gilt als bestaetigt fehlend", R,
+     [('        if (zustand == "fehler" and bestaetigt_fehlend\n', '        if (zustand == "fehler"\n')],
+     "Abruf scheitert technisch, Katalog `unavailable`"),
+
     # ── Entscheidungstabelle ───────────────────────────────────────────────
     ("closed nur auf Wahrheit geprueft", P,
      [("    if closed is True:\n", "    if closed:\n")],
