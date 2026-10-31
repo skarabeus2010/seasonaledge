@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Drawdown-Analyse &mdash; Max Drawdown, Dauer &amp; Time to Recovery | SeasonAlpha</title>
+  <meta name="description" content="Drawdown-Analyse für Aktien, ETFs, Indizes und Krypto: aktueller Drawdown gegen alle früheren, Rang der Drawdown-Dauer, Time to Recovery, Kaplan-Meier, Drawdown-Kalender.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/drawdown">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/drawdown">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/drawdown">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/drawdown">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/drawdown">
+  <meta property="og:title" content="Drawdown-Analyse &mdash; Max Drawdown, Dauer &amp; Time to Recovery | SeasonAlpha">
+  <meta property="og:description" content="Drawdown-Analyse für Aktien, ETFs, Indizes und Krypto: aktueller Drawdown gegen alle früheren, Rang der Drawdown-Dauer, Time to Recovery, Kaplan-Meier, Drawdown-Kalender.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Drawdown-Analyse &mdash; Max Drawdown, Dauer &amp; Time to Recovery | SeasonAlpha">
+  <meta name="twitter:description" content="Drawdown-Analyse für Aktien, ETFs, Indizes und Krypto: aktueller Drawdown gegen alle früheren, Rang der Drawdown-Dauer, Time to Recovery, Kaplan-Meier, Drawdown-Kalender.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Drawdown-Analyse","url":"https://seasonalpha.ai/drawdown","description":"Drawdown-Analyse für Aktien, ETFs, Indizes und Krypto: aktueller Drawdown gegen alle früheren, Rang der Drawdown-Dauer, Time to Recovery, Kaplan-Meier, Drawdown-Kalender.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Drawdown-Analyse","item":"https://seasonalpha.ai/drawdown"}]}</script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.5rem}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    main{position:relative}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .dd-status{display:flex;flex-wrap:wrap;gap:.6rem 1.75rem;align-items:baseline;padding:1rem 1.15rem;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:.75rem}
+    .dd-gross{font:800 2.5rem/1 var(--f-d);color:var(--red);font-variant-numeric:tabular-nums}
+    .dd-gross.null{color:var(--green)}
+    .dd-status dl{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;margin:0}
+    .dd-status dt{font:500 .625rem/1 var(--f-m);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+    .dd-status dd{margin:.3rem 0 0;font:500 .95rem/1.2 var(--f-m);color:var(--text)}
+    .dd-eyebrow{font:500 .625rem/1 var(--f-m);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+    .dd-antwort{padding:.85rem 1.1rem;border-left:3px solid var(--accent);background:rgba(232,168,32,.07);border-radius:0 8px 8px 0;margin-bottom:.75rem;font-size:.875rem;color:var(--text);line-height:1.6}
+    .dd-hinweis{font-size:.75rem;color:var(--muted);margin-bottom:1rem;line-height:1.6}
+    .dd-hinweis.warn{color:#e8a425}
+    .dd-kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.6rem;margin-bottom:1.25rem}
+    .dd-kachel{padding:.85rem;background:var(--card);border:1px solid var(--border);border-radius:10px;display:grid;gap:.35rem;align-content:start;min-width:0}
+    .dd-kachel .lab{font:500 .625rem/1.3 var(--f-m);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .dd-kachel .wert{font:800 1.5rem/1.1 var(--f-d);color:var(--text);font-variant-numeric:tabular-nums}
+    .dd-kachel .wert small{font:500 .8rem var(--f-m);color:var(--dim)}
+    .dd-kachel .erkl{font-size:.75rem;color:var(--dim);line-height:1.5}
+    .dd-kachel.aus .wert{color:var(--muted);font-size:1rem}
+    .dd-leiste{height:6px;background:rgba(232,168,32,.12);border-radius:3px;position:relative;overflow:hidden}
+    .dd-leiste i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
+    .dd-raster{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:.75rem}
+    .dd-tafel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.85rem;min-width:0}
+    .dd-tafel h3{font-size:.875rem;margin:0 0 .25rem;color:var(--text)}
+    .dd-tafel .unter{font-size:.75rem;color:var(--dim);margin-bottom:.4rem;line-height:1.5}
+    .dd-tab-wrap{overflow-x:auto}
+    .dd-table{width:100%;border-collapse:collapse;font-size:.8125rem;min-width:720px}
+    .dd-table th{color:var(--muted);font-size:.6875rem;text-transform:uppercase;letter-spacing:.06em;padding:.5rem;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+    .dd-table td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--dim);font-variant-numeric:tabular-nums;font-family:var(--f-m);text-align:right;white-space:nowrap}
+    .dd-table th:first-child,.dd-table td:first-child{text-align:left}
+    .dd-table td.neg{color:var(--red)}
+    .dd-table tr.lauf td{color:var(--accent)}
+    .sidebar select,.sidebar input[type="number"]{width:100%;padding:.4rem;background:var(--surface);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:.8125rem;font-family:var(--f-m)}
+    .sidebar input[type="range"]{width:100%;accent-color:var(--accent)}
+    .dd-seg{display:flex;gap:.3rem;flex-wrap:wrap;margin:.35rem 0}
+    .dd-seg button{flex:1;min-height:34px;padding:.3rem .4rem;border:1px solid var(--border);background:var(--surface);color:var(--dim);border-radius:6px;font:500 .75rem var(--f-m);cursor:pointer}
+    .dd-seg button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+    .dd-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .dd-regler-wert{font:500 .8125rem var(--f-m);color:var(--text)}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.5rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3 data-i18n="dd.ticker_h3">Ticker</h3>
+      <input type="text" id="ticker-input" value="QQQ" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+
+      <hr>
+      <h3 data-i18n="dd.zeitraum_h3">Peak im Zeitraum</h3>
+      <select id="sel-fenster">
+        <option value="10" data-i18n="dash.yr10">10 Jahre</option>
+        <option value="15" data-i18n="dash.yr15">15 Jahre</option>
+        <option value="20" data-i18n="dash.yr20">20 Jahre</option>
+        <option value="alle" data-i18n="dd.yr_alle">Gesamte Historie</option>
+      </select>
+
+      <hr>
+      <h3 data-i18n="dd.maxdd_h3">Max Drawdown</h3>
+      <div class="dd-seg" id="seg-maxdd"><button type="button" data-v="5">&ge; 5 %</button><button type="button" data-v="10">&ge; 10 %</button><button type="button" data-v="20">&ge; 20 %</button></div>
+      <label for="r-maxdd" class="dd-regler-wert">&ge; <span id="o-maxdd">5</span> %</label>
+      <input type="range" id="r-maxdd" min="5" max="40" step="1" value="5">
+
+      <hr>
+      <h3 data-i18n="dd.vergleich_h3">Vergleich ab Drawdown</h3>
+      <label class="check" style="display:flex;gap:.5rem;font-size:.75rem;color:var(--muted)"><input type="checkbox" id="chk-aktuell" checked><span data-i18n="dd.vergleich_aktuell">aktueller Drawdown</span></label>
+      <label for="r-vergleich" class="dd-regler-wert">&minus;<span id="o-vergleich">10</span> %</label>
+      <input type="range" id="r-vergleich" min="5" max="40" step="1" value="10" disabled>
+
+      <hr>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
+        <span data-i18n-html="dd.sidebar_desc"><b>Drawdown</b> = Abstand zum letzten Hoch (Peak). Die Seite vergleicht den aktuellen Drawdown mit allen früheren Episoden desselben Tickers: Dauer, Tiefe, Tempo und Time to Recovery.</span>
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b data-i18n="dd.page_title">Drawdown-Analyse</b> &mdash; <span id="title-ticker">QQQ</span></h1>
+      <p class="page-caption" data-i18n="dd.page_caption">Wie ungewöhnlich ist der aktuelle Drawdown? Drawdown-Dauer, Max Drawdown, Time to Recovery und Kaplan-Meier gegen die eigene Geschichte.</p>
+
+      <section class="dd-status" id="dd-status" aria-label="Aktuelle Lage">
+        <div><div class="dd-eyebrow" data-i18n="dd.st_aktuell">Aktueller Drawdown</div><div class="dd-gross" id="s-dd">&ndash;</div></div>
+        <dl>
+          <div><dt>Peak</dt><dd id="s-peak">&ndash;</dd></div>
+          <div><dt data-i18n="dd.st_dauer">Drawdown-Dauer</dt><dd id="s-dauer">&ndash;</dd></div>
+          <div><dt data-i18n="dd.st_trough">Trough bisher</dt><dd id="s-trough">&ndash;</dd></div>
+          <div><dt data-i18n="dd.st_daten">Ausgewertet bis</dt><dd id="s-e">&ndash;</dd></div>
+        </dl>
+      </section>
+      <div class="dd-antwort" id="dd-antwort"></div>
+      <div class="dd-hinweis" id="dd-hinweis"></div>
+
+      <section class="dd-kacheln" id="dd-kacheln" aria-label="Einordnung"></section>
+
+      <section class="dd-raster" id="dd-raster">
+        <div class="dd-tafel">
+          <h3 data-i18n="dd.c_dauer_h">Drawdown-Dauer früherer Episoden</h3>
+          <div class="unter" id="u-dauer"></div>
+          <div id="c-dauer" style="height:280px"></div>
+        </div>
+        <div class="dd-tafel">
+          <h3 data-i18n="dd.c_streu_h">Max Drawdown und Drawdown-Dauer jeder Episode</h3>
+          <div class="unter" id="u-streu"></div>
+          <div id="c-streu" style="height:280px"></div>
+        </div>
+        <div class="dd-tafel">
+          <h3 id="h-ab">Dauer ab dem Drawdown bis zur Recovery</h3>
+          <div class="unter" id="u-ab"></div>
+          <div id="c-ab" style="height:280px"></div>
+        </div>
+        <div class="dd-tafel">
+          <h3 id="h-tempo">Handelstage vom Peak bis zum Drawdown</h3>
+          <div class="unter" id="u-tempo"></div>
+          <div id="c-tempo" style="height:280px"></div>
+        </div>
+        <div class="dd-tafel">
+          <h3 data-i18n="dd.c_km_h">Kaplan-Meier: Anteil noch ohne Recovery</h3>
+          <div class="unter" id="u-km"></div>
+          <div id="c-km" style="height:280px"></div>
+        </div>
+        <div class="dd-tafel">
+          <h3 data-i18n="dd.c_kal_h">Drawdown-Kalender</h3>
+          <div class="unter" data-i18n="dd.c_kal_u">Je Kalenderjahr der tiefste Abstand zum bisherigen Hoch (Hoch seit Datenbeginn, Balken) und der Ulcer Index (Linie, rechte Achse).</div>
+          <div id="c-kal" style="height:280px"></div>
+        </div>
+      </section>
+
+      <section class="dd-tafel" style="margin-top:.75rem">
+        <h3 id="h-fr">Forward Returns nach einem Drawdown</h3>
+        <div class="unter" id="u-fr"></div>
+        <div class="dd-tab-wrap"><table class="dd-table" id="tab-fr"><thead><tr>
+          <th data-i18n="dd.fr_h">Horizont</th><th data-i18n="dd.fr_n">n</th><th data-i18n="dd.fr_unv">ohne vollen Horizont</th><th data-i18n="dd.fr_mittel">Mittel</th><th data-i18n="dd.fr_median">Median</th><th data-i18n="dd.fr_pos">positiv</th><th data-i18n="dd.fr_zw">Zwischenverlust (Mittel)</th><th data-i18n="dd.fr_basis_n">Basis n</th><th data-i18n="dd.fr_basis">Basis Mittel</th><th data-i18n="dd.fr_basis_pos">Basis positiv</th><th data-i18n="dd.fr_ue">überlappende Paare</th>
+        </tr></thead><tbody></tbody></table></div>
+      </section>
+
+      <section class="dd-tafel" style="margin-top:.75rem">
+        <h3 data-i18n="dd.c_kurve_h">Drawdown-Kurve</h3>
+        <div class="unter" data-i18n="dd.c_kurve_u">Drawdown zum jeweils letzten Peak an jedem Handelstag. Der gewählte Zeitraum ist hinterlegt.</div>
+        <div id="c-kurve" style="height:260px"></div>
+      </section>
+
+      <section class="dd-tafel" style="margin-top:.75rem">
+        <h3 id="t-titel">Drawdown-Episoden</h3>
+        <div class="dd-tab-wrap"><table class="dd-table" id="tab-ep"><thead><tr>
+          <th>Peak</th><th>Trough</th><th>Recovery</th><th>Max Drawdown</th><th>Peak to Trough</th><th>Time to Recovery</th><th data-i18n="dd.th_dauer">Drawdown-Dauer</th><th data-i18n="dd.th_kt">Kalendertage</th><th id="th-ab">ab &minus;x % bis Recovery</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="box-info" id="t-grenz"></div>
+      </section>
+
+      <details open style="margin-top:1rem">
+        <summary data-i18n="common.methodology">Methodik</summary>
+        <div class="details-body">
+          <ul>
+            <li data-i18n-html="dd.m_daten"><b>Daten:</b> gespeicherte Tagesrenditen (log) aus den Schlusskursen. Ob Dividenden enthalten sind, hängt vom Instrument ab und ist nur bei den oben ausgewiesenen Indizes belegt (Kursindex ohne, Performanceindex mit Dividenden); bei allen anderen Werten steht oben, dass es nicht belegt ist.</li>
+            <li data-i18n-html="dd.m_episode"><b>Episode:</b> vom Peak (letztes Hoch) bis zur Recovery, dem ersten Schluss, der den Peak wieder erreicht. <b>Trough</b> = niedrigster Schluss dazwischen. <b>Max Drawdown</b> = Abstand Trough zu Peak, <b>Peak to Trough</b> = Handelstage Peak bis Trough, <b>Time to Recovery</b> = Handelstage Trough bis Recovery, <b>Drawdown-Dauer</b> = Handelstage Peak bis Recovery.</li>
+            <li data-i18n-html="dd.m_stichtag"><b>Ausgewertet bis:</b> letzte abgeschlossene Sitzung vor dem heutigen Börsentag (Krypto: letzter abgeschlossener UTC-Tag). Die heutige Sitzung zählt auch nach Handelsschluss noch nicht.</li>
+            <li data-i18n-html="dd.m_zeitraum"><b>Zeitraum:</b> Eine Episode gehört dazu, wenn ihr Peak im Zeitraum liegt. Episoden mit früherem Peak werden unter der Tabelle gesondert genannt.</li>
+            <li data-i18n-html="dd.m_rang"><b>Ränge:</b> Anteil der abgeschlossenen Episoden mit mindestens dem gewählten Max Drawdown, deren Drawdown-Dauer kürzer bzw. deren Max Drawdown größer war. Weil der aktuelle Drawdown noch läuft, sagen die Ränge nichts über seine Enddauer.</li>
+            <li data-i18n-html="dd.m_ab"><b>Dauer ab −x % bis Recovery:</b> für frühere Episoden, die mindestens −x % erreichten, die Handelstage vom ersten Erreichen bis zur Recovery. Beschreibt frühere Fälle, keine Prognose.</li>
+            <li data-i18n-html="dd.m_km"><b>Kaplan-Meier:</b> Anteil der Episoden, die n Handelstage nach dem ersten Erreichen von −x % noch keine Recovery hatten. Der aktuelle Drawdown geht als noch offene (zensierte) Beobachtung ein. Die Linien darüber und darunter sind punktweise, nominelle 95-%-Intervalle, kein Konfidenzband.</li>
+            <li data-i18n-html="dd.m_fr"><b>Forward Returns:</b> Rendite nach 20, 60 und 120 Handelstagen ab dem Schluss des Tages, an dem eine Episode erstmals −x % erreichte (eine Beobachtung je Episode), mit dem tiefsten Zwischenstand und als Basis allen Handelstagen des Zeitraums. Fenster können sich überlappen; kein Signifikanztest.</li>
+            <li data-i18n-html="dd.m_kal"><b>Drawdown-Kalender:</b> tiefster Abstand zum bisherigen Hoch im Jahr (Hoch seit Datenbeginn, nicht Jahreshoch) und Ulcer Index = Wurzel aus dem Mittel der quadrierten Drawdowns des Jahres.</li>
+            <li data-i18n-html="dd.m_luecken"><b>Beobachtete Schlusskurse:</b> Gerechnet wird auf den vorhandenen Schlusskursen; alle Zählungen sind <b>Handelstage mit Kurs</b>. In Jahren, deren Börsenkalender nicht belegt ist (und bei Devisen), gelten einzelne Tage ohne Kurs als geschlossen, wenn die Rendite der Folgezeile beide Tage abdeckt; ihre Zahl steht oben. In Jahren mit belegtem Kalender und bei Krypto ist eine fehlende Kurszeile eine echte Lücke: der Verlauf ab dort ist unbekannt, frühere abgeschlossene Episoden bleiben gültig. Kein Signifikanztest, keine Handelsempfehlung.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details style="margin-top:.5rem">
+        <summary data-i18n="dd.faq_h">Häufige Fragen zum Drawdown</summary>
+        <div class="details-body">
+          <h3 data-i18n="dd.faq1_q">Was ist ein Drawdown?</h3>
+          <p data-i18n="dd.faq1_a">Ein Drawdown ist der prozentuale Abstand eines Kurses zu seinem bisherigen Hoch. Er beginnt am Peak und endet mit der Recovery, wenn der Kurs das alte Hoch wieder erreicht.</p>
+          <h3 data-i18n="dd.faq2_q">Was ist der Unterschied zwischen Time to Recovery und Drawdown-Dauer?</h3>
+          <p data-i18n="dd.faq2_a">Time to Recovery zählt die Handelstage vom Tiefpunkt (Trough) bis zur Recovery. Die Drawdown-Dauer zählt vom Peak bis zur Recovery, also inklusive der Zeit des Rückgangs.</p>
+          <h3 data-i18n="dd.faq3_q">Was sagt der Ulcer Index?</h3>
+          <p data-i18n="dd.faq3_a">Der Ulcer Index fasst Tiefe und Dauer von Drawdowns in einer Zahl zusammen: die Wurzel aus dem Mittel der quadrierten Drawdowns. Lange, tiefe Rückgänge erhöhen ihn stark, kurze Rücksetzer kaum.</p>
+          <h3 data-i18n="dd.faq4_q">Kann die Seite vorhersagen, wann ein Drawdown endet?</h3>
+          <p data-i18n="dd.faq4_a">Nein. Sie zeigt, wie lange frühere Drawdowns desselben Tickers dauerten. Daraus folgt keine Prognose für den laufenden.</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.__SA_RELEASE='%%RELEASE%%';window.__SA_METHODE='alt';</script>
+  <script src="/landing/js/methode.js"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/kurse.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
+  <script src="/landing/js/drawdown-compute.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    // Rechnung: landing/js/drawdown-compute.js (SA.drawdown). Hier nur Laden + Darstellung.
+    var GOLD = '#e8a820', RED = '#ff4757', BLUE = '#60a5fa', MUTED = '#8a8f98';
+    function T(k, de) { return (SA.i18n && SA.i18n.t) ? SA.i18n.t(k, de) : de; }
+    function EN() { return !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN()); }
+    function f(v, d) { if (v == null || !isFinite(v)) return '–'; return v.toLocaleString(EN() ? 'en-US' : 'de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+    // Vorzeichen/Farbe nach dem GERUNDETEN Wert: ein Rundungsrest erscheint nicht als „+0,00 %“ oder rot (Codex Code-R4)
+    function nullGerundet(v, d) { return +Math.abs(v).toFixed(d) === 0; }
+    function pct(v, d) { if (v == null || !isFinite(v)) return '–'; d = d == null ? 2 : d; var s = nullGerundet(v, d) ? '' : v > 0 ? '+' : '−'; return s + f(Math.abs(v), d) + (EN() ? '%' : ' %'); }
+    function negKl(v, d) { return v != null && isFinite(v) && v < 0 && !nullGerundet(v, d == null ? 2 : d) ? ' class="neg"' : ''; }
+    function dat(iso) { return iso ? (EN() ? iso : iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4)) : '–'; }
+    function ganz(n) { return n == null ? '–' : n.toLocaleString(EN() ? 'en-US' : 'de-DE'); }
+    function fmt(tpl, w) { return tpl.replace(/\{(\w+)\}/g, function (_, k) { return w[k] != null ? w[k] : ''; }); }
+
+    var $loading = document.getElementById('loading'), $error = document.getElementById('error-banner');
+    var charts = {}, _res = null, _ticker = null, _anfrage = 0;
+    var wahl = { fenster: '10', m: 5, aktuell: true, x: 10 };
+
+    function zeigeFehler(msg) { $error.textContent = msg; $error.style.display = 'block'; }
+    function versteckeFehler() { $error.style.display = 'none'; }
+    function chart(id, opts) {
+      if (charts[id]) { try { charts[id].destroy(); } catch (e) {} }
+      var el = document.getElementById(id); el.innerHTML = '';
+      charts[id] = new ApexCharts(el, Object.assign({}, SA.chartTheme, opts, { chart: Object.assign({}, SA.chartTheme.chart, opts.chart || {}) }));
+      charts[id].render();
+    }
+    function leeren() { Object.keys(charts).forEach(function (k) { try { charts[k].destroy(); } catch (e) {} charts[k] = null; }); }
+    function ergebnisseLeeren() {
+      leeren();
+      ['dd-kacheln', 'dd-antwort', 'u-dauer', 'u-streu', 'u-ab', 'u-tempo', 'u-km', 'u-fr', 't-grenz'].forEach(function (i) { document.getElementById(i).innerHTML = ''; });
+      ['c-dauer', 'c-streu', 'c-ab', 'c-tempo', 'c-km', 'c-kal', 'c-kurve'].forEach(function (i) { document.getElementById(i).innerHTML = ''; });
+      document.querySelector('#tab-ep tbody').innerHTML = ''; document.querySelector('#tab-fr tbody').innerHTML = '';
+    }
+
+    var RB = {
+      kursindex: ['dd.rb_ki', 'Basis: Kursindex ohne Dividenden (Price Return).'],
+      performanceindex: ['dd.rb_pi', 'Basis: Performanceindex (Dividenden reinvestiert).'],
+      neutral: ['dd.rb_neutral', 'Basis: gespeicherte Tagesrenditen; ob Ausschüttungen enthalten sind, ist für diesen Wert nicht belegt.']
+    };
+
+    function startDatum(r) { return wahl.fenster === 'alle' ? r.achse.daten[0] : SA.drawdown.minusJahre(r.achse.e, +wahl.fenster); }
+    function zeitraumText() {
+      return wahl.fenster === 'alle' ? T('dd.zr_alle', 'seit Datenbeginn') : fmt(T('dd.zr_n', 'in den letzten {n} Jahren'), { n: wahl.fenster });
+    }
+    function vergleichX(r) { return wahl.aktuell && r.d_heute != null && r.d_heute < -0.0001 ? -r.d_heute : wahl.x; }
+
+    // ── Status, Antwort, Hinweise ──
+    function renderStatus(r) {
+      var L = r.laufend, el = document.getElementById('s-dd');
+      document.getElementById('s-e').textContent = dat(r.achse.e);
+      if (r.status === 'luecke' || r.status === 'nicht_aktuell' || r.status === 'zu_wenig_daten') {
+        el.textContent = T('dd.nb', 'nicht bestimmbar'); el.className = 'dd-gross null';
+        ['s-peak', 's-dauer', 's-trough'].forEach(function (i) { document.getElementById(i).textContent = '–'; });
+        return;
+      }
+      if (!L) {
+        el.textContent = pct(0, 2); el.className = 'dd-gross null';
+        document.getElementById('s-peak').textContent = dat(r.achse.e);
+        document.getElementById('s-dauer').textContent = T('dd.am_hoch', 'am Hoch');
+        document.getElementById('s-trough').textContent = '–';
+        return;
+      }
+      el.textContent = pct(L.max_dd === undefined ? r.d_heute : r.d_heute, 2); el.className = 'dd-gross';
+      document.getElementById('s-peak').textContent = dat(L.peak);
+      document.getElementById('s-dauer').textContent = fmt(T('dd.st_dauer_w', '{n} Handelstage mit Kurs ({kt} Kalendertage)'), { n: ganz(L.seit_peak), kt: ganz(L.seit_peak_kt) });
+      document.getElementById('s-trough').textContent = pct(L.max_dd, 2) + ' ' + T('dd.am', 'am') + ' ' + dat(L.trough);
+    }
+
+    function renderAntwort(r, start) {
+      var el = document.getElementById('dd-antwort');
+      if (r.status === 'nicht_aktuell') {
+        el.innerHTML = fmt(T('dd.a_alt', 'Für die letzte abgeschlossene Sitzung ({e}) liegen keine Kursdaten vor. Ein aktueller Drawdown und Ränge sind deshalb nicht bestimmbar; die abgeschlossenen Episoden stehen unten.'), { e: dat(r.achse.e) });
+        return;
+      }
+      if (r.status === 'luecke') {
+        el.innerHTML = fmt(T('dd.a_luecke', 'Der Verlauf ist ab dem {d} unbekannt (fehlende Kurszeile bei belegtem Börsenkalender). Ein aktueller Drawdown und Ränge sind deshalb nicht bestimmbar; die Episoden davor stehen unten.'), { d: dat(r.achse.erste_luecke) });
+        return;
+      }
+      var L = r.laufend, g5 = SA.drawdown.gruppe(r, start, 5);
+      if (!L && !g5.n) {
+        el.innerHTML = fmt(T('dd.a_hoch_leer', '<b>Kein laufender Drawdown:</b> {t} schloss am {e} auf einem Hoch. Eine abgeschlossene Episode mit mindestens 5 % Max Drawdown gibt es {zr} nicht.'),
+          { t: _ticker, e: dat(r.achse.e), zr: zeitraumText() });
+        return;
+      }
+      if (!L) {
+        el.innerHTML = fmt(T('dd.a_hoch', '<b>Kein laufender Drawdown:</b> {t} schloss am {e} auf einem Hoch. Frühere Episoden mit mindestens 5 % Max Drawdown ({zr}, n = {n}) dauerten im Median {med} Handelstage mit Kurs bis zur Recovery.'),
+          { t: _ticker, e: dat(r.achse.e), zr: zeitraumText(), n: g5.n, med: f(g5.dauer_median, 0) });
+        return;
+      }
+      var v = SA.drawdown.vergleichAb(r, start, -r.d_heute), saetze = [];
+      if (!g5.laufend_erfuellt) {
+        saetze.push(fmt(T('dd.a_klein', '<b>Kleiner Rücksetzer:</b> {t} liegt {dd} unter dem Peak vom {p}, seit {n} Handelstagen mit Kurs. Das erreicht noch nicht die 5 % Max Drawdown, ab denen die Seite Episoden vergleicht.'),
+          { t: _ticker, dd: pct(r.d_heute), p: dat(L.peak), n: L.seit_peak }));
+      } else if (!g5.n) {
+        saetze.push(fmt(T('dd.a_keine', 'Keine abgeschlossene Episode mit mindestens 5 % Max Drawdown, deren Peak {zr} lag — ein Vergleich von Drawdown-Dauer und Tiefe ist nicht möglich.'),
+          { zr: zeitraumText() }));
+      } else {
+        var kuerzer = g5.kuerzer_als_laufend, n = g5.n, anteilK = n ? kuerzer / n : null;
+        var lang = anteilK === null ? '' : anteilK >= 0.8 ? T('dd.a_lang_ja', '<b>Ungewöhnlich lang:</b> ') : anteilK <= 0.2 ? T('dd.a_lang_nein', '<b>Ungewöhnlich lang ist der Drawdown nicht, sondern jung.</b> ') : T('dd.a_lang_mitte', '<b>Die Drawdown-Dauer liegt im üblichen Bereich.</b> ');
+        saetze.push(lang + fmt(T('dd.a_dauer', 'Von {n} abgeschlossenen Episoden mit mindestens 5 % Max Drawdown, deren Peak {zr} lag, hatten {k} eine kürzere Drawdown-Dauer als der aktuelle Drawdown bisher ({a} Handelstage mit Kurs).'),
+          { a: L.seit_peak, k: kuerzer, n: n, zr: zeitraumText() }));
+        saetze.push(fmt(T('dd.a_tiefe', 'Tiefer als die aktuellen {dd} fielen {t} von {n}.'), { dd: pct(r.d_heute), t: g5.tiefer_als_laufend, n: n }));
+        if (v.n) {
+          saetze.push(fmt(T('dd.a_tempo', 'Vom Peak bis {dd} brauchte der aktuelle Drawdown {tl} Handelstage mit Kurs; von {n} früheren Episoden, die mindestens so tief fielen, waren {lg} langsamer.'),
+            { dd: pct(r.d_heute, 1), tl: v.tempo_laufend, n: v.n, lg: v.langsamer_als_laufend }));
+          saetze.push(fmt(T('dd.a_ab', 'Ab dieser Tiefe dauerte es bei ihnen im Median {m} Handelstage mit Kurs bis zur Recovery ({min} bis {max}). Das beschreibt frühere Fälle und ist keine Prognose.'),
+            { m: f(v.ab_median, 1), min: Math.min.apply(null, v.einzel.map(function (e) { return e.ab_uebertritt_bis_recovery; })), max: Math.max.apply(null, v.einzel.map(function (e) { return e.ab_uebertritt_bis_recovery; })) }));
+        } else {
+          saetze.push(fmt(T('dd.a_tief_neu', 'Keine frühere Episode {zr} fiel so tief wie heute.'), { zr: zeitraumText() }));
+        }
+      }
+      el.innerHTML = saetze.join(' ');
+    }
+
+    function renderHinweis(r) {
+      var a = r.achse, teile = [];
+      var rb = RB[SA.drawdown.RENDITEBASIS[_ticker] || 'neutral'];
+      teile.push(T(rb[0], rb[1]));
+      teile.push(T('dd.h_ht', 'HT = Handelstage mit Kurs.'));
+      teile.push(fmt(T('dd.h_daten', 'Kursdaten {von} bis {bis}, ausgewertet bis zur letzten abgeschlossenen Sitzung {e}.'), { von: dat(a.daten[0]), bis: dat(a.datenende), e: dat(a.e) }));
+      if (a.n_ueberbrueckt) teile.push(fmt(T('dd.h_ueber', '{n} Tage ohne Kurs ({von}–{bis}) als geschlossen behandelt. Waren es Handelstage, sind Hoch oder Tief an diesen Tagen nicht erfasst; Peaks, Drawdowns und Dauern können dann abweichen.'),
+        { n: ganz(a.n_ueberbrueckt), von: a.ueberbrueckt_jahre[0], bis: a.ueberbrueckt_jahre[a.ueberbrueckt_jahre.length - 1] }));
+      if (r.status === 'nicht_aktuell') teile.push(fmt(T('dd.h_alt', 'Für die letzte abgeschlossene Sitzung ({e}) fehlen Kursdaten; der aktuelle Drawdown ist deshalb nicht bestimmbar.'), { e: dat(a.e) }));
+      if (a.kalender_nicht_belegt.length) teile.push(fmt(T('dd.h_kal', 'Börsenkalender für {von}–{bis} nicht belegt.'), { von: a.kalender_nicht_belegt[0], bis: a.kalender_nicht_belegt[a.kalender_nicht_belegt.length - 1] }));
+      var el = document.getElementById('dd-hinweis');
+      el.textContent = teile.join(' ');
+      el.className = 'dd-hinweis' + (r.status === 'luecke' || r.status === 'nicht_aktuell' ? ' warn' : '');
+    }
+
+    function kachel(lab, wert, erkl, anteil, aus) {
+      return '<div class="dd-kachel' + (aus ? ' aus' : '') + '"><span class="lab">' + lab + '</span><span class="wert">' + wert + '</span>' +
+        (anteil != null ? '<div class="dd-leiste"><i style="width:' + Math.max(2, anteil * 100) + '%"></i></div>' : '') + '<span class="erkl">' + erkl + '</span></div>';
+    }
+
+    function renderKacheln(r, start, G, V) {
+      var k = [], L = r.laufend, m = wahl.m;
+      if (G.laufend_erfuellt && !G.n) {
+        k.push(kachel(T('dd.k_dauer', 'Drawdown-Dauer · Rang'), T('dd.nb', 'nicht bestimmbar'),
+          fmt(T('dd.k_rang_leer', 'Keine abgeschlossene Episode mit Max Drawdown ≥ {m} % und Peak {zr} — kein Vergleich möglich.'), { m: m, zr: zeitraumText() }), null, true));
+      } else if (G.laufend_erfuellt) {
+        k.push(kachel(T('dd.k_dauer', 'Drawdown-Dauer · Rang'), G.kuerzer_als_laufend + ' <small>' + T('dd.von', 'von') + ' ' + G.n + '</small>',
+          fmt(T('dd.k_dauer_e', 'abgeschlossenen Episoden (Max Drawdown ≥ {m} %, Peak {zr}) hatten eine kürzere Drawdown-Dauer als der aktuelle bisher ({a} Handelstage mit Kurs).'), { m: m, zr: zeitraumText(), a: L.seit_peak }), G.n ? G.kuerzer_als_laufend / G.n : 0));
+        k.push(kachel(T('dd.k_tiefe', 'Max Drawdown · Rang'), G.tiefer_als_laufend + ' <small>' + T('dd.von', 'von') + ' ' + G.n + '</small>',
+          fmt(T('dd.k_tiefe_e', 'dieser Episoden hatten einen größeren Max Drawdown als die aktuellen {dd}.'), { dd: pct(r.d_heute) }), G.n ? G.tiefer_als_laufend / G.n : 0));
+      } else {
+        k.push(kachel(T('dd.k_dauer', 'Drawdown-Dauer · Rang'), T('dd.nv', 'nicht vergleichbar'),
+          L ? fmt(T('dd.k_nv_e', 'Der aktuelle Drawdown ({dd}) erreicht den gewählten Max Drawdown ≥ {m} % bisher nicht.'), { dd: pct(r.d_heute), m: m }) : T('dd.k_kein', 'Kein laufender Drawdown.'), null, true));
+      }
+      if (!G.n) {
+        k.push(kachel(T('dd.k_typ', 'Typische Drawdown-Dauer'), T('dd.nb', 'nicht bestimmbar'), fmt(T('dd.k_typ_leer', 'Keine abgeschlossene Episode mit Max Drawdown ≥ {m} % und Peak {zr}.'), { m: m, zr: zeitraumText() }), null, true));
+      } else if (G.n < 5) {
+        k.push(kachel(T('dd.k_typ', 'Typische Drawdown-Dauer'), G.einzel.map(function (e) { return e.dauer; }).join(' · ') + ' <small>' + T('dd.ht', 'HT') + '</small>',
+          fmt(T('dd.k_typ_einzel', 'Einzelwerte der {n} Episoden (zu wenige für Quartile).'), { n: G.n })));
+      } else {
+        k.push(kachel(T('dd.k_typ', 'Typische Drawdown-Dauer'), f(G.dauer_median, 0) + ' <small>' + T('dd.handelstage', 'Handelstage mit Kurs') + '</small>',
+          fmt(T('dd.k_typ_e', 'Median vom Peak bis zur Recovery, mittlere Hälfte {a} bis {b}, längste {mx} (n = {n}).'), { a: f(G.dauer_q25, 0), b: f(G.dauer_q75, 0), mx: G.dauer_max, n: G.n })));
+      }
+      var abWerte = V.einzel.map(function (e) { return e.ab_uebertritt_bis_recovery; });
+      k.push(V.n && V.n < 5 ? kachel(fmt(T('dd.k_ab', 'Ab −{x} % bis Recovery'), { x: f(V.x, 1) }), abWerte.join(' · ') + ' <small>' + T('dd.ht', 'HT') + '</small>',
+          fmt(T('dd.k_ab_einzel', 'Einzelwerte der {n} früheren Episoden, die −{x} % erreichten (zu wenige für Quartile).'), { n: V.n, x: f(V.x, 1) }))
+        : V.n ? kachel(fmt(T('dd.k_ab', 'Ab −{x} % bis Recovery'), { x: f(V.x, 1) }), f(V.ab_median, 1) + ' <small>' + T('dd.handelstage', 'Handelstage mit Kurs') + '</small>',
+          fmt(T('dd.k_ab_e', 'Median früherer Episoden ab dem ersten Erreichen von −{x} %, mittlere Hälfte {a} bis {b} (n = {n}).'), { x: f(V.x, 1), a: f(V.ab_q25, 1), b: f(V.ab_q75, 1), n: V.n }))
+        : kachel(fmt(T('dd.k_ab', 'Ab −{x} % bis Recovery'), { x: f(V.x, 1) }), T('dd.nb', 'nicht bestimmbar'), fmt(T('dd.k_ab_leer', 'Keine frühere Episode {zr} erreichte −{x} %.'), { zr: zeitraumText(), x: f(V.x, 1) }), null, true));
+      var za = SA.drawdown.zeitanteil(r, start);
+      if (za && L) k.push(kachel(T('dd.k_za', 'Zeitanteil'), f(100 * za.mind / za.n, 1) + (EN() ? '%' : ' %'),
+        fmt(T('dd.k_za_e', 'der {n} Handelstage mit Kurs {zr} lagen mindestens {dd} unter dem Peak (zeitgewichtet).'), { n: ganz(za.n), zr: zeitraumText(), dd: f(-r.d_heute, 2) + (EN() ? '%' : ' %') }), za.mind / za.n));
+      document.getElementById('dd-kacheln').innerHTML = k.join('');
+    }
+
+    // ── Charts ──
+    var LOGT = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+    function lg(t) { return Math.log10(Math.max(t, 1)); }
+    function logAchse(titel) {
+      return { type: 'numeric', min: 0, tickAmount: 8, title: { text: titel, style: { color: MUTED } },
+               labels: { style: { colors: MUTED }, formatter: function (v) { var x = Math.pow(10, v); var n = LOGT.reduce(function (p, q) { return Math.abs(q - x) < Math.abs(p - x) ? q : p; }); return Math.abs(lg(n) - v) < 0.06 ? String(n) : ''; } } };
+    }
+
+    function renderCharts(r, start, G, V, KM, x) {
+      var L = r.laufend;
+      document.getElementById('u-dauer').textContent = fmt(T('dd.u_dauer', 'Anteil der abgeschlossenen Episoden (Max Drawdown ≥ {m} %, n = {n}), die nach n Handelstagen mit Kurs noch keine Recovery hatten. Rote Linie: aktueller Drawdown.'), { m: wahl.m, n: G.n });
+      chart('c-dauer', { chart: { type: 'line', height: 280 }, stroke: { curve: 'stepline', width: 2 }, colors: [GOLD],
+        series: [{ name: T('dd.noch_dd', 'noch im Drawdown'), data: G.dauerkurve.map(function (p) { return [lg(p[0]), +(100 * p[1]).toFixed(2)]; }) }],
+        xaxis: logAchse(T('dd.ax_ht_log', 'Handelstage mit Kurs seit dem Peak (log)')), yaxis: { min: 0, max: 100, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+        annotations: L ? { xaxis: [{ x: lg(L.seit_peak), borderColor: RED, strokeDashArray: 4 }] } : {},
+        tooltip: { x: { formatter: function (v) { return Math.round(Math.pow(10, v)) + ' ' + T('dd.ht', 'HT'); } } } });
+
+      document.getElementById('u-streu').textContent = fmt(T('dd.u_streu', 'Jeder Punkt eine abgeschlossene Episode (n = {n}). Rot: der aktuelle Drawdown mit seinem bisherigen Stand.'), { n: G.n });
+      var serien = [{ name: T('dd.episoden', 'Episoden'), data: G.einzel.map(function (e) { return [lg(e.dauer), +e.max_dd.toFixed(2)]; }) }];
+      if (L) serien.push({ name: T('dd.aktuell', 'aktuell'), data: [[lg(L.seit_peak), +r.d_heute.toFixed(2)]] });
+      chart('c-streu', { chart: { type: 'scatter', height: 280 }, colors: [GOLD, RED], markers: { size: [5, 8] }, series: serien,
+        xaxis: logAchse(T('dd.ax_dauer_log', 'Drawdown-Dauer in Handelstagen mit Kurs (log)')), yaxis: { labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+        tooltip: { x: { formatter: function (v) { return Math.round(Math.pow(10, v)) + ' ' + T('dd.ht', 'HT'); } } } });
+
+      var ab = V.einzel.slice().sort(function (p, q) { return p.ab_uebertritt_bis_recovery - q.ab_uebertritt_bis_recovery; });
+      document.getElementById('h-ab').textContent = fmt(T('dd.h_ab', 'Dauer ab −{x} % bis zur Recovery'), { x: f(x, 1) });
+      document.getElementById('u-ab').textContent = fmt(T('dd.u_ab', 'Frühere Episoden mit Peak {zr}, die mindestens −{x} % erreichten (n = {n}): Handelstage mit Kurs vom ersten Erreichen bis zur Recovery.'), { zr: zeitraumText(), x: f(x, 1), n: V.n });
+      chart('c-ab', { chart: { type: 'bar', height: 280 }, colors: [GOLD], plotOptions: { bar: { borderRadius: 2 } }, dataLabels: { enabled: false },
+        series: [{ name: T('dd.handelstage', 'Handelstage mit Kurs'), data: ab.map(function (e) { return { x: e.uebertritt.slice(0, 7), y: e.ab_uebertritt_bis_recovery }; }) }],
+        yaxis: { logarithmic: true, labels: { formatter: function (v) { return Math.round(v); } } },
+        annotations: V.ab_median != null ? { yaxis: [{ y: V.ab_median, borderColor: '#fff', strokeDashArray: 4, label: { text: 'Median ' + f(V.ab_median, 1), style: { background: 'transparent', color: '#fff' } } }] } : {} });
+
+      var tp = V.einzel.map(function (e) { return { x: e.peak.slice(0, 7), y: e.bis_uebertritt, c: GOLD }; });
+      if (V.tempo_laufend != null) tp.push({ x: T('dd.aktuell', 'aktuell'), y: V.tempo_laufend, c: RED });
+      tp.sort(function (p, q) { return p.y - q.y; });
+      document.getElementById('h-tempo').textContent = fmt(T('dd.h_tempo', 'Handelstage mit Kurs vom Peak bis −{x} %'), { x: f(x, 1) });
+      document.getElementById('u-tempo').textContent = V.tempo_laufend != null
+        ? fmt(T('dd.u_tempo', 'Frühere Episoden (n = {n}, {lg} davon langsamer) und der aktuelle Drawdown (rot).'), { n: V.n, lg: V.langsamer_als_laufend })
+        : fmt(T('dd.u_tempo_ohne', 'Frühere Episoden (n = {n}); der aktuelle Drawdown hat −{x} % nicht erreicht.'), { n: V.n, x: f(x, 1) });
+      chart('c-tempo', { chart: { type: 'bar', height: 280 }, plotOptions: { bar: { distributed: true, borderRadius: 2 } }, legend: { show: false }, dataLabels: { enabled: false },
+        colors: tp.map(function (p) { return p.c; }), series: [{ name: T('dd.handelstage', 'Handelstage mit Kurs'), data: tp.map(function (p) { return { x: p.x, y: p.y }; }) }] });
+
+      document.getElementById('u-km').textContent = fmt(T('dd.u_km', 'Ab dem ersten Erreichen von −{x} %: Episoden mit Peak {zr} (n = {n}, davon {z} noch offen). Median: {med}.'),
+        { x: f(x, 1), zr: zeitraumText(), n: KM.n, z: KM.zensiert.length, med: KM.median == null ? T('dd.nicht_erreicht', 'nicht erreicht') : KM.median + ' ' + T('dd.ht', 'HT') });
+      var ks = KM.kurve.map(function (p) { return [p.t, +(100 * p.s).toFixed(2)]; });
+      var klo = KM.kurve.map(function (p) { return [p.t, p.lo == null ? null : +(100 * p.lo).toFixed(2)]; });
+      var khi = KM.kurve.map(function (p) { return [p.t, p.hi == null ? null : +(100 * p.hi).toFixed(2)]; });
+      chart('c-km', { chart: { type: 'line', height: 280 }, stroke: { curve: 'stepline', width: [2, 1, 1], dashArray: [0, 4, 4] }, colors: [GOLD, MUTED, MUTED],
+        series: [{ name: T('dd.ohne_recovery', 'noch ohne Recovery'), data: ks }, { name: T('dd.int_u', 'Intervall unten'), data: klo }, { name: T('dd.int_o', 'Intervall oben'), data: khi }],
+        legend: { show: false }, xaxis: { type: 'numeric', title: { text: T('dd.ax_km', 'Handelstage mit Kurs ab dem ersten Erreichen'), style: { color: MUTED } } },
+        yaxis: { min: 0, max: 100, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+        tooltip: { y: { formatter: function (v, o) { var p = KM.kurve[o.dataPointIndex]; return v == null ? '–' : f(v, 0) + ' % (' + T('dd.risiko', 'unter Risiko') + ' ' + (p ? p.risiko : '') + ')'; } } } });
+
+      var kal = SA.drawdown.kalender(r);
+      chart('c-kal', { chart: { type: 'line', height: 280 }, stroke: { width: [0, 2] }, colors: [RED, GOLD], dataLabels: { enabled: false },
+        series: [{ name: T('dd.kal_tief', 'tiefster Abstand zum Hoch'), type: 'column', data: kal.map(function (z) { return { x: String(z.jahr), y: z.tiefster == null ? null : +z.tiefster.toFixed(2) }; }) },
+                 { name: 'Ulcer Index', type: 'line', data: kal.map(function (z) { return { x: String(z.jahr), y: z.ulcer == null ? null : +z.ulcer.toFixed(2) }; }) }],
+        yaxis: [{ labels: { formatter: function (v) { return Math.round(v) + ' %'; } } }, { opposite: true, labels: { formatter: function (v) { return f(v, 0); } } }],
+        xaxis: { tickAmount: 12, labels: { rotate: -45 } },
+        tooltip: { shared: true, x: { formatter: function (v, o) { var z = kal[o.dataPointIndex]; return z ? z.jahr + (z.teiljahr ? ' (' + T('dd.teiljahr', 'Teiljahr') + ')' : '') + ', n = ' + z.n : v; } } } });
+
+      var ku = SA.drawdown.kurve(r);
+      var t0 = Date.UTC(+start.slice(0, 4), +start.slice(5, 7) - 1, +start.slice(8, 10));
+      chart('c-kurve', { chart: { type: 'area', height: 260 }, colors: [RED], stroke: { width: 1 }, dataLabels: { enabled: false }, fill: { opacity: .25 },
+        series: [{ name: 'Drawdown', data: ku.map(function (p) { return [Date.UTC(+p[0].slice(0, 4), +p[0].slice(5, 7) - 1, +p[0].slice(8, 10)), +p[1].toFixed(2)]; }) }],
+        xaxis: { type: 'datetime', labels: { datetimeUTC: true } }, yaxis: { max: 0, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+        annotations: wahl.fenster === 'alle' ? {} : { xaxis: [{ x: t0, x2: Date.UTC(+r.achse.e.slice(0, 4), +r.achse.e.slice(5, 7) - 1, +r.achse.e.slice(8, 10)), fillColor: GOLD, opacity: .08, borderColor: 'transparent' }] } });
+    }
+
+    function renderForward(r, start, x) {
+      var fr = SA.drawdown.forwardReturns(r, start, x);
+      document.getElementById('h-fr').textContent = fmt(T('dd.h_fr', 'Forward Returns nach einem Drawdown von −{x} %'), { x: f(x, 1) });
+      document.getElementById('u-fr').textContent = fmt(T('dd.u_fr', 'Ab dem Schluss des Tages, an dem eine Episode mit Peak {zr} erstmals −{x} % erreichte (eine Beobachtung je Episode). Basis: alle Handelstage mit Kurs des Zeitraums.'), { zr: zeitraumText(), x: f(x, 1) });
+      var rows = SA.drawdown.HORIZONTE.map(function (h) {
+        var z = fr.h[String(h)], e = z.ereignisse, b = z.basis;
+        return '<tr><td>' + h + ' ' + T('dd.ht', 'HT') + '</td><td>' + (e ? e.n : 0) + '</td><td>' + z.unvollstaendig + '</td><td>' + (e ? pct(e.mittel) : '–') + '</td><td>' + (e ? pct(e.median) : '–') +
+          '</td><td>' + (e ? f(100 * e.anteil_positiv, 0) + (EN() ? '%' : ' %') : '–') + '</td><td' + negKl(e ? e.zwischenverlust_mittel : null) + '>' + (e ? pct(e.zwischenverlust_mittel) : '–') + '</td><td>' + (b ? ganz(b.n) : 0) + '</td><td>' + (b ? pct(b.mittel) : '–') +
+          '</td><td>' + (b ? f(100 * b.anteil_positiv, 0) + (EN() ? '%' : ' %') : '–') + '</td><td>' + z.ueberlappende_paare + '</td></tr>';
+      });
+      document.querySelector('#tab-fr tbody').innerHTML = rows.join('');
+    }
+
+    function renderTabelle(r, start, G, x) {
+      var L = r.laufend, zeilen = [];
+      document.getElementById('th-ab').textContent = fmt(T('dd.th_ab', 'ab −{x} % bis Recovery'), { x: f(x, 1) });
+      document.getElementById('t-titel').textContent = fmt(T('dd.t_titel', 'Drawdown-Episoden mit Peak {zr}, Max Drawdown ≥ {m} %'), { zr: zeitraumText(), m: wahl.m });
+      var V = SA.drawdown.vergleichAb(r, start, x), abMap = {};
+      V.einzel.forEach(function (e) { abMap[e.peak] = e.ab_uebertritt_bis_recovery; });
+      if (L) zeilen.push('<tr class="lauf"><td>' + dat(L.peak) + '</td><td>' + dat(L.trough) + ' *</td><td>' + T('dd.laeuft', 'läuft') + '</td><td class="neg">' + pct(L.max_dd, 1) + '</td><td>' + L.peak_to_trough +
+        '</td><td>–</td><td>' + T('dd.bisher', 'bisher') + ' ' + L.seit_peak + '</td><td>' + T('dd.bisher', 'bisher') + ' ' + L.seit_peak_kt + '</td><td>–</td></tr>');
+      G.einzel.slice().reverse().forEach(function (e) {
+        zeilen.push('<tr><td>' + dat(e.peak) + '</td><td>' + dat(e.trough) + '</td><td>' + dat(e.recovery) + '</td><td class="neg">' + pct(e.max_dd, 1) + '</td><td>' + e.peak_to_trough +
+          '</td><td>' + e.ttr + '</td><td>' + e.dauer + '</td><td>' + e.dauer_kt + '</td><td>' + (abMap[e.peak] != null ? abMap[e.peak] : '–') + '</td></tr>');
+      });
+      document.querySelector('#tab-ep tbody').innerHTML = zeilen.join('');
+      var gr = SA.drawdown.grenzueberschreitend(r, start);
+      document.getElementById('t-grenz').textContent = (gr.length ? T('dd.grenz', 'Nicht enthalten, weil der Peak vor dem Zeitraum lag:') + ' ' + gr.map(function (e) {
+        return 'Peak ' + dat(e.peak) + ', Recovery ' + (e.recovery ? dat(e.recovery) : T('dd.laeuft', 'läuft')) + ' (' + pct(e.max_dd, 1) + (e.dauer != null ? ', ' + e.dauer + ' ' + T('dd.ht', 'HT') : '') + ')';
+      }).join('; ') + '. ' : '') + T('dd.t_fuss', '* vorläufiger Trough. Peak to Trough, Time to Recovery und Drawdown-Dauer in Handelstagen mit Kurs.');
+      if (SA.makeSortable) SA.makeSortable('tab-ep');
+    }
+
+    function zeichne() {
+      var r = _res; if (!r) return;
+      document.getElementById('o-maxdd').textContent = wahl.m;
+      document.querySelectorAll('#seg-maxdd button').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === wahl.m); });
+      renderStatus(r); renderHinweis(r);
+      if (r.status === 'zu_wenig_daten') { ergebnisseLeeren(); document.getElementById('dd-antwort').textContent = T('dd.a_kurz', 'Zu wenig Kursdaten für eine Drawdown-Analyse.'); return; }
+      var start = startDatum(r);
+      var x = vergleichX(r);
+      document.getElementById('o-vergleich').textContent = f(x, wahl.aktuell ? 1 : 0);
+      var G = SA.drawdown.gruppe(r, start, wahl.m), V = SA.drawdown.vergleichAb(r, start, x), KM = SA.drawdown.kaplanMeier(r, start, x);
+      renderAntwort(r, start); renderKacheln(r, start, G, V); renderCharts(r, start, G, V, KM, x); renderForward(r, start, x); renderTabelle(r, start, G, x);
+    }
+
+    function laden(ticker) {
+      ticker = String(ticker || '').trim().toUpperCase();
+      if (!ticker) return;
+      var nr = ++_anfrage;
+      $loading.style.display = 'flex'; versteckeFehler();
+      SA.kurse.zeilen(ticker, { felder: ['date', 'close', 'log_return'], ab: null }).then(function (rows) {
+        if (nr !== _anfrage) return;                      // überholte Antwort (schneller Tickerwechsel)
+        var boerse = SA.boersenkalender.boerse(ticker);
+        var res = SA.drawdown.analyse(rows || [], boerse, Date.now());
+        _res = res; _ticker = ticker;
+        document.getElementById('title-ticker').textContent = ticker;
+        zeichne();
+        $loading.style.display = 'none';
+      }).catch(function (e) {
+        if (nr !== _anfrage) return;
+        $loading.style.display = 'none';
+        _res = null; _ticker = ticker; ergebnisseLeeren();
+        document.getElementById('title-ticker').textContent = ticker;
+        document.getElementById('dd-hinweis').innerHTML = '';
+        ['s-dd', 's-peak', 's-dauer', 's-trough', 's-e'].forEach(function (i) { document.getElementById(i).textContent = '\u2013'; });
+        document.getElementById('s-dd').className = 'dd-gross null';
+        zeigeFehler(fmt(T('dd.fehler', 'Kursdaten für {t} konnten nicht geladen werden ({e}).'), { t: ticker, e: (e && e.message) || e }));
+      });
+    }
+
+    // ── Steuerung ──
+    document.getElementById('sel-fenster').addEventListener('change', function () { wahl.fenster = this.value; zeichne(); });
+    document.querySelectorAll('#seg-maxdd button').forEach(function (b) {
+      b.addEventListener('click', function () { wahl.m = +b.dataset.v; document.getElementById('r-maxdd').value = wahl.m; zeichne(); });
+    });
+    document.getElementById('r-maxdd').addEventListener('input', function () { wahl.m = +this.value; zeichne(); });
+    document.getElementById('chk-aktuell').addEventListener('change', function () { wahl.aktuell = this.checked; document.getElementById('r-vergleich').disabled = this.checked; zeichne(); });
+    document.getElementById('r-vergleich').addEventListener('input', function () { wahl.x = +this.value; zeichne(); });
+
+    function start() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(start, 50); return; }
+      if (SA.prefs && SA.prefs.autoYears) { try { var y = SA.prefs.autoYears(); } catch (e) {} }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) laden(SA.prefs.applyTicker('ticker-input', 'QQQ'));
+      else zeigeFehler('Supabase nicht konfiguriert');
+    }
+    SA.initTickerInput('ticker-input', 'ticker-list', function (t) { laden(t); });
+    document.addEventListener('sa:i18n-bereit', zeichne);
+    start();
+  })();
+  </script>
+</body>
+</html>

@@ -987,8 +987,19 @@ zeigt nur Profile derselben Session.
 **GEX-Spot.** Unbereinigter Yahoo-Schluss der Session (`close`, nicht `adjclose`), zur Laufzeit nach Börsenschluss
 abgerufen, Nachweis `meta.regularMarketTime` ≥ regulärer Sessionschluss (16:00 New York, Halbtag laut
 `shared.sitzungen.sitzung_info`); sonst fällt der Ticker aus. Nicht Massive: `/prev` liefert vor Mitternacht New York
-die Session davor (GEX rechnete bis 13.10. mit einem um eine Session veralteten Spot), der Tagesbalken der Session ist
-in unserem Abo bis dahin gesperrt (403). Nicht Supabase: der Intraday-Lauf schreibt `close` unter demselben Schlüssel.
+je nach Abrufzeit die Session davor, der Tagesbalken der Session ist in unserem Abo bis dahin gesperrt (403). Nicht
+Supabase: der Intraday-Lauf schreibt `close` unter demselben Schlüssel.
+
+> **Korrektur 2026-10-31** ([Prüfung mit Codex](review_prompts/2026-10-31_gex_altbestand_regel_antwort.md)): Hier stand
+> „GEX rechnete bis 13.10. mit einem um eine Session veralteten Spot". Das ist nicht belegt. Der frühere Massive-Pfad
+> nahm `/prev` ohne Prüfung des Balkendatums; welche Sitzung er traf, hing vom Abrufzeitpunkt ab (vor 00:00 UTC die
+> Vorsitzung, siehe Messbericht weiter unten). Der Archivabgleich (`gex_history/`, 51 Dateien, Spot gegen die
+> Supabase-Schlüsse, Laufzeit aus den Dateizeiten) zeigt: 03.–25.08. Lauf 22:52–23:25 UTC am Sitzungstag, Spot = Schluss
+> dieser Sitzung; 27.08.–14.10. Lauf 00:14–03:55 UTC, Spot = Schluss der Sitzung **vor** dem Dateistempel — also
+> überwiegend passende Schlusskurse bei um eine Sitzung verschobenen Dateinamen; Abweichungen > 0,3 % nur bei ETHA
+> (Basiswechsel) und drei Einzelfällen. Eine Wiederverwendung braucht trotzdem eine datei- und tickerbezogene Prüfung:
+> Restlaufzeit gegen den Lauftag statt die Session (Abstand Δ bis vier Tage), OI-/IV-Zeitstand und Kettenumfang sind
+> rückwirkend nicht belegbar, Yahoo- (bis 05.09.) und Massive-Phase rechnen verschieden.
 
 **Radar-Quadranten.** X-Achse = Rang von `call_iv − put_iv` relativ zur eigenen Historie (rechts: Call-Seite teurer als
 üblich). Oben (teure Vola) die ungewöhnlich teure Seite verkaufen, unten die ungewöhnlich günstige kaufen: oben links

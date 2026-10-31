@@ -109,7 +109,7 @@ SA.i18n = (function() {
   // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
   // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
   // veroeffentlicht.
-  var _JSON_VER = 'v27';
+  var _JSON_VER = 'v29';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
@@ -305,6 +305,10 @@ SA.i18n = (function() {
     '/tdom-analyse': {
       title: 'TDoM Analysis — Trading Day of the Month | SeasonAlpha',
       desc:  'Average return, win rate and heatmap per trading day of the month. Exchange-specific (NYSE/XETRA/LSE) — analyses the true trading calendar, not calendar days.'
+    },
+    '/drawdown': {
+      title: 'Drawdown Analysis — Max Drawdown, Duration & Time to Recovery | SeasonAlpha',
+      desc:  'Drawdown analysis for stocks, ETFs, indices and crypto: the current drawdown against all earlier ones, rank of drawdown duration, time to recovery, Kaplan-Meier, drawdown calendar.'
     },
     '/spot-vol-beta': {
       title: 'Spot-Vol Beta — SPX vs VIX Regression | SeasonAlpha',
