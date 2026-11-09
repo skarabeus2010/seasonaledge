@@ -1031,7 +1031,6 @@ SYMBOLS = {
     "BE":   {"name": "Bloom Energy", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Bloom Energy — Festoxid-Brennstoffzellen"},
     "PRIM": {"name": "Primoris Services", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Primoris Services — Energie- & Versorgungs-Infrastruktur"},
     "MYRG": {"name": "MYR Group", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NASDAQ", "beschreibung": "MYR Group — Stromnetz-Bau"},
-    "ATKR": {"name": "Atkore", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Atkore Inc. — Elektro-Infrastrukturprodukte"},
     "FIX":  {"name": "Comfort Systems USA", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Comfort Systems USA — HLK- & Gebäudetechnik"},
     "EMR":  {"name": "Emerson Electric", "kategorie": "US-Aktie", "währung": "USD", "exchange": "NYSE", "beschreibung": "Emerson Electric — Automatisierungstechnik"},
     # Unregulierte Versorger / Stromerzeuger
@@ -1093,6 +1092,14 @@ DEFAULT_SYMBOL = "SPY"
 def get_symbols_by_category(kategorie: str) -> dict:
     """Gibt alle Symbole einer Kategorie zurück."""
     return {k: v for k, v in SYMBOLS.items() if v["kategorie"] == kategorie}
+
+
+# Aus dem Universum genommen (übernommen, delistet). Die Kursreihen bleiben als Historie in `prices`; Nightly,
+# Intraday, Mail und Audit-Abdeckung kennen sie nicht mehr, der Orphan-Check des Audits nimmt sie bewusst aus.
+AUSGESCHIEDEN = {
+    "ATKR": {"name": "Atkore", "letzte_sitzung": "2026-10-16",
+             "grund": "Übernahme durch Prysmian (Abschluss 19.10.2026, 95 USD in bar je Aktie), NYSE-Delisting"},
+}
 
 
 def get_all_tickers() -> list[str]:

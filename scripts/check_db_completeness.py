@@ -342,7 +342,9 @@ def dim_coverage(ctx: dict) -> dict:
     if not ctx.get("single"):
         try:
             price_tickers = _distinct_price_tickers()
-            orphans = sorted(price_tickers - set(universe))
+            from shared.symbols import AUSGESCHIEDEN
+            # Ausgeschiedene Ticker (übernommen/delistet) behalten ihre Kurshistorie bewusst — kein Orphan.
+            orphans = sorted(price_tickers - set(universe) - set(AUSGESCHIEDEN))
             findings["orphans"] = orphans
             if not price_tickers:
                 add("orphans (Registry)", "yellow", "keine Ticker ermittelt")
@@ -351,8 +353,10 @@ def dim_coverage(ctx: dict) -> dict:
                     f"{len(orphans)} Ticker mit Preisdaten NICHT in symbols.py: "
                     + ", ".join(orphans[:12]) + ("…" if len(orphans) > 12 else ""))
             else:
+                aus = sorted(price_tickers & set(AUSGESCHIEDEN))
                 add("orphans (Registry)", "green",
-                    "keine Orphans — alle Preis-Ticker sind in der Registry")
+                    "keine Orphans — alle Preis-Ticker sind in der Registry"
+                    + (f" (ausgeschieden mit Historie: {', '.join(aus)})" if aus else ""))
         except Exception as e:
             add("orphans (Registry)", "yellow", f"nicht ermittelbar: {str(e)[:60]}")
 

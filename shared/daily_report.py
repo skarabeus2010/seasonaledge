@@ -1040,7 +1040,7 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
     sofern in scanner_results vorhanden.
     """
     from shared.supabase_client import get_client
-    from shared.symbols import SYMBOLS
+    from shared.symbols import AUSGESCHIEDEN, SYMBOLS
 
     try:
         resp = get_client().rpc("get_watchlist_by_email", {"p_email": email}).execute()
@@ -1060,6 +1060,9 @@ def fetch_watchlist_for_email(email: str, scanner_results: list[dict] | None = N
             if t:
                 score_map[t] = {"score": s.get("score")}
 
+    # Ausgeschiedene Ticker (übernommen/delistet) haben keine neuen Kurse mehr — ihre Signale wären alte Werte ohne
+    # Kennzeichnung. Die gespeicherte Watchlist bleibt unverändert, die Mail lässt sie nur aus.
+    raw = [item for item in raw if item.get("ticker") not in AUSGESCHIEDEN]
     items = raw[:WATCHLIST_LIMIT]
     # Eine Historie-Query für alle Watchlist-Ticker → MW + LBR/RSI/Score + Kurs/Vortag.
     wl_tickers = [item["ticker"] for item in items if item.get("ticker")]

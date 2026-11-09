@@ -59,6 +59,15 @@ MUTATIONEN = [
      "[Betrieb: EXIT-Falle"),
     ("Normalisieren trotz fremder Methode", "einbindung", None,
      [(RS, '        raise Verweigert("Methode %s statt %s" % (fremd[0], methode))', "        pass")], "[Simulation: fremde Methode"),
+    # Cache-Buster im gebauten Blog (2026-11-09, Search Console „Seite mit Weiterleitung“)
+    ("kein Cache-Buster beim Setzen", "einbindung", None,
+     [(RS, "                n = assets_setzen(n, a.wert)\n", "")], "[Simulation: Blog-Skripte tragen ?v="),
+    ("Prüfung ohne Cache-Buster-Befund", "einbindung", None,
+     [(RS, "        for b in html_pruefen(t, a.wert) + assets_pruefen(t, a.wert):", "        for b in html_pruefen(t, a.wert):")],
+     "[Simulation: Asset ohne Cache-Buster"),
+    ("fremde Query-Form wird überschrieben", "einbindung", None,
+     [(RS, "        if q is not None and not ASSET_VERSION.match(q):", "        if False:")],
+     "[Simulation: fremde Query-Form bleibt stehen"),
     ("Methoden laufen auseinander", "einbindung", None, [(KM, 'LESER = "alt"', 'LESER = "kalender_v1"')], "[Methode: methode.js = shared"),
     ("XHR an der Hülle vorbei", "einbindung", None,
      [(DASH, '  <script src="/landing/js/methode.js"></script>\n',
@@ -127,8 +136,14 @@ def isolierte_kopie(ziel: pathlib.Path) -> pathlib.Path:
     for teil in ("shared", "deploy", ".github"):
         shutil.copytree(WURZEL / teil, ziel / teil, ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copytree(WURZEL / "blog" / "templates", ziel / "blog" / "templates")
+    # seit Kalender V2 bindet seo/tools (Trading Day Converter) eigene Skripte ein und steht im Manifest
+    shutil.copytree(WURZEL / "seo" / "tools", ziel / "seo" / "tools", ignore=shutil.ignore_patterns("__pycache__"))
     (ziel / "scripts").mkdir()
     shutil.copy2(WURZEL / "scripts" / "verify_einbindung.py", ziel / "scripts" / "verify_einbindung.py")
+    # verify_einbindung liest seit Kalender V2 das Einbindungsmanifest — ohne Kopie brach der Mutationstest ab
+    (ziel / "scripts" / "fixtures").mkdir()
+    shutil.copy2(WURZEL / "scripts" / "fixtures" / "einbindung_manifest.json",
+                 ziel / "scripts" / "fixtures" / "einbindung_manifest.json")
     return ziel
 
 

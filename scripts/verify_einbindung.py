@@ -260,6 +260,38 @@ def simulation():
                (r.stdout + r.stderr)[-200:])
         js_ok = all(("SA.__release('%s')" % sha) in lesen(p) for p in (k / "landing" / "js").glob("*.js"))
         pruefe("Simulation: jede JS-Datei trägt die Kennung", js_ok)
+        # Cache-Buster (2026-11-09): der gebaute Blog band methode.js/app.js ohne ?v= ein → Googles Renderer kombinierte
+        # frische HTML mit Skripten eines alten Releases, die Sperre lud mit ?r= neu („Seite mit Weiterleitung“).
+        blog = k / "blog" / "output" / "post" / "index.html"
+        roh_blog = lesen(blog)
+        pruefe("Simulation: Blog-Skripte tragen ?v=<Kennung>",
+               ('/landing/js/methode.js?v=%s"' % sha) in roh_blog and ('/landing/js/app.js?v=%s"' % sha) in roh_blog
+               and ('/landing/js/app.js?v=%s"' % sha) in roh_en and "?v=abc1234" not in roh_en, roh_blog[-160:])
+        r = lauf("%%RELEASE%%", "--nur-pruefen")
+        pruefe("Simulation: Platzhalter verlangt keinen Cache-Buster", "Cache-Buster" not in (r.stdout + r.stderr),
+               (r.stdout + r.stderr)[-200:])
+        blog.write_text(roh_blog.replace('/landing/js/app.js?v=%s"' % sha, '/landing/js/app.js"'), encoding="utf-8")
+        css = k / "blog" / "output" / "post2" / "index.html"
+        css.parent.mkdir(parents=True)
+        css.write_text("<html><head><link rel=\"stylesheet\" href=\"/landing/css/app.css?v=alt1234\"></head></html>",
+                       encoding="utf-8")
+        r = lauf(sha, "--nur-pruefen")
+        pruefe("Simulation: Asset ohne Cache-Buster der Kennung → Prüfung rot (JS und CSS)",
+               r.returncode == 1 and "app.js" in r.stderr and "app.css?v=alt1234" in r.stderr, (r.stdout + r.stderr)[-300:])
+        r = lauf(sha)
+        pruefe("Simulation: erneutes Setzen repariert beides", r.returncode == 0
+               and ('/landing/js/app.js?v=%s"' % sha) in lesen(blog) and ('app.css?v=%s"' % sha) in lesen(css),
+               (r.stdout + r.stderr)[-200:])
+        # Fremde Query-Form (Codex R1 P3): bleibt unverändert stehen, die Abschlussprüfung meldet sie
+        quer = k / "blog" / "output" / "post3" / "index.html"
+        quer.parent.mkdir(parents=True)
+        roh_quer = "<html><head><script src=\"/landing/js/app.js?v=1.2&amp;x=1\"></script></head></html>"
+        quer.write_text(roh_quer, encoding="utf-8")
+        r = lauf(sha)
+        pruefe("Simulation: fremde Query-Form bleibt stehen und macht die Prüfung rot",
+               r.returncode == 1 and "app.js?v=1.2&amp;x=1" in r.stderr and lesen(quer) == roh_quer,
+               (r.stdout + r.stderr)[-300:])
+        quer.unlink()
         # Methodenwechsel: eine Ausgabe trägt eine andere Methode → Verweigerung, nichts geschrieben
         fremd = k / "blog" / "output" / "post" / "index.html"
         fremd.write_text(lesen(fremd).replace("window.__SA_METHODE='alt'", "window.__SA_METHODE='kalender_v1'"),

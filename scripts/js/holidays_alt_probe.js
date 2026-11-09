@@ -82,8 +82,9 @@ g['arithmetik'] = [h(arith)];
 // Sonderlisten (unter alt lesbar)
 g['sonderlisten'] = [h([r(() => H._NYSE_SONDER), r(() => H._XETRA_SONDER)])];
 
-// detect: alle Ticker + Randfälle
-const ticker = JSON.parse(fs.readFileSync(path.join(repo, 'landing/data/tickers.json'), 'utf8')).map((x) => x.t).sort();
+// detect: alle Ticker der Momentaufnahme + Randfälle. Die Liste ist eingefroren (Stand der Aufnahme) — die live
+// tickers.json hätte die Prüfsumme bei jedem Wechsel im Universum verschoben (ATKR, 2026-11-09).
+const ticker = JSON.parse(fs.readFileSync(path.join(repo, 'scripts/fixtures/holidays_alt_ticker.json'), 'utf8')).ticker.slice().sort();
 const rand = ['', null, undefined, '^FOO', 'X.YY', 'btc-usd', 'eurusd=x', '11 Sektoren', 'AZN', 'ASML', 'ENR.F', 'NEL.OL',
   '^N225', '^HSI', '^KS11', 'SAP.DE', 'NVDA', 'GC=F', 'ES=F', 'FOO.BAR'];
 g['detect'] = [h(ticker.map((t) => t + '=' + r(() => H.detect(t)))), h(rand.map((t) => String(t) + '=' + r(() => H.detect(t))))];

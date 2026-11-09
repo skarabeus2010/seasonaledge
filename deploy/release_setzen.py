@@ -8,8 +8,16 @@ Für jede HTML-Datei unter den Bäumen, die ein eigenes Skript (`/landing/js/<na
         <script>window.__SA_RELEASE='<wert>';window.__SA_METHODE='<methode>';</script>
         <script src="/landing/js/methode.js"></script>
   - jede Kennung (`window.__SA_RELEASE='…'`) wird auf <wert> gesetzt.
+  - mit einer echten Kennung (nicht dem Platzhalter) trägt jede eigene Asset-Adresse (`/landing/js/*.js`,
+    `/landing/css/*.css` in `src`/`href`) den Cache-Buster `?v=<wert>` — auch im gebauten Blog, den
+    inject_credentials.sh nicht erreicht (er entsteht erst danach).
 Für jede eigene JS-Datei unter `landing/js/` wird jede Kennung (`SA.__release('…')`, in methode.js zusätzlich
 `var RELEASE = '…'`) auf <wert> gesetzt.
+
+WARUM Cache-Buster hier (2026-11-09): die Blogseiten banden methode.js/app.js ohne `?v=` ein. Googles Renderer
+hält Skripte lange im Cache und kombinierte frische Blog-HTML mit Skripten eines älteren Releases → die Release-
+Sperre griff, ersetzte den Inhalt durch den Hinweis und lud mit `?r=` neu; die Search Console meldete die Seiten
+als „Seite mit Weiterleitung“. Mit der Kennung in der Adresse gehört zu jeder HTML genau ihr Skriptstand.
 
 Grenze: Normalisieren ist nur ohne Methodenwechsel erlaubt. Trägt eine HTML eine andere Methode
 (`window.__SA_METHODE`) als `methode.js`, wird NICHTS geschrieben (Exit 3) — ein Methodenwechsel läuft nur über V9.
@@ -33,6 +41,9 @@ EIGENES_SKRIPT = re.compile(r'<script\b[^>]*\bsrc="/landing/js/([A-Za-z0-9_.-]+)
                             re.IGNORECASE)
 HTML_KENNUNG = re.compile(r"window\.__SA_RELEASE='([^'\\]*)'")
 HTML_METHODE = re.compile(r"window\.__SA_METHODE='([^'\\]*)'")
+ASSET = re.compile(r'(\b(?:src|href)=")(/landing/(?:js|css)/[A-Za-z0-9_./-]+\.(?:js|css))(\?[^"]*)?(")')
+# Nur diese Query-Form wird ersetzt; jede andere (?v=1.2, ?v=x&y=1, ?x=1) bleibt stehen und meldet die Prüfung.
+ASSET_VERSION = re.compile(r"^\?v=[A-Za-z0-9%]*$")
 JS_KENNUNG = re.compile(r"SA\.__release\('([^'\\]*)'\)")
 JS_METHODE_RELEASE = re.compile(r"var RELEASE = '([^'\\]*)';")
 JS_METHODE = re.compile(r"var METHODE = '([^'\\]*)';")
@@ -108,6 +119,19 @@ def html_normalisieren(text: str, wert: str, methode: str) -> tuple[str, list[st
     return text, []
 
 
+def assets_setzen(text: str, wert: str) -> str:
+    """Cache-Buster `?v=<wert>` an jede eigene JS/CSS-Adresse — nur mit echter Kennung (der Platzhalter bleibt
+    ohne, damit das Normalisieren nichts Erfundenes in die Adressen schreibt)."""
+    if wert == PLATZHALTER:
+        return text
+    def ein(m):
+        q = m.group(3)
+        if q is not None and not ASSET_VERSION.match(q):
+            return m.group(0)
+        return m.group(1) + m.group(2) + "?v=" + wert + m.group(4)
+    return ASSET.sub(ein, text)
+
+
 def html_pruefen(text: str, wert: str) -> list[str]:
     befunde = []
     skripte = list(EIGENES_SKRIPT.finditer(text))
@@ -126,6 +150,14 @@ def html_pruefen(text: str, wert: str) -> list[str]:
     if not HTML_METHODE.search(text):
         befunde.append("kein window.__SA_METHODE")
     return befunde
+
+
+def assets_pruefen(text: str, wert: str) -> list[str]:
+    """Mit echter Kennung muss jede eigene JS/CSS-Adresse `?v=<wert>` tragen."""
+    if wert == PLATZHALTER:
+        return []
+    falsch = sorted({m.group(2) + (m.group(3) or "") for m in ASSET.finditer(text) if m.group(3) != "?v=" + wert})
+    return ["Asset ohne Cache-Buster der Kennung: %s" % ", ".join(falsch[:3])] if falsch else []
 
 
 def js_normalisieren(name: str, text: str, wert: str) -> str:
@@ -175,6 +207,7 @@ def main(argv=None) -> int:
             for p in html:
                 t = lesen(p)
                 n, _ = html_normalisieren(t, a.wert, methode)
+                n = assets_setzen(n, a.wert)
                 if n != t:
                     neu[p] = n
         except Verweigert as e:
@@ -191,7 +224,8 @@ def main(argv=None) -> int:
 
     fehler = []
     for p in html:
-        for b in html_pruefen(lesen(p), a.wert):
+        t = lesen(p)
+        for b in html_pruefen(t, a.wert) + assets_pruefen(t, a.wert):
             fehler.append("%s: %s" % (p.relative_to(wurzel), b))
     for p in js:
         for b in js_pruefen(p.name, lesen(p), a.wert):
