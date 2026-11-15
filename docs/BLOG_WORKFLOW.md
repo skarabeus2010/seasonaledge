@@ -122,7 +122,29 @@ git add blog/posts/ && git commit -m "Blog: 4 Posts fuer April" && git push
 
 ### 3. Automatische Veroeffentlichung
 
-Der Nightly-Job rebuildet taeglich. Posts erscheinen am `publish_date` automatisch.
+**Achtung (geprüft 2026-11-15): Es gibt keinen täglichen Neubau.** Der Blog wird nur im Deploy gebaut
+(`deploy.yml`, `blog_builder.py --build`). `status: scheduled` + `publish_date` sorgt nur dafür, dass der Artikel
+bis zum Datum NICHT erzeugt wird (404, nicht in Sitemap/Übersicht) — erscheinen tut er erst beim nächsten Neubau
+nach dem Datum. Für einen festen Termin deshalb einen einmaligen Timer auf dem Server setzen:
+
+```bash
+# Skript: deploy/blog_freischalten.sh (auf dem Server /opt/seasonaledge/deploy/…) — wiederholt die Blog-Schritte
+# des Deploys ohne Container-Neubau:
+#   docker compose exec -T app python3 blog/blog_builder.py --build
+#   python3 seo/programmatic_seo_builder.py
+#   python3 deploy/release_setzen.py "$(git rev-parse HEAD)"   # Pflicht, sonst fehlen die ?v=-Kennungen
+#   python3 scripts/verify_seo_html.py
+systemd-run --unit=sa-blog-freischalten-<JJJJMMTT> --on-calendar='<JJJJ-MM-TT> 06:00:00 UTC' \
+  --timer-property=AccuracySec=1min /opt/seasonaledge/deploy/blog_freischalten.sh
+systemctl list-timers 'sa-blog-*'                       # Kontrolle
+journalctl -u sa-blog-freischalten-<JJJJMMTT>.service   # Log nach dem Lauf
+```
+
+Vorher das Skript einmal von Hand laufen lassen (baut denselben Stand wie der letzte Deploy, ändert also nichts).
+Kein API-Key nötig: der Artikel ist vorher fertig geschrieben und gepusht, der Timer baut nur statisches HTML.
+**Grenze:** ein `systemd-run`-Timer übersteht keinen Server-Neustart. Ein Push vor dem Termin schadet nicht.
+Erster Einsatz: Thanksgiving-Artikel, 2026-11-20 06:00 UTC (Timer zeigt noch auf die Kopie `/root/sa_blog_freischalten.sh`,
+inhaltsgleich).
 
 ---
 
