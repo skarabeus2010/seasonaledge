@@ -140,6 +140,7 @@ def get_or_compute_tdom_stats(
     df=None,
     strategy: str = "open_to_close",
     direction: str = "forward",
+    schreibfehler_werfen: bool = False,
 ) -> list[dict]:
     """
     TDoM-Statistiken aus DB laden, bei Bedarf live berechnen + speichern.
@@ -184,7 +185,11 @@ def get_or_compute_tdom_stats(
         from shared.supabase_client import upsert_tdom_stats
         upsert_tdom_stats(records)
     except Exception as e:
-        app_logger.debug(f"cache_manager: DB-Upsert tdom_stats fehlgeschlagen: {e}")
+        # error statt debug + Weitergabe an den Nightly wie bei monthly_stats (Audit 2026-11-15): ein gescheiterter
+        # Upsert ließ die Statistik still auf altem Stand, der Lauf blieb grün
+        app_logger.error(f"cache_manager: DB-Upsert tdom_stats {ticker} {strategy} fehlgeschlagen: {e}")
+        if schreibfehler_werfen:
+            raise
 
     return records
 
@@ -196,6 +201,7 @@ def get_or_compute_tdoy_stats(
     df=None,
     strategy: str = "open_to_close",
     direction: str = "forward",
+    schreibfehler_werfen: bool = False,
 ) -> list[dict]:
     """
     TDoY-Statistiken aus DB laden, bei Bedarf live berechnen + speichern.
@@ -240,6 +246,10 @@ def get_or_compute_tdoy_stats(
         from shared.supabase_client import upsert_tdoy_stats
         upsert_tdoy_stats(records)
     except Exception as e:
-        app_logger.debug(f"cache_manager: DB-Upsert tdoy_stats fehlgeschlagen: {e}")
+        # error statt debug + Weitergabe an den Nightly wie bei monthly_stats (Audit 2026-11-15): ein gescheiterter
+        # Upsert ließ die Statistik still auf altem Stand, der Lauf blieb grün
+        app_logger.error(f"cache_manager: DB-Upsert tdoy_stats {ticker} {strategy} fehlgeschlagen: {e}")
+        if schreibfehler_werfen:
+            raise
 
     return records

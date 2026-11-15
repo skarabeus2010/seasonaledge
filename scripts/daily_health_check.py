@@ -173,6 +173,119 @@ def bewerte_polymarket_intraday(row: dict | None, now_utc: datetime) -> tuple[st
     return "green", detail, f"{alter_h:.1f}h"
 
 
+NIGHTLY_START_NY = (16, 45)      # deploy/systemd/sa-nightly.timer: OnCalendar=*-*-* 16:45:00 America/New_York
+NIGHTLY_PUFFER_H = 3             # so lange darf ein Lauf dauern, bevor seine Zeile fehlen darf
+
+
+def erwarteter_nightly_tag(now_utc):
+    """UTC-Datum (= run_date) des jüngsten Nightly, der jetzt fertig sein müsste: letzter Start um 16:45 New York, der
+    mindestens NIGHTLY_PUFFER_H Stunden zurückliegt. Codex 2026-11-15: ohne diese Erwartung fand der Check nach einem
+    gescheiterten refresh_log-Insert (oder einem Abbruch vor dem Logpunkt) die grüne Vortageszeile."""
+    from zoneinfo import ZoneInfo
+    ny = ZoneInfo("America/New_York")
+    jetzt_ny = now_utc.astimezone(ny)
+    start = jetzt_ny.replace(hour=NIGHTLY_START_NY[0], minute=NIGHTLY_START_NY[1], second=0, microsecond=0)
+    if jetzt_ny < start + timedelta(hours=NIGHTLY_PUFFER_H):
+        start = (start - timedelta(days=1)).replace(hour=NIGHTLY_START_NY[0], minute=NIGHTLY_START_NY[1])
+    return start.astimezone(timezone.utc).date()
+
+
+def bewerte_nightly(last: dict, today_utc, erwartet=None) -> tuple[str, str]:
+    """Status + Text für die letzte refresh_log-Zeile des Nightly. Eigene Funktion, damit der Wächter sie prüfen kann
+    (scripts/verify_nightly_phasen.py). „PHASE: …“-Einträge = gescheiterte Phase des Laufs → rot.
+    `erwartet` (erwarteter_nightly_tag): eine ältere Zeile heißt, der erwartete Lauf hat keine geschrieben → rot."""
+    run_date = last.get("run_date")
+    errors_raw = last.get("errors") or "[]"
+    try:
+        errors = json.loads(errors_raw) if isinstance(errors_raw, str) else errors_raw
+    except Exception:
+        errors = []
+    duration = last.get("duration_seconds")
+    success = last.get("tickers_success", 0)
+    total = last.get("tickers_total", 0)
+
+    run_d = datetime.strptime(run_date, "%Y-%m-%d").date() if run_date else None
+    age_days = (today_utc - run_d).days if run_d else 999
+
+    phasen = [str(e) for e in (errors or []) if str(e).startswith("PHASE: ")]
+    if age_days > 1:
+        return "red", f"Letzter Run {age_days} Tage alt ({run_date})"
+    if erwartet is not None and (run_d is None or run_d < erwartet):
+        return "red", f"Nightly vom {erwartet.isoformat()} ohne refresh_log-Zeile (letzte: {run_date})"
+    if phasen:
+        # Der Nightly endete rot (gescheiterte Phase, scripts/nightly_refresh.py) — bis 2026-11-15 zeigte die
+        # Mail einen solchen Lauf grün, weil refresh_log nur die Kurslücken kannte
+        return "red", f"{run_date} · {len(phasen)} Phase(n) gescheitert: {phasen[0][7:][:100]}"
+    if errors:
+        return "yellow", f"{run_date} · {len(errors)} Fehler: {str(errors[0])[:80]}"
+    if total and success < total * 0.95:
+        return "yellow", f"{run_date} · {success}/{total} erfolgreich ({(success/total*100):.0f}%)"
+    return "green", f"{run_date} · {duration}s · {success}/{total} Ticker"
+
+
+NIGHTLY_AUSGABEN = ("market_calendar.json", "market_calendar.ics", "chart-data.json", "wahlen_study.json")
+
+
+def bewerte_nightly_ausgaben(datenordner, jetzt_ts: float) -> tuple[str, str]:
+    """Alter der täglich vom Nightly geschriebenen Dateien: > 2 Tage gelb (ein Nightly fehlt übers Wochenende nicht,
+    er läuft täglich), > 4 Tage oder fehlend rot."""
+    import os
+    alt = []
+    schlimmst = "green"
+    for name in NIGHTLY_AUSGABEN:
+        p = os.path.join(str(datenordner), name)
+        if not os.path.exists(p):
+            alt.append(f"{name} fehlt")
+            schlimmst = "red"
+            continue
+        tage = (jetzt_ts - os.path.getmtime(p)) / 86400
+        if tage > 4:
+            alt.append(f"{name} {tage:.0f} T.")
+            schlimmst = "red"
+        elif tage > 2:
+            alt.append(f"{name} {tage:.1f} T.")
+            schlimmst = "yellow" if schlimmst == "green" else schlimmst
+    # Inhalt des Kalenders: der Deploy setzt die getrackte Datei per `git checkout` zurück — das Änderungsdatum ist
+    # dann frisch, der Inhalt alt. Das Fenster beginnt am Ersten des Baumonats → erstes Ereignis ≤ 40 Tage alt.
+    p = os.path.join(str(datenordner), "market_calendar.json")
+    if os.path.exists(p):
+        try:
+            ev = json.load(open(p, encoding="utf-8"))
+            erstes = min(e["date"] for e in ev)
+            grenze = datetime.fromtimestamp(jetzt_ts, timezone.utc).date() - timedelta(days=40)
+            if erstes < grenze.isoformat():
+                alt.append(f"market_calendar.json Inhalt ab {erstes} (alter Stand)")
+                schlimmst = "red"
+        except Exception as e:  # noqa: BLE001
+            alt.append(f"market_calendar.json unlesbar: {str(e)[:60]}")
+            schlimmst = "red"
+    if not alt:
+        return "green", f"{len(NIGHTLY_AUSGABEN)} Dateien ≤ 2 Tage alt"
+    return schlimmst, "; ".join(alt)
+
+
+def pruefe_nightly(client, now_utc) -> dict:
+    """Check 1 (Nightly Refresh) als eigene Funktion — der Wächter führt sie mit einer Attrappe aus
+    (scripts/verify_nightly_phasen.py), damit auch der Aufruf mit dem erwarteten Lauftag geprüft ist."""
+    try:
+        resp = (
+            client.table("refresh_log")
+            .select("run_date,run_type,duration_seconds,errors,tickers_success,tickers_total,created_at")
+            .eq("run_type", "nightly")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            return {"name": "Nightly Refresh", "status": "red", "detail": "Kein Eintrag in refresh_log", "value": "—"}
+        last = rows[0]
+        status, detail = bewerte_nightly(last, now_utc.date(), erwarteter_nightly_tag(now_utc))
+        return {"name": "Nightly Refresh", "status": status, "detail": detail, "value": last.get("run_date") or "—"}
+    except Exception as e:
+        return {"name": "Nightly Refresh", "status": "red", "detail": f"Query-Fehler: {str(e)[:100]}", "value": "ERR"}
+
+
 def collect_health_data() -> dict:
     """Sammelt alle Health-Checks in ein Dict fuer Template-Rendering."""
     from shared.supabase_client import get_client
@@ -193,66 +306,19 @@ def collect_health_data() -> dict:
             overall_status = new_status
 
     # ── Check 1: Letzter Nightly-Run ──────────────────────────────────
+    _c1 = pruefe_nightly(client, now_utc)
+    checks.append(_c1)
+    downgrade(_c1["status"])
+
+    # ── Check 1b: Ausgaben des Nightly (Dateialter) ───────────────────
+    # Audit 2026-11-15: market_calendar.json stand 135 Tage still auf dem committeten Stand; chart-data.json und
+    # wahlen_study.json prüfte niemand. Alle drei schreibt der Nightly täglich (Phasen I, J, K).
     try:
-        resp = (
-            client.table("refresh_log")
-            .select("run_date,run_type,duration_seconds,errors,tickers_success,tickers_total,created_at")
-            .eq("run_type", "nightly")
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        rows = resp.data or []
-        if not rows:
-            checks.append({
-                "name": "Nightly Refresh",
-                "status": "red",
-                "detail": "Kein Eintrag in refresh_log",
-                "value": "—",
-            })
-            downgrade("red")
-        else:
-            last = rows[0]
-            run_date = last.get("run_date")
-            errors_raw = last.get("errors") or "[]"
-            try:
-                errors = json.loads(errors_raw) if isinstance(errors_raw, str) else errors_raw
-            except Exception:
-                errors = []
-            duration = last.get("duration_seconds")
-            success = last.get("tickers_success", 0)
-            total = last.get("tickers_total", 0)
-
-            run_d = datetime.strptime(run_date, "%Y-%m-%d").date() if run_date else None
-            age_days = (today_utc - run_d).days if run_d else 999
-
-            if age_days > 1:
-                status = "red"
-                detail = f"Letzter Run {age_days} Tage alt ({run_date})"
-            elif errors and len(errors) > 0:
-                status = "yellow"
-                detail = f"{run_date} · {len(errors)} Fehler: {str(errors[0])[:80]}"
-            elif total and success < total * 0.95:
-                status = "yellow"
-                detail = f"{run_date} · {success}/{total} erfolgreich ({(success/total*100):.0f}%)"
-            else:
-                status = "green"
-                detail = f"{run_date} · {duration}s · {success}/{total} Ticker"
-            checks.append({
-                "name": "Nightly Refresh",
-                "status": status,
-                "detail": detail,
-                "value": run_date or "—",
-            })
-            downgrade(status)
-    except Exception as e:
-        checks.append({
-            "name": "Nightly Refresh",
-            "status": "red",
-            "detail": f"Query-Fehler: {str(e)[:100]}",
-            "value": "ERR",
-        })
-        downgrade("red")
+        st, d = bewerte_nightly_ausgaben(pathlib.Path(_project_dir) / "landing" / "data", now_utc.timestamp())
+    except Exception as e:  # noqa: BLE001
+        st, d = "red", f"Prüfung gescheitert: {str(e)[:100]}"
+    checks.append({"name": "Nightly-Ausgaben (Kalender, Chart, Wahlen)", "status": st, "detail": d, "value": st})
+    downgrade(st)
 
     # ── Check 2: prices Frische SPY (als US-Proxy) ────────────────────
     try:

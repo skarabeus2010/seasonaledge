@@ -228,6 +228,16 @@ jobs:
       # echte Seite DE + gebaute EN in jsdom (braucht das npm ci darueber). Mutationen 20/20 (verify_drawdown_mutation.py).
       - name: Waechter - Drawdown-Analyse
         run: python3 scripts/verify_drawdown.py
+      # Audit 2026-11-15: jede gescheiterte Nightly-Phase steht als „PHASE: …“ im refresh_log (Log nach Phase K) und ist
+      # in der Health-Mail rot; TDOM/TDOY-Schreibfehler, Backfill-Abfragefehler, Kalender-Ausgabe (Alter + Inhalt) und
+      # getAll-Fehlerantworten gehen nicht mehr als Erfolg durch. Mutationen 13/13 (verify_nightly_phasen_mutation.py).
+      - name: Waechter - Nightly-Phasen und Health
+        run: python3 scripts/verify_nightly_phasen.py
+      # Indikator-Zwillinge (Audit 2026-11-15): shared/indicators.py = landing/js/indicators.js fuer EMA (SMA-Start),
+      # RSI (Wilder, ohne Verlust 100, flach unbestimmt), Bollinger (Population), MACD/LBR; Handfaelle beider Seiten.
+      # Mutationen 7/7 (verify_indikator_zwillinge_mutation.py).
+      - name: Waechter - Indikator-Zwillinge Python = JS
+        run: python3 scripts/verify_indikator_zwillinge.py
       # GEX-Spot und Kettenvertrag (docs/review_prompts/2026-10-21_gex_abendluecke_entwurf_v5.md):
       # Yahoo liefert den Tagesbalken der Session etwa 00:00-01:10 UTC mit close = null, der
       # verspaetete GitHub-Cron traf das fuenf Naechte in Folge. Geprueft werden der Rueckfall auf
@@ -424,6 +434,11 @@ jobs:
 
             # Landing-Chart-Daten generieren (Split-Slider ^DJI, schreibt nach landing/data/ = host-sichtbar)
             docker compose exec -T app python3 scripts/generate_landing_chart.py 2>/dev/null || echo "generate_landing_chart.py uebersprungen"
+
+            # Marktkalender (JSON + ICS) im Container — auf dem Host fehlt pandas (bis 2026-11-15 still gescheitert,
+            # Datei 135 Tage alt). Der Nightly baut ihn taeglich (Phase K); der Health-Check prueft das Alter.
+            docker compose exec -T app python3 scripts/build_calendar_data.py \
+              || echo "::warning::build_calendar_data.py fehlgeschlagen — der Nightly baut den Kalender in Phase K"
 
             # nginx neu laden: restart = bewaehrt (alle frueheren Deploys),
             # picked die gemountete deploy/nginx.conf zuverlaessig auf.

@@ -279,7 +279,14 @@ SA.supabase = {
       var q = (query || '') + (query ? '&' : '') + 'offset=' + offset + '&limit=' + PAGE;
       return self.get(table, q).then(function(rows) {
         if (SA.__gesperrt) throw (SA.ReleaseFehler ? new SA.ReleaseFehler('getAll nach Sperre') : new Error('Release-Sperre'));
-        if (!Array.isArray(rows)) return results;
+        // Keine Liste = Fehlerantwort (z. B. 57014 Timeout). Bis 2026-11-15 kam hier der bisher geladene Teilbestand
+        // als Erfolg zurück — eine abgeschnittene Historie sah aus wie eine vollständige (Audit mit Codex).
+        if (!Array.isArray(rows)) {
+          var e = new Error('getAll ' + table + ': ' + ((rows && (rows.message || rows.code)) || 'keine Liste') +
+                            ' nach ' + results.length + ' Zeilen');
+          e.antwort = rows;
+          throw e;
+        }
         results.push.apply(results, rows);
         if (rows.length < PAGE) return results;
         return fetchPage(offset + PAGE);

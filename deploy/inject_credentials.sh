@@ -64,10 +64,10 @@ else
     echo "Credentials injiziert in $COUNT Datei(en) (Supabase + Umami)"
 fi
 
-# ── Marktkalender-Daten bauen (JSON + ICS) ───────────────────
-python3 "$REPO_DIR/scripts/build_calendar_data.py" \
-    && echo "Marktkalender-Daten generiert" \
-    || echo "WARNUNG: build_calendar_data.py fehlgeschlagen — Kalender-Daten nicht aktualisiert"
+# ── Marktkalender-Daten (JSON + ICS) ─────────────────────────
+# Nicht mehr hier: das Host-python3 hat kein pandas, der Aufruf scheiterte bei JEDEM Deploy still, und
+# market_calendar.json stand vom 03.07. bis 15.11.2026 auf dem committeten Stand (Audit 2026-11-15).
+# Jetzt im App-Container: deploy.yml nach dem Container-Austausch und täglich im Nightly (Phase K).
 
 # ── Cache-Busting fuer CSS und JS ────────────────────────────
 # Haengt ?v=<git-sha> an alle /landing/css/*.css und /landing/js/*.js Refs

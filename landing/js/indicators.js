@@ -12,61 +12,77 @@ var SA = window.SA || {};
 
 SA.indicators = {
 
-  // ── Berechnungen (1:1 Port der Python-Funktionen) ──
+  // ── Berechnungen (Zwilling: shared/indicators.py, Wächter scripts/verify_indikator_zwillinge.py) ──
+  // Vertrag für fehlende Kurse (null/undefined/NaN), seit 2026-11-15 gleich in Python: SMA/Bollinger — ein Fenster mit
+  // Lücke ist unbestimmt; EMA/RSI/MACD — gerechnet auf den gültigen Kursen, Ergebnis an deren Stellen, Lücke bleibt null.
+  // Vorher rechnete JS null als 0 und NaN vergiftete die EMA-Folge (Codex 2026-11-15).
+  _gueltig: function(v) { return typeof v === 'number' && !isNaN(v); },
 
-  /** Simple Moving Average */
+  /** Werte nur an gültigen Stellen rechnen und an ihre Positionen zurücklegen */
+  _aufGueltigen: function(closes, fn) {
+    var idx = [], werte = [];
+    for (var i = 0; i < closes.length; i++) if (SA.indicators._gueltig(closes[i])) { idx.push(i); werte.push(closes[i]); }
+    var result = new Array(closes.length).fill(null);
+    if (idx.length === closes.length) return fn(werte);
+    var teil = fn(werte);
+    for (var j = 0; j < idx.length; j++) result[idx[j]] = teil[j];
+    return result;
+  },
+
+  /** Simple Moving Average — Fenster mit Lücke = null */
   calcSMA: function(closes, period) {
     var result = new Array(closes.length).fill(null);
     for (var i = period - 1; i < closes.length; i++) {
-      var sum = 0;
-      for (var j = i - period + 1; j <= i; j++) sum += closes[j];
-      result[i] = sum / period;
+      var sum = 0, ok = true;
+      for (var j = i - period + 1; j <= i; j++) {
+        if (!SA.indicators._gueltig(closes[j])) { ok = false; break; }
+        sum += closes[j];
+      }
+      if (ok) result[i] = sum / period;
     }
     return result;
   },
 
-  /** Exponential Moving Average */
+  /** Exponential Moving Average (SMA-Startwert über die ersten 'period' gültigen Werte) */
   calcEMA: function(closes, period) {
-    var result = new Array(closes.length).fill(null);
-    var k = 2 / (period + 1);
-    // Seed: SMA der ersten 'period' Werte
-    var sum = 0;
-    for (var i = 0; i < period && i < closes.length; i++) sum += closes[i];
-    if (closes.length < period) return result;
-    result[period - 1] = sum / period;
-    for (var i = period; i < closes.length; i++) {
-      result[i] = closes[i] * k + result[i - 1] * (1 - k);
-    }
-    return result;
+    return SA.indicators._aufGueltigen(closes, function(c) {
+      var result = new Array(c.length).fill(null);
+      if (c.length < period) return result;
+      var k = 2 / (period + 1), sum = 0;
+      for (var i = 0; i < period; i++) sum += c[i];
+      result[period - 1] = sum / period;
+      for (var i = period; i < c.length; i++) result[i] = c[i] * k + result[i - 1] * (1 - k);
+      return result;
+    });
   },
 
-  /** Relative Strength Index (0-100) */
+  /** Relative Strength Index (0-100) nach Wilder */
   calcRSI: function(closes, period) {
-    var result = new Array(closes.length).fill(null);
-    if (closes.length < period + 1) return result;
-
-    var gains = [], losses = [];
-    for (var i = 1; i < closes.length; i++) {
-      var d = closes[i] - closes[i - 1];
-      gains.push(d > 0 ? d : 0);
-      losses.push(d < 0 ? -d : 0);
-    }
-
-    // Erste Durchschnitte (SMA)
-    var avgGain = 0, avgLoss = 0;
-    for (var i = 0; i < period; i++) { avgGain += gains[i]; avgLoss += losses[i]; }
-    avgGain /= period; avgLoss /= period;
-    var rs = avgLoss > 0 ? avgGain / avgLoss : 100;
-    result[period] = 100 - 100 / (1 + rs);
-
-    // Weitere Werte (EMA-Glaettung)
-    for (var i = period; i < gains.length; i++) {
-      avgGain = (avgGain * (period - 1) + gains[i]) / period;
-      avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-      rs = avgLoss > 0 ? avgGain / avgLoss : 100;
-      result[i + 1] = 100 - 100 / (1 + rs);
-    }
-    return result;
+    // Kein Verlust bei Gewinn → 100, keine Bewegung → null (unbestimmt). Bis 2026-11-15 wurde dann RS = 100 gesetzt
+    // und eine nur steigende Reihe ergab 99,0099 statt 100 (Audit mit Codex; Zwilling shared/indicators.calc_rsi).
+    function rsiAus(g, v) { return v > 0 ? 100 - 100 / (1 + g / v) : (g > 0 ? 100 : null); }
+    return SA.indicators._aufGueltigen(closes, function(c) {
+      var result = new Array(c.length).fill(null);
+      if (c.length < period + 1) return result;
+      var gains = [], losses = [];
+      for (var i = 1; i < c.length; i++) {
+        var d = c[i] - c[i - 1];
+        gains.push(d > 0 ? d : 0);
+        losses.push(d < 0 ? -d : 0);
+      }
+      // Erste Durchschnitte (SMA)
+      var avgGain = 0, avgLoss = 0;
+      for (var i = 0; i < period; i++) { avgGain += gains[i]; avgLoss += losses[i]; }
+      avgGain /= period; avgLoss /= period;
+      result[period] = rsiAus(avgGain, avgLoss);
+      // Weitere Werte (Wilder-Glaettung)
+      for (var i = period; i < gains.length; i++) {
+        avgGain = (avgGain * (period - 1) + gains[i]) / period;
+        avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+        result[i + 1] = rsiAus(avgGain, avgLoss);
+      }
+      return result;
+    });
   },
 
   /** Bollinger Bands → {middle, upper, lower} */
@@ -96,15 +112,8 @@ SA.indicators = {
     for (var i = 0; i < closes.length; i++) {
       if (emaFast[i] !== null && emaSlow[i] !== null) macdLine[i] = emaFast[i] - emaSlow[i];
     }
-    // Signal = EMA der MACD-Line
-    var validMacd = [];
-    var startIdx = -1;
-    for (var i = 0; i < macdLine.length; i++) {
-      if (macdLine[i] !== null) { if (startIdx < 0) startIdx = i; validMacd.push(macdLine[i]); }
-    }
-    var sigEMA = SA.indicators.calcEMA(validMacd, signal);
-    var signalLine = new Array(closes.length).fill(null);
-    for (var i = 0; i < sigEMA.length; i++) signalLine[startIdx + i] = sigEMA[i];
+    // Signal = EMA der gültigen MACD-Linie (calcEMA überspringt null — führende und Lücken), wie Python calc_ema
+    var signalLine = SA.indicators.calcEMA(macdLine, signal);
 
     var histogram = new Array(closes.length).fill(null);
     for (var i = 0; i < closes.length; i++) {

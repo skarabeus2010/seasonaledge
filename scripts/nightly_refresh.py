@@ -150,13 +150,14 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
                 saison_fehler.append(f"{ticker}: {str(_se)[:120]}")
                 app_logger.error(f"nightly_refresh: Saison-Score {ticker}: {_se}")
 
-            # TDoM Stats (alle 4 Strategien, forward) — Daily-Newsletter Multi-Window-Score
+            # TDoM/TDoY Stats (alle 4 Strategien, forward) — Daily-Newsletter Multi-Window-Score. Ein Schreibfehler
+            # zählt wie bei monthly_stats (bis 2026-11-15 verschluckt: Statistik still alt, Lauf grün)
             for strategy in ["open_to_close", "open_to_next_open", "open_to_next_close", "close_to_next_close"]:
-                get_or_compute_tdom_stats(ticker, df, strategy=strategy, direction="forward")
-
-            # TDoY Stats (alle 4 Strategien, forward)
-            for strategy in ["open_to_close", "open_to_next_open", "open_to_next_close", "close_to_next_close"]:
-                get_or_compute_tdoy_stats(ticker, df, strategy=strategy, direction="forward")
+                for _art, _fn in (("tdom_stats", get_or_compute_tdom_stats), ("tdoy_stats", get_or_compute_tdoy_stats)):
+                    try:
+                        _fn(ticker, df, strategy=strategy, direction="forward", schreibfehler_werfen=True)
+                    except Exception as _te:  # noqa: BLE001
+                        ticker_fehler.append(f"{ticker}: {_art} {strategy} {str(_te)[:80]}")
 
             elapsed = time.time() - t0
             app_logger.info(
@@ -336,6 +337,41 @@ def tickers_erfolgreich(tickers, missing_details, ungeprueft) -> int:
     return len(set(tickers) - set(missing_details) - set(ungeprueft))
 
 
+def refresh_log_eintrag(tickers, missing_details, health_errors, ungeprueft, auto_fixed, regime_status,
+                        dauer_s, gescheitert) -> dict:
+    """Zeile für refresh_log. Gescheiterte Phasen stehen VORN als „PHASE: …“ (nie von den 20 Kurslücken verdrängt)."""
+    import json
+    errs = [f"PHASE: {p}"[:200] for p in gescheitert] + list(health_errors[:20])
+    if not regime_status["ok"]:
+        errs.append(f"STRESS: {regime_status.get('error') or 'kein Lauf veröffentlicht'}")
+    return {
+        "run_date": date.today().strftime("%Y-%m-%d"),
+        "run_type": "nightly",
+        "tickers_total": len(tickers),
+        "tickers_success": tickers_erfolgreich(tickers, missing_details, ungeprueft),
+        "tickers_missing": len(missing_details),
+        "missing_details": json.dumps(missing_details),
+        "auto_fixed": auto_fixed,
+        "duration_seconds": round(dauer_s, 1),
+        "errors": json.dumps(errs),
+    }
+
+
+def _schreibe_refresh_log(tickers, missing_details, health_errors, ungeprueft, auto_fixed, regime_status,
+                          t_start) -> bool:
+    try:
+        from shared.supabase_client import get_client
+        eintrag = refresh_log_eintrag(tickers, missing_details, health_errors, ungeprueft, auto_fixed,
+                                      regime_status, time.time() - t_start, list(_FEHLGESCHLAGEN))
+        get_client().table("refresh_log").insert(eintrag).execute()
+        print("Refresh-Log: geschrieben ✓")
+        return True
+    except Exception as e:  # noqa: BLE001
+        app_logger.error(f"nightly_refresh: refresh_log fehlgeschlagen: {e}")
+        print(f"Refresh-Log failed: {e}")
+        return False
+
+
 def main():
     """Hauptfunktion: Calendar + Ticker Refresh + Heartbeat."""
     from shared.symbols import SYMBOLS
@@ -350,6 +386,7 @@ def main():
     except Exception as e:
         app_logger.error(f"nightly_refresh: Calendar-Sync fehlgeschlagen: {e}")
         print(f"Calendar sync failed: {e}")
+        _FEHLGESCHLAGEN.append("Calendar-Sync")
 
     # Phase A2: CPI Update
     try:
@@ -359,6 +396,7 @@ def main():
     except Exception as e:
         app_logger.error(f"nightly_refresh: CPI-Update fehlgeschlagen: {e}")
         print(f"CPI update failed: {e}")
+        _FEHLGESCHLAGEN.append("CPI-Update")
 
     # Phase B: Ticker Data
     tickers = list(SYMBOLS.keys())
@@ -378,6 +416,7 @@ def main():
     # Per-Ticker-Iteration statt Full-Table-Scan → vermeidet Supabase Statement-Timeout
     backfill_fixed = 0
     backfill_null_total = 0
+    backfill_fehler: list[str] = []   # bis 2026-11-15 mit `pass` verschluckt → „keine NULL-Rows ✓“ ohne Prüfung
     try:
         import math
         from shared.supabase_client import get_client as _get_client_bf
@@ -413,12 +452,15 @@ def main():
                              .eq("date", _bf_row["date"])
                              .execute())
                             backfill_fixed += 1
-                    except Exception:
-                        pass
-            except Exception:
-                pass  # Einzelner Ticker-Fehler → weiter
+                    except Exception as _ue:  # noqa: BLE001
+                        backfill_fehler.append(f"{_bf_ticker} {_bf_row['date']}: {str(_ue)[:80]}")
+            except Exception as _qe:  # noqa: BLE001
+                backfill_fehler.append(f"{_bf_ticker}: {str(_qe)[:80]}")  # einzelner Ticker → weiter, aber gezählt
 
-        if backfill_fixed:
+        if backfill_fehler:
+            print(f"Backfill log_return: {len(backfill_fehler)} Fehler, z. B. {backfill_fehler[0]}")
+            _FEHLGESCHLAGEN.append(f"Backfill log_return ({len(backfill_fehler)} Fehler, z. B. {backfill_fehler[0]})")
+        elif backfill_fixed:
             print(f"Backfill log_return: {backfill_fixed}/{backfill_null_total} gefixt")
         else:
             print("Backfill log_return: keine NULL-Rows ✓")
@@ -426,6 +468,7 @@ def main():
     except Exception as e:
         app_logger.error(f"nightly_refresh: Backfill fehlgeschlagen: {e}")
         print(f"Backfill log_return failed: {e}")
+        _FEHLGESCHLAGEN.append("Backfill log_return")
 
     # Phase E: Stress-Ampel (shared/stress_score.py) — jeder Lauf ist ein geprüfter Vollauf mit eigener Version;
     # sichtbar erst nach Rücklesevergleich und atomarer Veröffentlichung (Plan 2026-10-09 v5, Y1/Y2).
@@ -443,35 +486,13 @@ def main():
         regime_status["error"] = f"Stress-Lauf gescheitert ({type(e).__name__}), Details im App-Log"
         app_logger.error(f"nightly_refresh: Stress-Ampel fehlgeschlagen: {e}")
         print(f"Stress-Ampel failed: {e}")
+        _FEHLGESCHLAGEN.append("Stress-Ampel")  # neutraler Name, kein Score (keine Ampel in Mails)
 
     # Phase E1b (Spot-Vol-Beta) entfernt 2026-10-19: die Tabelle spot_vol_beta las niemand, /spot-vol-beta
     # rechnet selbst aus prices (landing/js/spot-vol-compute.js).
 
-    # Phase E2: refresh_log schreiben
-    try:
-        from shared.supabase_client import get_client
-        _log_client = get_client()
-        import json
-        _log_entry = {
-            "run_date": date.today().strftime("%Y-%m-%d"),
-            "run_type": "nightly",
-            "tickers_total": len(tickers),
-            "tickers_success": tickers_erfolgreich(tickers, missing_details, health_ungeprueft),
-            "tickers_missing": len(missing_details),
-            "missing_details": json.dumps(missing_details),
-            "auto_fixed": auto_fixed + backfill_fixed,
-            "duration_seconds": round(time.time() - t_start, 1),
-            "errors": json.dumps(health_errors[:20]),
-        }
-        # Regime-Status ergaenzen (in errors-Feld, da kein eigenes Feld)
-        if not regime_status["ok"]:
-            _errs = json.loads(_log_entry["errors"])
-            _errs.append(f"STRESS: {regime_status.get('error') or 'kein Lauf veröffentlicht'}")
-            _log_entry["errors"] = json.dumps(_errs)
-        _log_client.table("refresh_log").insert(_log_entry).execute()
-        print("Refresh-Log: geschrieben ✓")
-    except Exception as e:
-        print(f"Refresh-Log failed: {e}")
+    # Phase E2 (refresh_log) steht seit 2026-11-15 am Ende, nach Phase J: vorher sah der Eintrag weder gescheiterte
+    # Ticker-/Saison-Score-Phasen noch Landing-Chart/Wahl-Studie, und die Health-Mail zeigte einen roten Lauf grün.
 
     # Phase F: Weekly Newsletter (nur Sonntags ab 17:00 UTC = 18:00 Berlin-Winter / 19:00 Berlin-Sommer)
     # WICHTIG: capture_output=False damit Newsletter-Output direkt in docker logs
@@ -555,6 +576,28 @@ def main():
         app_logger.error(f"nightly_refresh: Wahl-Studie Phase J fehlgeschlagen: {e}")
         print(f"Wahl-Studie Phase J: exception {e}", flush=True)
         _FEHLGESCHLAGEN.append("Wahl-Studie Phase J")
+
+    # Phase K: Marktkalender (landing/data/market_calendar.json + .ics, Fenster ab dem laufenden Monat). Bis 2026-11-15
+    # baute ihn nur der Deploy mit Host-python3 ohne pandas → still gescheitert, Datei 135 Tage alt.
+    try:
+        import subprocess as _spK
+        _resK = _spK.run([sys.executable, "scripts/build_calendar_data.py"],
+                         cwd=_project_dir, env=_KIND_UMGEBUNG, timeout=300)
+        if _resK.returncode == 0:
+            print("Marktkalender: OK", flush=True)
+        else:
+            print(f"Marktkalender FAILED (exit {_resK.returncode})", flush=True)
+            _FEHLGESCHLAGEN.append("Marktkalender")
+    except Exception as e:
+        app_logger.error(f"nightly_refresh: Marktkalender Phase K fehlgeschlagen: {e}")
+        print(f"Marktkalender Phase K: exception {e}", flush=True)
+        _FEHLGESCHLAGEN.append("Marktkalender Phase K")
+
+    # Phase E2: refresh_log schreiben — nach allen Phasen, mit jeder gescheiterten Phase als „PHASE: …“-Eintrag.
+    # Der Health-Check wertet PHASE-Einträge rot (scripts/daily_health_check.py, Check 1).
+    if not _schreibe_refresh_log(tickers, missing_details, health_errors, health_ungeprueft,
+                                 auto_fixed + backfill_fixed, regime_status, t_start):
+        _FEHLGESCHLAGEN.append("refresh_log")
 
     # Phase Z: Supabase Heartbeat (verhindert Free-Tier Pausing)
     try:
