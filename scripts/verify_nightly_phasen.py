@@ -306,6 +306,9 @@ def block_cache_und_ticker():
     _stub_module("shared.saison_score_betrieb", fuer_ticker=lambda t, c: {"status": "ok"},
                  schreibe=lambda c, a, b: [], scanner_zeile=lambda *a: {}, protokoll_zeile=lambda *a: {})
     _stub_module("shared.tdom_analysis", build_tdom_stats=lambda df, strategy, direction: pd.DataFrame())
+    # refresh_ticker_data importiert shared.calculations (zieht plotly, das im Deploy-Gate fehlt — Deploy 016152f rot)
+    _stub_module("shared.calculations", build_year_data=lambda *a, **k: None,
+                 calculate_seasonal_average=lambda *a, **k: None)
     import scripts.nightly_refresh as nr
     nr._FEHLGESCHLAGEN.clear()
     with redirect_stdout(io.StringIO()):
