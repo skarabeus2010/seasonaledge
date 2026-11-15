@@ -1,0 +1,959 @@
+{
+ "datenstand": {
+  "datei": "blog/daten/gspc_2026-11-13.json",
+  "sha256": "27b320b0ef06ea9a0d0c838ef92c8395734b87b051f7802b50a1a1878d4f9ee4",
+  "letzte_sitzung": "2026-11-13",
+  "abgerufen": "2026-11-15T19:27Z",
+  "zeitraum": "1973-01 bis 2025-12",
+  "monate": 636,
+  "phantomzeilen": [],
+  "fehlende_sitzungen": []
+ },
+ "verfall_belegt_ab": "2015-02",
+ "listung_anzahl": {
+  "belegt": 72,
+  "regel": 564,
+  "projektion": 0
+ },
+ "abstand": {
+  "6": 45,
+  "13": 8,
+  "jahre_13": [
+   1974,
+   1985,
+   1991,
+   1996,
+   2002,
+   2013,
+   2019,
+   2024
+  ]
+ },
+ "A_verfallswoche_nov_gegen_rest": {
+  "november": {
+   "n": 53,
+   "mittel": -0.03531990329592349,
+   "median": 0.04336139833758246,
+   "positiv": 28,
+   "anteil_positiv": 52.83018867924528,
+   "std": 2.078841060388902
+  },
+  "uebrige": {
+   "n": 583,
+   "mittel": 0.2300364288775503,
+   "median": 0.38736131210537206,
+   "positiv": 334,
+   "anteil_positiv": 57.289879931389365,
+   "std": 2.3720153092141723
+  },
+  "differenz_mittel": -0.26535633217347376,
+  "differenz_median": -0.3439999137677896,
+  "t_welch": -0.8787302329771854,
+  "p_welch": 0.38278660994632124,
+  "p_perm": 0.4307784610769462
+ },
+ "B_woche_danach_nov6_gegen_rest": {
+  "november_6": {
+   "n": 45,
+   "mittel": 0.6001893993221498,
+   "median": 0.8478661967107781,
+   "positiv": 30,
+   "anteil_positiv": 66.66666666666667,
+   "std": 2.5333232689428993
+  },
+  "uebrige": {
+   "n": 583,
+   "mittel": -0.02809659645530356,
+   "median": 0.14243434148952794,
+   "positiv": 305,
+   "anteil_positiv": 52.315608919382505,
+   "std": 2.1755225961899716
+  },
+  "differenz_mittel": 0.6282859957774534,
+  "differenz_median": 0.7054318552212502,
+  "t_welch": 1.6182711507746093,
+  "p_welch": 0.11200584998837573,
+  "p_perm": 0.06614669266536673
+ },
+ "B_pro_tag": {
+  "november_6": {
+   "n": 45,
+   "mittel": 0.15004734983053744,
+   "median": 0.21196654917769453,
+   "positiv": 30,
+   "anteil_positiv": 66.66666666666667,
+   "std": 0.6333308172357248
+  },
+  "uebrige": {
+   "n": 583,
+   "mittel": -0.004110754236469401,
+   "median": 0.028486868297905588,
+   "positiv": 305,
+   "anteil_positiv": 52.315608919382505,
+   "std": 0.4496503212223017
+  },
+  "differenz_mittel": 0.15415810406700683,
+  "differenz_median": 0.18347968087978894,
+  "t_welch": 1.6019670186269666,
+  "p_welch": 0.11579525043626014,
+  "p_perm": 0.0351982400879956
+ },
+ "B_woche_danach_nov_alle": {
+  "n": 53,
+  "mittel": 0.5350104055928236,
+  "median": 0.8478661967107781,
+  "positiv": 35,
+  "anteil_positiv": 66.0377358490566,
+  "std": 2.4701849151969824
+ },
+ "C_alle_wochen": {
+  "n": 2766,
+  "mittel": 0.17356721016039495,
+  "median": 0.30848132758846125,
+  "positiv": 1561,
+  "anteil_positiv": 56.4352856109906,
+  "std": 2.302486549145079
+ },
+ "C_thanksgiving_woche_alle": {
+  "n": 53,
+  "mittel": 0.6125779079727793,
+  "median": 0.8478661967107781,
+  "positiv": 37,
+  "anteil_positiv": 69.81132075471699,
+  "std": 2.3410172154910684
+ },
+ "C_thanksgiving_gegen_alle_wochen": {
+  "thanksgiving": {
+   "n": 53,
+   "mittel": 0.6125779079727793,
+   "median": 0.8478661967107781,
+   "positiv": 37,
+   "anteil_positiv": 69.81132075471699,
+   "std": 2.3410172154910684
+  },
+  "alle_wochen": {
+   "n": 2766,
+   "mittel": 0.17356721016039495,
+   "median": 0.30848132758846125,
+   "positiv": 1561,
+   "anteil_positiv": 56.4352856109906,
+   "std": 2.302486549145079
+  },
+  "differenz_mittel": 0.4390106978123844,
+  "differenz_median": 0.5393848691223169,
+  "t_welch": 1.3527586061010166,
+  "p_welch": 0.1817756734488585,
+  "p_perm": 0.168141592920354
+ },
+ "E_woche_danach_rest_gegen_alle_wochen": {
+  "uebrige": {
+   "n": 583,
+   "mittel": -0.02809659645530356,
+   "median": 0.14243434148952794,
+   "positiv": 305,
+   "anteil_positiv": 52.315608919382505,
+   "std": 2.1755225961899716
+  },
+  "alle_wochen": {
+   "n": 2766,
+   "mittel": 0.17356721016039495,
+   "median": 0.30848132758846125,
+   "positiv": 1561,
+   "anteil_positiv": 56.4352856109906,
+   "std": 2.302486549145079
+  },
+  "differenz_mittel": -0.2016638066156985,
+  "differenz_median": -0.1660469860989333,
+  "t_welch": -2.0131356506436973,
+  "p_welch": 0.04440482165337861,
+  "p_perm": 0.05124743762811859
+ },
+ "D_jahre_13": [
+  {
+   "jahr": 1974,
+   "verfall": "1974-11-15",
+   "thanksgiving": "1974-11-28",
+   "verfallswoche": -4.004806165743002,
+   "woche_danach": -4.1857888351675365,
+   "thanksgiving_woche": 1.5529762671243397
+  },
+  {
+   "jahr": 1985,
+   "verfall": "1985-11-15",
+   "thanksgiving": "1985-11-28",
+   "verfallswoche": 2.266156885283599,
+   "woche_danach": 1.7212659574417088,
+   "thanksgiving_woche": 0.3225490736459058
+  },
+  {
+   "jahr": 1991,
+   "verfall": "1991-11-15",
+   "thanksgiving": "1991-11-28",
+   "verfallswoche": -2.6139627170187585,
+   "woche_danach": -1.69358583026612,
+   "thanksgiving_woche": -0.2445893915077102
+  },
+  {
+   "jahr": 1996,
+   "verfall": "1996-11-15",
+   "thanksgiving": "1996-11-28",
+   "verfallswoche": 0.9304611237114013,
+   "woche_danach": 1.5061944808992367,
+   "thanksgiving_woche": 1.1072066609665976
+  },
+  {
+   "jahr": 2002,
+   "verfall": "2002-11-15",
+   "thanksgiving": "2002-11-28",
+   "verfallswoche": 1.6865239072706428,
+   "woche_danach": 2.277347460395207,
+   "thanksgiving_woche": 0.6189888671458199
+  },
+  {
+   "jahr": 2013,
+   "verfall": "2013-11-15",
+   "thanksgiving": "2013-11-28",
+   "verfallswoche": 1.5570963549469186,
+   "woche_danach": 0.3659198579915257,
+   "thanksgiving_woche": 0.05818492086180349
+  },
+  {
+   "jahr": 2019,
+   "verfall": "2019-11-15",
+   "thanksgiving": "2019-11-28",
+   "verfallswoche": 0.8851989173146002,
+   "woche_danach": -0.3259137443786697,
+   "thanksgiving_woche": 0.9867253462650494
+  },
+  {
+   "jahr": 2024,
+   "verfall": "2024-11-15",
+   "thanksgiving": "2024-11-28",
+   "verfallswoche": -2.0835478491439408,
+   "woche_danach": 1.6815891800075589,
+   "thanksgiving_woche": 1.0560644085587656
+  }
+ ],
+ "D_13_woche_danach": {
+  "n": 8,
+  "mittel": 0.16837856586536387,
+  "median": 0.9360571694453812,
+  "positiv": 5,
+  "anteil_positiv": 62.5,
+  "std": 2.192448059427826
+ },
+ "D_13_thanksgiving_woche": {
+  "n": 8,
+  "mittel": 0.6822632691325714,
+  "median": 0.8028571067054346,
+  "positiv": 7,
+  "anteil_positiv": 87.5,
+  "std": 0.6039240788473218
+ },
+ "tage_woche_danach_nov6": [
+  4
+ ],
+ "tage_woche_danach_rest": {
+  "4": 97,
+  "5": 486
+ },
+ "haelfte_1973_1999": {
+  "A": {
+   "november": {
+    "n": 27,
+    "mittel": 0.19111884734176796,
+    "median": 0.03287540277645551,
+    "positiv": 14,
+    "anteil_positiv": 51.851851851851855,
+    "std": 1.8758736215540743
+   },
+   "uebrige": {
+    "n": 297,
+    "mittel": 0.32846374715241633,
+    "median": 0.39525608461732364,
+    "positiv": 173,
+    "anteil_positiv": 58.24915824915825,
+    "std": 2.1349030386079457
+   },
+   "differenz_mittel": -0.13734489981064837,
+   "differenz_median": -0.36238068184086814,
+   "t_welch": -0.35984770506540503,
+   "p_welch": 0.7212929377020435,
+   "p_perm": 0.7511624418779062
+  },
+  "B": {
+   "november_6": {
+    "n": 23,
+    "mittel": 0.3919118747340681,
+    "median": 0.8226886364234298,
+    "positiv": 15,
+    "anteil_positiv": 65.21739130434783,
+    "std": 1.5851570932657317
+   },
+   "uebrige": {
+    "n": 297,
+    "mittel": -0.14670900858616726,
+    "median": 0.061895147145829554,
+    "positiv": 151,
+    "anteil_positiv": 50.841750841750844,
+    "std": 2.0719482981258723
+   },
+   "differenz_mittel": 0.5386208833202353,
+   "differenz_median": 0.7607934892776003,
+   "t_welch": 1.5314139453410005,
+   "p_welch": 0.1368213216824196,
+   "p_perm": 0.22133893305334734
+  }
+ },
+ "haelfte_2000_2025": {
+  "A": {
+   "november": {
+    "n": 26,
+    "mittel": -0.27046783665044927,
+    "median": 0.08537122959038079,
+    "positiv": 14,
+    "anteil_positiv": 53.84615384615385,
+    "std": 2.283932136090167
+   },
+   "uebrige": {
+    "n": 286,
+    "mittel": 0.1278234445151894,
+    "median": 0.32642019177310244,
+    "positiv": 161,
+    "anteil_positiv": 56.29370629370629,
+    "std": 2.5952861486027525
+   },
+   "differenz_mittel": -0.39829128116563867,
+   "differenz_median": -0.24104896218272165,
+   "t_welch": -0.8412070849852287,
+   "p_welch": 0.4066381393051849,
+   "p_perm": 0.45007749612519377
+  },
+  "B": {
+   "november_6": {
+    "n": 22,
+    "mittel": 0.8179340841187805,
+    "median": 0.9589718850867568,
+    "positiv": 15,
+    "anteil_positiv": 68.18181818181819,
+    "std": 3.273699398117428
+   },
+   "uebrige": {
+    "n": 286,
+    "mittel": 0.0950778315267472,
+    "median": 0.16414074302910642,
+    "positiv": 154,
+    "anteil_positiv": 53.84615384615385,
+    "std": 2.2751982989370374
+   },
+   "differenz_mittel": 0.7228562525920333,
+   "differenz_median": 0.7948311420576504,
+   "t_welch": 1.0169571307310383,
+   "p_welch": 0.3199439319535734,
+   "p_perm": 0.1631918404079796
+  }
+ },
+ "pfad_offsets": [
+  -5,
+  -4,
+  -3,
+  -2,
+  -1,
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "pfad_november_6": {
+  "n": 45,
+  "pfad": [
+   100.0,
+   99.90952596733884,
+   99.95709729464102,
+   99.80085428307332,
+   99.74778091882719,
+   99.988998325971,
+   100.08651437687861,
+   100.15805523449107,
+   100.39848502320842,
+   100.57195802845658
+  ]
+ },
+ "pfad_uebrige": {
+  "n": 583,
+  "pfad": [
+   100.0,
+   100.0939238605345,
+   100.23163976441629,
+   100.24737729021342,
+   100.26718121870246,
+   100.2243049961261,
+   100.10431110329196,
+   100.16650967785392,
+   100.22774917013002,
+   100.20798271952152
+  ]
+ },
+ "termine_2026": {
+  "opex_nov": "2026-11-20",
+  "opex_nov_listung": "belegt",
+  "opex_nov_triple": false,
+  "opex_dez": "2026-12-18",
+  "opex_dez_triple": true,
+  "vix_kontrakt_2026_10": "2026-10-21",
+  "vix_kontrakt_2026_11": "2026-11-18",
+  "vix_kontrakt_2026_11_listung": "belegt",
+  "thanksgiving": "2026-11-26",
+  "abstand": 6,
+  "halbtage": [
+   "2026-11-27",
+   "2026-12-24"
+  ],
+  "naechste_13_jahre": [
+   2030
+  ],
+  "letzte_13_jahre": [
+   1974,
+   1985,
+   1991,
+   1996,
+   2002,
+   2013,
+   2019,
+   2024
+  ]
+ },
+ "einzeln_november": [
+  {
+   "jahr": 1973,
+   "verfall": "1973-11-16",
+   "listung": "regel",
+   "thanksgiving": "1973-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": -1.348528770334001,
+   "woche_danach": -4.27416157697571,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1974,
+   "verfall": "1974-11-15",
+   "listung": "regel",
+   "thanksgiving": "1974-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": -4.004806165743002,
+   "woche_danach": -4.1857888351675365,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 1975,
+   "verfall": "1975-11-21",
+   "listung": "regel",
+   "thanksgiving": "1975-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": -1.5829377389983246,
+   "woche_danach": 1.9099740279839184,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1976,
+   "verfall": "1976-11-19",
+   "listung": "regel",
+   "thanksgiving": "1976-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": 2.700523674137667,
+   "woche_danach": 1.2068291188432223,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1977,
+   "verfall": "1977-11-18",
+   "listung": "regel",
+   "thanksgiving": "1977-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -0.6772234360144513,
+   "woche_danach": 1.4266235123779003,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1978,
+   "verfall": "1978-11-17",
+   "listung": "regel",
+   "thanksgiving": "1978-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": -0.3693153471295063,
+   "woche_danach": 1.4509637507930329,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1979,
+   "verfall": "1979-11-16",
+   "listung": "regel",
+   "thanksgiving": "1979-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": 2.246084008904292,
+   "woche_danach": 0.8478661967107781,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1980,
+   "verfall": "1980-11-21",
+   "listung": "regel",
+   "thanksgiving": "1980-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": 1.4290932807297319,
+   "woche_danach": 1.0135873476887491,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1981,
+   "verfall": "1981-11-20",
+   "listung": "regel",
+   "thanksgiving": "1981-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": 0.03287540277645551,
+   "woche_danach": 2.777092849614937,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1982,
+   "verfall": "1982-11-19",
+   "listung": "regel",
+   "thanksgiving": "1982-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": -1.798896164158803,
+   "woche_danach": -1.561816155448481,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1983,
+   "verfall": "1983-11-18",
+   "listung": "regel",
+   "thanksgiving": "1983-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -0.7216316442840931,
+   "woche_danach": 1.2659754728381323,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1984,
+   "verfall": "1984-11-16",
+   "listung": "regel",
+   "thanksgiving": "1984-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": -2.088305493966025,
+   "woche_danach": 1.718464592352209,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1985,
+   "verfall": "1985-11-15",
+   "listung": "regel",
+   "thanksgiving": "1985-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": 2.266156885283599,
+   "woche_danach": 1.7212659574417088,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 1986,
+   "verfall": "1986-11-21",
+   "listung": "regel",
+   "thanksgiving": "1986-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": 0.5562372867629506,
+   "woche_danach": 1.3666311855906832,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1987,
+   "verfall": "1987-11-20",
+   "listung": "regel",
+   "thanksgiving": "1987-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": -1.4818449927976096,
+   "woche_danach": -0.685950544959979,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1988,
+   "verfall": "1988-11-18",
+   "listung": "regel",
+   "thanksgiving": "1988-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -0.5412061737950946,
+   "woche_danach": 0.2852099518896756,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1989,
+   "verfall": "1989-11-17",
+   "listung": "regel",
+   "thanksgiving": "1989-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": 0.7401939922417,
+   "woche_danach": 0.6908464097960643,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1990,
+   "verfall": "1990-11-16",
+   "listung": "regel",
+   "thanksgiving": "1990-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": 1.0773258091304028,
+   "woche_danach": -0.6369836029162301,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1991,
+   "verfall": "1991-11-15",
+   "listung": "regel",
+   "thanksgiving": "1991-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": -2.6139627170187585,
+   "woche_danach": -1.69358583026612,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 1992,
+   "verfall": "1992-11-20",
+   "listung": "regel",
+   "thanksgiving": "1992-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": 0.9989808289721847,
+   "woche_danach": 0.8226886364234298,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1993,
+   "verfall": "1993-11-19",
+   "listung": "regel",
+   "thanksgiving": "1993-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": -0.5994977975703919,
+   "woche_danach": 0.09943740623932218,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1994,
+   "verfall": "1994-11-18",
+   "listung": "regel",
+   "thanksgiving": "1994-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -0.19033163917442364,
+   "woche_danach": -1.9892951382620705,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1995,
+   "verfall": "1995-11-17",
+   "listung": "regel",
+   "thanksgiving": "1995-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": 1.240045589512917,
+   "woche_danach": -0.01666461129936625,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1996,
+   "verfall": "1996-11-15",
+   "listung": "regel",
+   "thanksgiving": "1996-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": 0.9304611237114013,
+   "woche_danach": 1.5061944808992367,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 1997,
+   "verfall": "1997-11-21",
+   "listung": "regel",
+   "thanksgiving": "1997-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": 3.7421243124559744,
+   "woche_danach": -0.7984711478503104,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1998,
+   "verfall": "1998-11-20",
+   "listung": "regel",
+   "thanksgiving": "1998-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": 3.360516383074641,
+   "woche_danach": 2.4734659195062125,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 1999,
+   "verfall": "1999-11-19",
+   "listung": "regel",
+   "thanksgiving": "1999-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": 1.8580783815183022,
+   "woche_danach": -0.37834048205255266,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2000,
+   "verfall": "2000-11-17",
+   "listung": "regel",
+   "thanksgiving": "2000-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": 0.12738106084317913,
+   "woche_danach": -1.8973179665520257,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2001,
+   "verfall": "2001-11-16",
+   "listung": "regel",
+   "thanksgiving": "2001-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": 1.6370380031321963,
+   "woche_danach": 1.0266532900325753,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2002,
+   "verfall": "2002-11-15",
+   "listung": "regel",
+   "thanksgiving": "2002-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": 1.6865239072706428,
+   "woche_danach": 2.277347460395207,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 2003,
+   "verfall": "2003-11-21",
+   "listung": "regel",
+   "thanksgiving": "2003-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": -1.434760785396838,
+   "woche_danach": 2.2138938302592726,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2004,
+   "verfall": "2004-11-19",
+   "listung": "regel",
+   "thanksgiving": "2004-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": -1.167906402637231,
+   "woche_danach": 1.0518312586846212,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2005,
+   "verfall": "2005-11-18",
+   "listung": "regel",
+   "thanksgiving": "2005-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": 1.0974138912009268,
+   "woche_danach": 1.6006147675808435,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2006,
+   "verfall": "2006-11-17",
+   "listung": "regel",
+   "thanksgiving": "2006-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": 1.4700555748399458,
+   "woche_danach": -0.017842408053014847,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2007,
+   "verfall": "2007-11-16",
+   "listung": "regel",
+   "thanksgiving": "2007-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": 0.34670162454331077,
+   "woche_danach": -1.2366844219083517,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2008,
+   "verfall": "2008-11-21",
+   "listung": "regel",
+   "thanksgiving": "2008-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": -8.388965720836694,
+   "woche_danach": 12.02579933661374,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2009,
+   "verfall": "2009-11-20",
+   "listung": "regel",
+   "thanksgiving": "2009-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": -0.19204635454741492,
+   "woche_danach": 0.010078507847488538,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2010,
+   "verfall": "2010-11-19",
+   "listung": "regel",
+   "thanksgiving": "2010-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": 0.04336139833758246,
+   "woche_danach": -0.8610267484370993,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2011,
+   "verfall": "2011-11-18",
+   "listung": "regel",
+   "thanksgiving": "2011-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -3.8137442360362095,
+   "woche_danach": -4.6872036552143115,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2012,
+   "verfall": "2012-11-16",
+   "listung": "regel",
+   "thanksgiving": "2012-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": -1.4472580653849487,
+   "woche_danach": 3.6231143046015157,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2013,
+   "verfall": "2013-11-15",
+   "listung": "regel",
+   "thanksgiving": "2013-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": 1.5570963549469186,
+   "woche_danach": 0.3659198579915257,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 2014,
+   "verfall": "2014-11-21",
+   "listung": "regel",
+   "thanksgiving": "2014-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": 1.1608916470184028,
+   "woche_danach": 0.19675731367141402,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2015,
+   "verfall": "2015-11-20",
+   "listung": "regel",
+   "thanksgiving": "2015-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": 3.268837011283132,
+   "woche_danach": 0.045004123818492836,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2016,
+   "verfall": "2016-11-18",
+   "listung": "regel",
+   "thanksgiving": "2016-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": 0.8062054743666058,
+   "woche_danach": 1.4414136065978633,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2017,
+   "verfall": "2017-11-17",
+   "listung": "regel",
+   "thanksgiving": "2017-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": -0.13359867740224685,
+   "woche_danach": 0.9139653879914666,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2018,
+   "verfall": "2018-11-16",
+   "listung": "regel",
+   "thanksgiving": "2018-11-22",
+   "abstand_tage": 6,
+   "verfallswoche": -1.6087688273631606,
+   "woche_danach": -3.7901930341150747,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2019,
+   "verfall": "2019-11-15",
+   "listung": "regel",
+   "thanksgiving": "2019-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": 0.8851989173146002,
+   "woche_danach": -0.3259137443786697,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 2020,
+   "verfall": "2020-11-20",
+   "listung": "belegt",
+   "thanksgiving": "2020-11-26",
+   "abstand_tage": 6,
+   "verfallswoche": -0.770118275943088,
+   "woche_danach": 2.271515772306021,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2021,
+   "verfall": "2021-11-19",
+   "listung": "belegt",
+   "thanksgiving": "2021-11-25",
+   "abstand_tage": 6,
+   "verfallswoche": 0.32266444464366106,
+   "woche_danach": -2.1996763844167155,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2022,
+   "verfall": "2022-11-18",
+   "listung": "belegt",
+   "thanksgiving": "2022-11-24",
+   "abstand_tage": 6,
+   "verfallswoche": -0.6909657778217615,
+   "woche_danach": 1.5327814194465494,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2023,
+   "verfall": "2023-11-17",
+   "listung": "belegt",
+   "thanksgiving": "2023-11-23",
+   "abstand_tage": 6,
+   "verfallswoche": 2.237246239376467,
+   "woche_danach": 1.003978382182047,
+   "tage_woche_danach": 4
+  },
+  {
+   "jahr": 2024,
+   "verfall": "2024-11-15",
+   "listung": "belegt",
+   "thanksgiving": "2024-11-28",
+   "abstand_tage": 13,
+   "verfallswoche": -2.0835478491439408,
+   "woche_danach": 1.6815891800075589,
+   "tage_woche_danach": 5
+  },
+  {
+   "jahr": 2025,
+   "verfall": "2025-11-21",
+   "listung": "belegt",
+   "thanksgiving": "2025-11-27",
+   "abstand_tage": 6,
+   "verfallswoche": -1.9470983295157174,
+   "woche_danach": 3.7270931676758545,
+   "tage_woche_danach": 4
+  }
+ ]
+}
