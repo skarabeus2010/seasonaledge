@@ -233,6 +233,10 @@ jobs:
       # getAll-Fehlerantworten gehen nicht mehr als Erfolg durch. Mutationen 13/13 (verify_nightly_phasen_mutation.py).
       - name: Waechter - Nightly-Phasen und Health
         run: python3 scripts/verify_nightly_phasen.py
+      # Nightly 2026-11-15 rot: Yahoo ^MDAXI 1997-01-06 Open=Close=0 → ±inf in tdom/tdoy_stats (Upsert scheitert) und
+      # −100 % am Vortag. Kurse ≤ 0 gelten in calc_strategy_returns als fehlend; Mutation (alte Fassung) eingebaut.
+      - name: Waechter - Strategierenditen mit Platzhalterkursen
+        run: python3 scripts/verify_strategie_renditen.py
       # Indikator-Zwillinge (Audit 2026-11-15): shared/indicators.py = landing/js/indicators.js fuer EMA (SMA-Start),
       # RSI (Wilder, ohne Verlust 100, flach unbestimmt), Bollinger (Population), MACD/LBR; Handfaelle beider Seiten.
       # Mutationen 7/7 (verify_indikator_zwillinge_mutation.py).

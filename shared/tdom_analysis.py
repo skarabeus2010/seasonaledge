@@ -60,6 +60,14 @@ def calc_strategy_returns(df: pd.DataFrame, strategy: str = "open_to_close") -> 
     """
     df = df.copy()
 
+    # Ein Kurs ≤ 0 oder nicht endlich ist kein Kurs, sondern ein Platzhalter der Quelle (Yahoo ^MDAXI 1997-01-06:
+    # Open=High=Low=Close=0). Als fehlend behandeln, sonst entsteht ±inf (Division durch 0 — der Upsert scheitert,
+    # 2026-11-15) und am Vortag eine erfundene Rendite von −100 % (Kurs gegen 0), die endlich ist und nie auffällt.
+    for _col in ("Open", "Close"):
+        if _col in df.columns:
+            _v = pd.to_numeric(df[_col], errors="coerce")
+            df[_col] = _v.where(np.isfinite(_v) & (_v > 0))
+
     # shift(-1) holt den "naechsten" Tag. Ueber ein DataFrame mit mehreren Tickern
     # gezogen, ist der naechste Tag der ERSTE Tag des naechsten Tickers — die
     # Overnight-Rendite waere dann AAPL-Open gegen SAP-Open. Deshalb je Ticker
