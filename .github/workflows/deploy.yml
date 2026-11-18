@@ -237,6 +237,9 @@ jobs:
       # −100 % am Vortag. Kurse ≤ 0 gelten in calc_strategy_returns als fehlend; Mutation (alte Fassung) eingebaut.
       - name: Waechter - Strategierenditen mit Platzhalterkursen
         run: python3 scripts/verify_strategie_renditen.py
+
+      - name: Waechter - Kursladen wiederholt Statement-Timeout
+        run: python3 scripts/verify_lese_wiederholung.py
       # Indikator-Zwillinge (Audit 2026-11-15): shared/indicators.py = landing/js/indicators.js fuer EMA (SMA-Start),
       # RSI (Wilder, ohne Verlust 100, flach unbestimmt), Bollinger (Population), MACD/LBR; Handfaelle beider Seiten.
       # Mutationen 7/7 (verify_indikator_zwillinge_mutation.py).

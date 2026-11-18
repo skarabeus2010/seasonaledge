@@ -174,6 +174,32 @@ def kurse_hash(daten, closes):
 # LADEN (X2)
 # ══════════════════════════════════════════════════════════════
 
+LESE_WIEDERHOLUNG_S = (3.0, 8.0)   # Wartezeiten vor dem 2. und 3. Versuch
+
+
+def _ist_statement_timeout(e) -> bool:
+    """PostgREST meldet „canceling statement due to statement timeout“ als APIError mit code 57014."""
+    code = getattr(e, "code", None)
+    if code is None and e.args and isinstance(e.args[0], dict):
+        code = e.args[0].get("code")
+    return str(code) == "57014" or "57014" in str(e)
+
+
+def _lesen(fn, warte=None):
+    """Führt eine LESENDE Abfrage aus und wiederholt sie nur bei Statement-Timeout (57014). Anlass: Nightly 14.11. und
+    17.11.2026 — die Zählung der ^GSPC-Zeilen dauert mit kaltem Cache 5,8 s statt 0,1 s und riss unter Last das Limit.
+    Lesen ist idempotent; jeder andere Fehler geht sofort durch, und nach dem letzten Versuch auch der Timeout."""
+    import time
+    warte = LESE_WIEDERHOLUNG_S if warte is None else warte
+    for pause in (*warte, None):
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001 — Auswahl über _ist_statement_timeout
+            if pause is None or not _ist_statement_timeout(e):
+                raise
+            time.sleep(pause)
+
+
 def lade_kurse(ticker, client=None):
     """Alle Kurszeilen aus Supabase `prices` (wie shared.data.lade_closes, aber mit Rohzeilen und unabhängiger
     Zählung). Gibt (daten, closes, info) bereinigt zurück; info = {roh, quell_n, duplikate, ungueltig}.
@@ -184,11 +210,12 @@ def lade_kurse(ticker, client=None):
     if client is None:
         raise LadeFehler(f"{ticker}: kein Supabase-Client")
     try:
-        quell_n = client.table("prices").select("date", count="exact").eq("ticker", ticker).limit(1).execute().count
+        quell_n = _lesen(lambda: client.table("prices").select("date", count="exact").eq("ticker", ticker)
+                         .limit(1).execute().count)
         zeilen, offset = [], 0
         while True:
-            teil = (client.table("prices").select("date,close").eq("ticker", ticker)
-                    .order("date").range(offset, offset + 999).execute().data) or []
+            teil = _lesen(lambda: client.table("prices").select("date,close").eq("ticker", ticker)
+                          .order("date").range(offset, offset + 999).execute().data) or []
             zeilen += teil
             if len(teil) < 1000:
                 break
