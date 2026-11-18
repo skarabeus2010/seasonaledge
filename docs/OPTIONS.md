@@ -138,7 +138,7 @@ Die Options-Analysen leben unter dem Top-Level-Nav-Punkt **„Optionen"** (neben
 
 ## Crons
 
-- **`options_skew.yml`** (werktags 23:00 UTC, **Timeout 50m** wegen 156 Tickern): `compute_options_skew.py` → `compute_iv_surface.py` → `compute_options_flow.py`.
+- **`sa-options-skew.timer`** auf dem VPS (Mo–Fr 23:00 UTC, seit 2026-11-18; vorher GitHub-Cron `options_skew.yml`, der Stunden zu spät startete und am 18.11. nach abgerissener SSH-Verbindung trotz fertiger Daten „failed“ meldete): `compute_options_skew.py` → `compute_iv_surface.py` → `compute_options_flow.py`, Fristen 45/10/10 min im Container. `options_skew.yml` ist nur noch Notauslöser (startet dieselbe Unit). Prüfen: `journalctl -u sa-options-skew.service`.
 - **`gex_snapshot.yml`** (werktags 22:15 UTC): `snapshot_gex_massive.py` → `compute_key_levels.py`.
 - Alle `landing/data/*.json` (inkl. `oi_history/`, `gex_history/`) **gitignored** → server-produziert; nach manuellem Backfill per SSH, nicht committen.
 - **`daily_health_check.py`** prüft jetzt **„Options: Skew/IV"** (Frische + Ticker-Zahl + Metrik-Abdeckung) + **„Options: GEX-Ketten"** (Frische + Flip-Abdeckung).

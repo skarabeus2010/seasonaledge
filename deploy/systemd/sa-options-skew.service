@@ -1,0 +1,33 @@
+# SeasonAlpha — Options Skew & Vol: Skew-Radar, IV-Surface, Options-Flow (ausgeloest von sa-options-skew.timer).
+#
+# Ersetzt den Zeitplan in .github/workflows/options_skew.yml. GitHub startete den Cron
+# `0 23 * * 1-5` regelmaessig Stunden zu spaet (00:44-01:20 UTC im September, 03:55 UTC am
+# 18.11.2026), und die SSH-Verbindung der Action riss am 18.11. ab: die drei Skripte waren um
+# 04:24 UTC fertig und hatten geschrieben, der Workflow wartete trotzdem bis zum Limit von
+# 50 min und meldete „failed" — ein Fehlalarm ohne Datenfehler. Ein Timer auf dem Server hat
+# weder Verspaetung noch eine Verbindung, die abreissen kann.
+# Installation/Aktualisierung: deploy/install_timers.sh (laeuft im Deploy).
+
+[Unit]
+Description=SeasonAlpha Options Skew & Vol (Skew, IV-Surface, Flow)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Nach einem Deploy kann der Container gerade neu erstellt werden: begrenzt warten.
+ExecStartPre=/bin/bash /opt/seasonaledge/deploy/systemd/warte_auf_app.sh
+# Drei unabhaengige Schritte (eigene Ausgabedateien): ein gescheiterter darf die anderen nicht
+# verhindern, macht den Lauf aber rot. Jeder Timeout sitzt IM Container — systemd beendet bei
+# TimeoutStartSec nur den docker-Client, nicht den Prozess im Container.
+# GEMESSEN (Lauf 18.11.2026, volles Universum): Skew 26 min, IV-Surface 2 min, Flow 1,5 min.
+# Fristen 45 + 10 + 10 min (+ je 30 s kill-after) = 66,5 min < 75 min aussen.
+# Alle drei veroeffentlichen ueber shared/atomic_json (temporaere Datei + os.replace), ein
+# Abbruch hinterlaesst also keine halbe Datei.
+# `$$f`: systemd ersetzt `$f` selbst; `$$` reicht ein `$` an die Shell durch.
+ExecStart=/usr/bin/docker exec seasonalpha-app sh -c 'f=0; \
+  timeout --kill-after=30s 45m python3 -u scripts/compute_options_skew.py || f=1; \
+  timeout --kill-after=30s 10m python3 -u scripts/compute_iv_surface.py || f=1; \
+  timeout --kill-after=30s 10m python3 -u scripts/compute_options_flow.py || f=1; \
+  exit $$f'
+TimeoutStartSec=75min

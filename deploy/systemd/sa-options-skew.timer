@@ -1,0 +1,19 @@
+[Unit]
+Description=SeasonAlpha Options Skew & Vol Mo-Fr um 23:00 UTC (nach US-Boersenschluss und Nightly)
+
+[Timer]
+# 23:00 UTC liegt das ganze Jahr nach dem regulaeren US-Schluss (Sommer 20:00, Winter 21:00 UTC;
+# der Erzeuger prueft das zusaetzlich mit pruefe_eod_fenster), nach dem Nightly (Kurse der Session
+# fuer die realisierte Vola; Start 20:45/21:45 UTC, Dauer ~20 min) und nach dem GEX-Snapshot
+# (22:15 UTC, ~10 min; beide teilen den Massive-Zugang).
+# Mo-Fr: an Boersenfeiertagen feuert der Timer trotzdem und stempelt die letzte Session — wie der
+# bisherige GitHub-Cron, keine Verhaltensaenderung.
+OnCalendar=Mon..Fri 23:00:00 UTC
+AccuracySec=1min
+# Verpasste Termine (Server aus) NICHT nachholen: ein Neustart tagsueber fiele in die Handelszeit
+# (der Lauf bricht dort mit MarktOffen ab). Nachholen per Notausloeser (options_skew.yml).
+Persistent=false
+Unit=sa-options-skew.service
+
+[Install]
+WantedBy=timers.target
