@@ -12,8 +12,9 @@ SeasonAlpha hat zwei automatische Refresh-Jobs:
 | **Intraday Refresh** | Stündlich :17 UTC, jeden Tag (systemd-Timer auf dem VPS) | Live-Kurse der gerade offenen Börsen; Krypto rund um die Uhr |
 | **Polymarket-Intraday** | Stündlich :23 UTC (systemd-Timer) | Snapshot im FOMC-Fenster, sonst nur eine Skip-Zeile |
 | **Daily Morning Briefing** | Mo–Fr 07:30 Berliner Zeit (Sommer 05:30, Winter 06:30 UTC), `sa-daily-briefing.timer` (seit 2026-10-12) | Versand an `daily_subscribers`; `refresh_log` run_type `daily_newsletter`. GitHub-Cron `0 6 * * 1-5` kam zuletzt erst 11:48–14:18 UTC an; `daily_newsletter.yml` ist nur noch manuell (Test, Trockenlauf, Einzelempfänger). **Ein Live-Versand je Berliner Datum** (`shared/versandsperre.py`, Zustand in `logs/versand/`): zweiter Lauf nach Abschluss → Exit 0 ohne Versand; abgebrochener Versand → Admin-Alarm, Fortsetzen nur mit `--wiederaufnahme`. **Journal in zwei Stufen** (`? <hash>` VOR dem Versand, danach `+` angenommen / `-` sicher nicht versandt, chronologisch ausgewertet): die Wiederaufnahme überspringt angenommene UND ungeklärte Empfänger (lieber eine Mail zu wenig als eine doppelt) und meldet die Ungeklärten. Der Mailadapter `shared/email_brevo.send_html_ergebnis` unterscheidet `angenommen` (nur HTTP 2xx), `abgelehnt` (kein Schlüssel, Verbindungsaufbau gescheitert, 4xx) und `unklar` (5xx, Lese-Timeout, Abbruch, 1xx/3xx). Ein Journal-Schreibfehler beendet den Lauf. `missing_details.modus` = live/test/einzel; Health-Check zählt nur live und meldet werktags ab 10:00 Berlin ohne heutigen Live-Lauf rot; dazu **`sa-briefing-frist.timer`** Mo–Fr 10:15 Berlin (`daily_health_check.py --briefing-frist`, Admin-Alarm nur bei Verstoß — die Health-Mail um 05:00 UTC liegt vor der Frist). Wächter `verify_briefing_versand.py` (+ Mutationstest), Codex-Freigabe nach 5 Runden |
+| **Options Skew & Vol** | Mo–Fr 23:00 UTC, `sa-options-skew.timer` (seit 2026-11-18) | Skew-Radar, IV-Surface, Options-Flow nacheinander (`compute_options_skew.py`, `compute_iv_surface.py`, `compute_options_flow.py`), je eigene Frist im Container (45/10/10 min); ein gescheiterter Schritt macht den Lauf rot, die anderen laufen weiter. Schreibt **keine** `refresh_log`-Zeile — Frische prüft der Health-Check an den Options-Dateien. GitHub startete `0 23 * * 1-5` bis 03:55 UTC und meldete am 18.11. nach abgerissener SSH-Verbindung „failed“, obwohl die Daten fertig waren; `options_skew.yml` ist nur noch Notauslöser (`systemctl start sa-options-skew.service`). Verpasste Termine werden nicht nachgeholt (`Persistent=false`, ein Neustart tagsüber fiele in die Handelszeit). Prüfen: `journalctl -u sa-options-skew.service -n 60` |
 
-Alle schreiben ein Protokoll in die Supabase-Tabelle `refresh_log`.
+Alle außer Options Skew & Vol schreiben ein Protokoll in die Supabase-Tabelle `refresh_log`.
 
 > **Seit 2026-09-29 laufen die stündlichen Jobs NICHT mehr über GitHub Actions.** GitHub startete die
 > stündlichen Crons ab dem 26.08.2026 nur noch 4–8× pro Tag statt 24× (Workflow unverändert, alle
@@ -236,7 +237,7 @@ nur den `docker exec`-Client, der Prozess im Container liefe weiter — am 29.09
 |---|---|
 | `scripts/nightly_refresh.py` | Nightly Job + Health-Check |
 | `scripts/intraday_refresh.py` | Intraday Updates |
-| `deploy/systemd/` + `deploy/install_timers.sh` | Timer: stündlich (Intraday, Polymarket), Nightly, Daily Morning Briefing |
+| `deploy/systemd/` + `deploy/install_timers.sh` | Timer: stündlich (Intraday, Polymarket), Nightly, Daily Morning Briefing, Options Skew & Vol |
 | `scripts/fix_missing_days.py` | Fehlende Tage finden + nachladen |
 | `scripts/backfill_tdoy.py` | TDOM/TDOY neu berechnen |
 | `shared/exchange_holidays.py` | Börsen-Feiertagskalender |
