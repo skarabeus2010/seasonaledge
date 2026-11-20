@@ -190,6 +190,39 @@ Heute: `secrets.toml` auf dem Server leer, kein `st.secrets` mehr in `shared/`, 
 `env=_KIND_UMGEBUNG` (Umgebung vom Laufbeginn). **Symptom zum Wiedererkennen:** ein Skript läuft per
 `docker exec` einwandfrei und scheitert nur als Kind eines langlaufenden Prozesses.
 
+### Problem: Nightly rot an EINEM Ticker — vorübergehende DB-Fehler (2026-11-20)
+
+Vom 05. bis 19.11.2026 war der Nightly an 10 von 15 Abenden rot, jedes Mal wegen eines einzelnen Tickers von 372.
+Es gab zwei Fehlerbilder, beide vorübergehend, und keines davon wurde wiederholt:
+
+- **`57014 statement timeout`** beim Laden langer Reihen (^GSPC ab 1927, ^GDAXI, RTX). Ursache: `count=exact` plus
+  Offset-Paginierung. Die Offset-Kosten wachsen mit der Tiefe der Reihe.
+- **`<ConnectionTerminated error_code:0, last_stream_id:19999>`** = HTTP/2-GOAWAY. Der Server schließt eine
+  Verbindung nach 10 000 Streams. Der Nightly hält einen Client für den ganzen Lauf, und wer die 10 000. Anfrage
+  trifft, scheitert. Das hängt nicht am Ticker, sondern nur am Zählerstand.
+
+**Regel seit v66.31** (`shared/db_wiederholung.py`, eine Stelle für alle):
+
+- Wiederholt werden nur 57014 und die httpx-Transportfehler `RemoteProtocolError`, `TimeoutException` und
+  `NetworkError`, auch wenn sie in der Ursachenkette (`__cause__`/`__context__`) stecken.
+- Alle anderen Fehler (Rechte, Schema, Daten) gehen sofort weiter.
+- 3 Versuche mit Backoff 2/5/10 s plus Jitter.
+- Nach einem Transportfehler wird ein **neuer** Client verwendet (`client_factory(force_new=True)` bzw.
+  `get_client(force_new=True)`). Ein Retry auf demselben Client trifft dieselbe tote Verbindung.
+- `stress_score.lade_kurse` paginiert per Keyset (`date > letztes`) und lädt bei einem Fehler die ganze Reihe neu,
+  nie eine Teilreihe. Die Prüfung `len == count` bleibt.
+- Nightly und Full-Scanner reichen `client_factory` durch. Ohne Factory gilt ein Transportfehler als endgültig.
+- `upsert_monthly_stats` / `upsert_tdom_stats` (je Batch) / `upsert_tdoy_stats` laufen über `_upsert_wiederholt`.
+- **Endgültige Fehler bleiben rot** (v66.29). Das Log nennt die Ladestufe (`count` / `seite nach <datum>`).
+
+**Diagnose:** In `journalctl -u sa-nightly.service` erscheint „<Ticker>: Versuch n/3 gescheitert (…)“. Steht ein Ticker nach
+drei Versuchen noch auf rot, ist der Fehler nicht mehr vorübergehend, und man sieht in der Ladestufe, wo er saß.
+Wächter: `scripts/verify_db_wiederholung.py` (im Gate). Mit echten `APIError`- und httpx-Ausnahmen gegen eine
+Attrappe, die ihren Zustand mitführt. Prompts und Antworten: `docs/review_prompts/2026-11-20_nightly_rot_*.md`.
+
+**Noch ohne Wiederholung** (offen): die übrigen `count=exact`-Leser (`check_db_completeness`, `data_audit`,
+`onboard_ticker`, `supabase_client`-Lesepfade).
+
 ### Problem: EU-Aktien zeigen keine Charts
 
 Wahrscheinlich fehlende Tage in Supabase (Monatszyklus braucht ≥10 Tage pro Monat).

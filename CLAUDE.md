@@ -325,7 +325,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 
 ### Blog November 2026 (v66.30)
 - [x] OPEX-November-Artikel live (DE+EN), Thanksgiving-Artikel terminiert, Footer „Mehr“ = Menü „Mehr“.
-- [ ] **Fr 20.11. ab 07:00 Berlin:** `journalctl -u sa-blog-freischalten-20261120.service` = FERTIG, `/blog/thanksgiving-boerse-black-friday/` + `/en/blog/thanksgiving-stock-market-black-friday/` HTTP 200, beide in der Sitemap.
+- [x] **Thanksgiving-Artikel live** (2026-11-20, geprüft): Timer FERTIG 06:00:18 UTC, DE + EN HTTP 200, beide in der Sitemap.
 - [ ] **Danach:** im OPEX-Artikel (DE+EN, Abschnitt „Die Woche danach“) den Link auf den Thanksgiving-Artikel setzen (Nutzer-OK 2026-11-15), pushen.
 - [ ] Ko & Yang (2021, Critical Finance Review) im Volltext prüfen — im Thanksgiving-Artikel nur nach Suchtreffer zitiert.
 - [ ] Optional (Nutzerentscheidung): Rückverweis aus `independence-day-effekt-nasdaq` auf den Thanksgiving-Artikel (veröffentlichter Artikel).
@@ -336,6 +336,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 - [ ] Nach dem Deploy: Nightly 15.11. prüfen (`refresh_log` mit `PHASE`-Liste leer, Phase K „Marktkalender: OK“), Health-Mail 16.11. „Nightly-Ausgaben“ grün, `/kalender` ab November 2026.
 - [ ] Offen aus dem Audit (Codex, nicht umgesetzt): Skew-Lauf/Key Levels/Polymarket-Backfill enden bei null Ergebnissen mit Exit 0; ETF-Flows setzt `generated_at` ohne neue Erfassung; Health „eine Zeile genügt“ (Scanner, Polymarket, Key Levels); `tdom/tdoy/monthly_stats`, `saison_score_protokoll`, `cpi_data` ohne Frischeprüfung; Vollhistorie-Abfragen mit `count=exact`/Offset ohne Wiederholung bei 57014; Morgen-Mail zeigt veraltete Kurszeilen ohne Prüfung gegen die letzte Sitzung.
 - [x] **Nightly 14.11./17.11. rot: Saison-Score ^GSPC 57014** (2026-11-18): `stress_score.lade_kurse` zählt mit `count=exact`, kalt 5,8 s statt 0,1 s, nach den schweren Phasen über dem Limit. Jetzt Wiederholung nur bei 57014 (`_lesen`, 3 Versuche, 3/8 s), Wächter `verify_lese_wiederholung.py` im Gate (Mutation gefangen) — **abgelöst 2026-11-20 (v66.31)** durch `shared/db_wiederholung.py` (auch HTTP/2-GOAWAY, neuer Client, Keyset) und `verify_db_wiederholung.py`. Die übrigen `count=exact`-Leser (`check_db_completeness`, `data_audit`, `onboard_ticker`, `supabase_client`) haben das noch nicht.
+- [ ] **Nightly-Wiederholung (v66.31) im Betrieb prüfen:** Läufe ab 20.11. 21:45 UTC — `journalctl -u sa-nightly.service` Exit 0, `refresh_log` ohne `PHASE`-Einträge; Zeilen „Versuch n/3 gescheitert“ zählen (wie oft 57014/GOAWAY wirklich auftreten). Betrieb: [docs/REFRESH_MONITORING.md](docs/REFRESH_MONITORING.md).
 - [ ] Datenlücken: ^STOXX50E 6 HT, RR.L 1 HT (2 Jahre); Earnings fehlen für BTI, E, GLCNF, NGG, RIO, UL.
 - [ ] `wochentage.html` hat eine eigene RSI-Kopie (flaches Fenster 100 statt unbestimmt) — auf `SA.indicators.calcRSI` umstellen.
 - [ ] Gamma-Studie: RSI-Definition ist jetzt Wilder in beiden Zwillingen (der Nebenbefund aus v66.26 ist erledigt).
