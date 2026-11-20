@@ -5,7 +5,7 @@ Alle historischen FOMC-Sitzungstermine (Statement-Datum = Entscheidungstag).
 Bei zweitägigen Meetings ist das Datum der zweite Tag (= Tag der Bekanntgabe).
 
 Quelle: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-Letzte Aktualisierung: 2026-06-14 (2026 offiziell verifiziert + 2027 vorläufig + 2028-01)
+Letzte Aktualisierung: 2026-11-19 (Abgleich 2000–2027 mit federalreserve.gov; Dez. 2025 → 10.12., 26./27.10.2027 = Strategietreffen, kein Zinsentscheid)
 """
 
 # Format: (Jahr, Monat, Tag) — Datum der Zinsentscheidung/Statement
@@ -93,15 +93,25 @@ FOMC_MEETING_DATES = [
     (2024, 7, 31), (2024, 9, 18), (2024, 11, 7), (2024, 12, 18),
     # ── 2025 ──
     (2025, 1, 29), (2025, 3, 19), (2025, 5, 7), (2025, 6, 18),
-    (2025, 7, 30), (2025, 9, 17), (2025, 10, 29), (2025, 12, 17),
+    (2025, 7, 30), (2025, 9, 17), (2025, 10, 29), (2025, 12, 10),
     # ── 2026 (offiziell, federalreserve.gov; Entscheidungstag = 2. Sitzungstag) ──
     (2026, 1, 28), (2026, 3, 18), (2026, 4, 29), (2026, 6, 17),
     (2026, 7, 29), (2026, 9, 16), (2026, 10, 28), (2026, 12, 9),
-    # ── 2027 (vorläufig, federalreserve.gov) ──
+    # ── 2027 (vorläufig, federalreserve.gov, Stand 18.11.2026): sieben reguläre Sitzungen. Der 26./27.10.2027 ist
+    #    ein „Monetary Policy Strategy Meeting" (Fed-Mitteilung 12.11.2026) — kein regulärer Zinsentscheid, deshalb in
+    #    FOMC_STRATEGIE_TREFFEN; die letzte reguläre Sitzung ist der 16./17.11. ──
     (2027, 1, 27), (2027, 3, 17), (2027, 4, 28), (2027, 6, 9),
-    (2027, 7, 28), (2027, 9, 15), (2027, 10, 27), (2027, 12, 8),
+    (2027, 7, 28), (2027, 9, 15), (2027, 11, 17),
     # ── 2028 (erster vorläufiger Termin, federalreserve.gov) ──
     (2028, 1, 26),
+]
+
+
+# Strategietreffen der Fed (Überprüfung des geldpolitischen Rahmens) — eigener Ereignistyp, NICHT in
+# FOMC_MEETING_DATES: dort steht nur, was die Fed als Sitzung mit Statement/Zinsentscheid führt (Codex 2026-11-20).
+FOMC_STRATEGIE_TREFFEN = [
+    (2027, 10, 27),   # „Monetary Policy Strategy Meeting" am 26./27.10.2027 — fomccalendars.htm (Zeile Oktober,
+                      # Spalte Hinweise) und Pressemitteilung monetary20261112a, Stand 18.11.2026
 ]
 
 

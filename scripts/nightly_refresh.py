@@ -140,7 +140,7 @@ def refresh_ticker_data(tickers: list[str], years_back: int = 20, quick_mode: bo
             # wie die Seiten, nachdem oben die letzten 7 Tage geschrieben wurden. Lade-/Schreibfehler werden gezählt
             # und machen den Nightly rot; ein nicht berechenbarer Ticker ist KEIN Fehler, sondern eine Zeile mit Grund.
             try:
-                _e = _saison.fuer_ticker(ticker, _get_client())
+                _e = _saison.fuer_ticker(ticker, client_factory=_get_client)
                 for _ab in _saison.schreibe(_get_client(), [_saison.scanner_zeile(_e, ticker, today_str)],
                                             [_saison.protokoll_zeile(_e, ticker)]):
                     app_logger.warning(f"nightly_refresh: Saison-Protokoll weicht ab (erster Eintrag bleibt): {_ab}")

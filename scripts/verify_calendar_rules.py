@@ -266,8 +266,32 @@ def rule92_central_banks():
     # Bekannte Korrekturen müssen sitzen (Regression-Guard):
     if (2026, 5, 6) in FOMC_MEETING_DATES or (2026, 4, 29) not in FOMC_MEETING_DATES:
         problems.append("FOMC 2026-04-29 fehlt / 05-06 noch da")
+    if (2025, 12, 17) in FOMC_MEETING_DATES or (2025, 12, 10) not in FOMC_MEETING_DATES:
+        problems.append("FOMC 2025-12-10 fehlt / 12-17 noch da")
+    from shared.fed_dates import FOMC_STRATEGIE_TREFFEN
+    if set(FOMC_STRATEGIE_TREFFEN) & set(FOMC_MEETING_DATES):
+        problems.append("Fed-Strategietreffen als Zinsentscheid geführt (z. B. 2027-10-27)")
+    if (2027, 10, 27) not in FOMC_STRATEGIE_TREFFEN or (2027, 11, 17) not in FOMC_MEETING_DATES:
+        problems.append("Fed 2027: Strategietreffen 26./27.10., reguläre Sitzung 16./17.11. (Fed-Kalender, Zeile Oktober)")
     if (2026, 3, 13) in CB.BOJ_MEETING_DATES:
         problems.append("BoJ 2026-03-13 (falsch) noch da")
+    # Zwilling: landing/js/fomc-dates.js muss dieselben Termine tragen wie shared/fed_dates.py
+    # (bis 11/2026 standen dort 2025-12-17, 2026-05-06, 2026-12-16 — niemand hat es bemerkt)
+    import re as _re
+    _js = (pathlib.Path(_project_dir) / "landing" / "js" / "fomc-dates.js").read_text(encoding="utf-8")
+    js_fomc = {tuple(int(x) for x in t) for t in _re.findall(r"\[(\d{4}),(\d{1,2}),(\d{1,2})\]", _js)}
+    if js_fomc != set(FOMC_MEETING_DATES):
+        diff = sorted(js_fomc ^ set(FOMC_MEETING_DATES))
+        problems.append(f"FOMC Python≠JS (fomc-dates.js): {diff[:4]}")
+    # Fed-Protokolle: 3 Wochen nach der vorangehenden Sitzung; nur um Thanksgiving und den Jahreswechsel
+    # früher (belegt: 21.11.2023, 26.11.2024, 30.12.2025)
+    _fomc = sorted(date(*t) for t in FOMC_MEETING_DATES)
+    for t in CB.FED_MINUTES_DATES:
+        m = date(*t)
+        vor = [f for f in _fomc if f < m]
+        abstand = (m - vor[-1]).days if vor else None
+        if abstand not in (19, 20, 21) or (abstand != 21 and m.month not in (11, 12)):
+            problems.append(f"Fed-Protokoll {m}: {abstand} Tage nach der Sitzung")
     if problems:
         report("Regel 9.2: Notenbank-Termin-Integrität", FAIL, "; ".join(problems[:5]))
     else:

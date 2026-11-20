@@ -237,9 +237,13 @@ jobs:
       # −100 % am Vortag. Kurse ≤ 0 gelten in calc_strategy_returns als fehlend; Mutation (alte Fassung) eingebaut.
       - name: Waechter - Strategierenditen mit Platzhalterkursen
         run: python3 scripts/verify_strategie_renditen.py
-
-      - name: Waechter - Kursladen wiederholt Statement-Timeout
-        run: python3 scripts/verify_lese_wiederholung.py
+      # Nightly rot an 10 von 15 Abenden (2026-11): 57014 UND HTTP/2-GOAWAY beim Laden/Schreiben wurden nicht
+      # wiederholt. shared/db_wiederholung.py + Keyset-Lader + neuer Client nach Verbindungsabbruch; echte Fehlerklassen
+      # aus postgrest/httpx (Versionen wie im Container). Löst verify_lese_wiederholung.py ab (nur 57014, `_lesen`).
+      - name: Waechter - Wiederholung voruebergehender DB-Fehler
+        run: |
+          python3 -m pip install --quiet httpx==0.28.1 postgrest==2.34.1
+          python3 scripts/verify_db_wiederholung.py
       # Indikator-Zwillinge (Audit 2026-11-15): shared/indicators.py = landing/js/indicators.js fuer EMA (SMA-Start),
       # RSI (Wilder, ohne Verlust 100, flach unbestimmt), Bollinger (Population), MACD/LBR; Handfaelle beider Seiten.
       # Mutationen 7/7 (verify_indikator_zwillinge_mutation.py).

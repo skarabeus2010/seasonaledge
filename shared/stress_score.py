@@ -174,56 +174,72 @@ def kurse_hash(daten, closes):
 # LADEN (X2)
 # ══════════════════════════════════════════════════════════════
 
-LESE_WIEDERHOLUNG_S = (3.0, 8.0)   # Wartezeiten vor dem 2. und 3. Versuch
-
-
-def _ist_statement_timeout(e) -> bool:
-    """PostgREST meldet „canceling statement due to statement timeout“ als APIError mit code 57014."""
-    code = getattr(e, "code", None)
-    if code is None and e.args and isinstance(e.args[0], dict):
-        code = e.args[0].get("code")
-    return str(code) == "57014" or "57014" in str(e)
-
-
-def _lesen(fn, warte=None):
-    """Führt eine LESENDE Abfrage aus und wiederholt sie nur bei Statement-Timeout (57014). Anlass: Nightly 14.11. und
-    17.11.2026 — die Zählung der ^GSPC-Zeilen dauert mit kaltem Cache 5,8 s statt 0,1 s und riss unter Last das Limit.
-    Lesen ist idempotent; jeder andere Fehler geht sofort durch, und nach dem letzten Versuch auch der Timeout."""
-    import time
-    warte = LESE_WIEDERHOLUNG_S if warte is None else warte
-    for pause in (*warte, None):
-        try:
-            return fn()
-        except Exception as e:  # noqa: BLE001 — Auswahl über _ist_statement_timeout
-            if pause is None or not _ist_statement_timeout(e):
-                raise
-            time.sleep(pause)
-
-
-def lade_kurse(ticker, client=None):
-    """Alle Kurszeilen aus Supabase `prices` (wie shared.data.lade_closes, aber mit Rohzeilen und unabhängiger
-    Zählung). Gibt (daten, closes, info) bereinigt zurück; info = {roh, quell_n, duplikate, ungueltig}.
-    Eine kurze oder leere Reihe ist KEIN Fehler; LadeFehler nur bei echtem Abrufproblem oder Unvollständigkeit."""
-    if client is None:
-        from shared.supabase_client import get_client
-        client = get_client()
-    if client is None:
-        raise LadeFehler(f"{ticker}: kein Supabase-Client")
+def _lade_einmal(client, ticker):
+    """Ein vollständiger Ladeversuch: Zählung, dann Seiten per Keyset (`date > letztes`). Keyset statt Offset, weil ein
+    tiefer Offset (^GSPC: OFFSET 25 000) die übersprungenen Zeilen jedes Mal neu lesen lässt — eine Quelle der 57014."""
+    stufe = "count"
     try:
-        quell_n = _lesen(lambda: client.table("prices").select("date", count="exact").eq("ticker", ticker)
-                         .limit(1).execute().count)
-        zeilen, offset = [], 0
+        quell_n = client.table("prices").select("date", count="exact").eq("ticker", ticker).limit(1).execute().count
+        zeilen, letztes = [], None
         while True:
-            teil = _lesen(lambda: client.table("prices").select("date,close").eq("ticker", ticker)
-                          .order("date").range(offset, offset + 999).execute().data) or []
+            stufe = f"seite nach {letztes or 'Anfang'}"
+            q = client.table("prices").select("date,close").eq("ticker", ticker)
+            if letztes is not None:
+                q = q.gt("date", letztes)
+            teil = q.order("date").limit(1000).execute().data
+            if teil is None:
+                raise LadeFehler(f"{ticker}: Seite ohne Daten ({stufe})")
+            for z in teil:   # Cursor nur vorwärts — sonst entstehen Lücken oder Dubletten an der Seitengrenze
+                d = z.get("date")
+                if d is None or (letztes is not None and str(d) <= str(letztes)):
+                    raise LadeFehler(f"{ticker}: Datum {d!r} nicht aufsteigend nach {letztes!r}")
+                letztes = d
             zeilen += teil
             if len(teil) < 1000:
                 break
-            offset += 1000
+    except LadeFehler:
+        raise
+    except Exception as e:  # noqa: BLE001 — Stufe anhängen; ob wiederholt wird, entscheidet der Aufrufer
+        e.add_note(f"stress_score.lade_kurse {ticker}: {stufe}")
+        raise
+    return quell_n, zeilen
+
+
+def lade_kurse(ticker, client=None, client_factory=None, log=None):
+    """Alle Kurszeilen aus Supabase `prices` (wie shared.data.lade_closes, aber mit Rohzeilen und unabhängiger
+    Zählung). Gibt (daten, closes, info) bereinigt zurück; info = {roh, quell_n, duplikate, ungueltig}.
+    Eine kurze oder leere Reihe ist KEIN Fehler; LadeFehler nur bei echtem Abrufproblem oder Unvollständigkeit.
+
+    Vorübergehende Fehler (57014, HTTP/2-GOAWAY, Timeout — `shared.db_wiederholung`) werden bis zu dreimal mit einem
+    vollständig neuen Versuch wiederholt; nie wird eine Teilreihe zurückgegeben. Nach einem Transportfehler braucht
+    der neue Versuch einen NEUEN Client: mit `client_factory` (Signatur wie `get_client(force_new=…)`) holt sich der
+    Lader einen; ohne Factory (fest übergebener Client, z. B. Tests oder der Stress-Vollauf, der denselben Client für
+    seine Schreibvorgänge hält) scheitert ein Transportfehler sofort statt auf der toten Verbindung zu wiederholen."""
+    from shared import db_wiederholung as dw
+    if client is None and client_factory is None:
+        from shared.supabase_client import get_client as client_factory
+    if client is None:
+        client = client_factory()
+    if client is None:
+        raise LadeFehler(f"{ticker}: kein Supabase-Client")
+    aktuell = [client]
+
+    def versuch(neuer_client):
+        if neuer_client:
+            if client_factory is None:   # nicht wiederholbar (kein Transportfehler) → LadeFehler unten
+                raise LadeFehler(f"{ticker}: Verbindungsabbruch, aber kein Weg zu einem neuen Client")
+            aktuell[0] = client_factory(force_new=True)
+        return _lade_einmal(aktuell[0], ticker)
+
+    if log is None:
+        from shared.logger import app_logger
+        log = app_logger.warning
+    try:
+        quell_n, zeilen = dw.mit_wiederholung(versuch, was=f"Kurse {ticker}", log=log)
     except LadeFehler:
         raise
     except Exception as e:  # noqa: BLE001 — jeder Abruffehler ist ein Ladefehler, nie ein grüner Wert
-        raise LadeFehler(f"{ticker}: Abruf fehlgeschlagen: {e}") from e
+        raise LadeFehler(f"{ticker}: Abruf fehlgeschlagen ({dw.beschreibe(e)})") from e
     if quell_n is None or len(zeilen) != quell_n:
         raise LadeFehler(f"{ticker}: {len(zeilen)} Zeilen geladen, Zählung {quell_n} — unvollständig")
     daten, closes, dup = bereinigen([z.get("date") for z in zeilen], [z.get("close") for z in zeilen])

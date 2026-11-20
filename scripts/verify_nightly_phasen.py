@@ -303,7 +303,7 @@ def block_cache_und_ticker():
 
     # [Ticker]: der echte Ticker-Pfad zählt einen tdoy-Schreibfehler als Fehler
     _stub_module("shared.yahoo_downloader", download_data=lambda t, period="max": df, preprocess=lambda d: d)
-    _stub_module("shared.saison_score_betrieb", fuer_ticker=lambda t, c: {"status": "ok"},
+    _stub_module("shared.saison_score_betrieb", fuer_ticker=lambda t, c=None, client_factory=None: {"status": "ok"},
                  schreibe=lambda c, a, b: [], scanner_zeile=lambda *a: {}, protokoll_zeile=lambda *a: {})
     _stub_module("shared.tdom_analysis", build_tdom_stats=lambda df, strategy, direction: pd.DataFrame())
     # refresh_ticker_data importiert shared.calculations (zieht plotly, das im Deploy-Gate fehlt — Deploy 016152f rot)
@@ -315,6 +315,17 @@ def block_cache_und_ticker():
         nr.refresh_ticker_data(["SPY"])
     pruefe("Ticker tdoy-Schreibfehler → Ticker-Refresh gescheitert",
            any(f.startswith("Ticker-Refresh") and "tdoy_stats" in f for f in nr._FEHLGESCHLAGEN), str(nr._FEHLGESCHLAGEN))
+
+    # [Saison]: ein Ladefehler, der nach allen Wiederholungen bleibt, geht durch das ECHTE except im Ticker-Pfad
+    # (saison_fehler) in die Phasenliste — Nightly 2026-11-20, Codex Code-R2
+    def _ladefehler(t, c=None, client_factory=None):
+        raise RuntimeError(f"{t}: Abruf fehlgeschlagen (APIError 57014) nach 3 Versuchen")
+    sys.modules["shared.saison_score_betrieb"].fuer_ticker = _ladefehler
+    nr._FEHLGESCHLAGEN.clear()
+    with redirect_stdout(io.StringIO()):
+        nr.refresh_ticker_data(["SPY"])
+    pruefe("Saison-Ladefehler → Phase Saison-Score gescheitert",
+           any(f.startswith("Saison-Score (1 ") and "57014" in f for f in nr._FEHLGESCHLAGEN), str(nr._FEHLGESCHLAGEN))
 
 
 # ── [getAll] ──────────────────────────────────────────────────────────────────────────────────────────────────────

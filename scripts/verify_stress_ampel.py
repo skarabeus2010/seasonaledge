@@ -137,6 +137,10 @@ class Abfrage:
         self.filter.append((k, ("≠", v)))
         return self
 
+    def gt(self, k, v):
+        self.filter.append((k, (">", v)))
+        return self
+
     def order(self, k, desc=False):
         self.ordnung, self.desc = k, desc
         return self
@@ -232,6 +236,9 @@ class FakeDB:
             for k, v in q.filter:
                 if isinstance(v, tuple) and v[:1] == ("≠",):
                     if r.get(k) == v[1]:
+                        return False
+                elif isinstance(v, tuple) and v[:1] == (">",):
+                    if not (r.get(k) is not None and str(r.get(k)) > str(v[1])):
                         return False
                 elif r.get(k) != v:
                     return False

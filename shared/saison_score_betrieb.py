@@ -15,10 +15,11 @@ def code_version() -> str:
     return METHODE + ":" + hashlib.sha256(pathlib.Path(kern.__file__).read_bytes()).hexdigest()[:12]
 
 
-def fuer_ticker(ticker, client=None) -> dict:
-    """Saison-Score aus den Supabase-Kursen (dieselbe Quelle wie die Seiten). LadeFehler wird nicht verschluckt."""
+def fuer_ticker(ticker, client=None, client_factory=None) -> dict:
+    """Saison-Score aus den Supabase-Kursen (dieselbe Quelle wie die Seiten). LadeFehler wird nicht verschluckt.
+    `client_factory` (wie `get_client`) erlaubt dem Lader nach einem Verbindungsabbruch einen neuen Client."""
     from shared import stress_score
-    daten, closes, _ = stress_score.lade_kurse(ticker, client)
+    daten, closes, _ = stress_score.lade_kurse(ticker, client, client_factory=client_factory)
     e = berechne(daten, closes, ticker)
     e["kurse_bis"] = daten[-1] if daten else None
     e["kurse_hash"] = stress_score.kurse_hash(daten, closes)

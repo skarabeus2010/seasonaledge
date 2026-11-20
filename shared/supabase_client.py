@@ -137,6 +137,17 @@ def _with_retry(fn, max_tries: int = 3, backoff_base: float = 1.5):
     raise last_exc
 
 
+def _upsert_wiederholt(tabelle: str, zeilen: list[dict], on_conflict: str):
+    """Idempotenter Upsert mit Wiederholung bei vorübergehenden Fehlern (57014, HTTP/2-GOAWAY, Timeout — siehe
+    shared/db_wiederholung.py). Jeder Versuch baut die Anfrage NEU; nach einem Transportfehler mit neuem Client
+    (am 05.11. scheiterte `monthly_stats` an GOAWAY, der Nightly wurde rot)."""
+    from shared import db_wiederholung as dw
+    from shared.logger import app_logger
+    dw.mit_wiederholung(
+        lambda neu: get_client(force_new=neu).table(tabelle).upsert(zeilen, on_conflict=on_conflict).execute(),
+        was=f"Upsert {tabelle}", log=app_logger.warning)
+
+
 # ── Prices ──────────────────────────────────────────
 
 def fetch_prices(ticker: str, start_date: str = None) -> list[dict]:
@@ -233,9 +244,7 @@ def upsert_tdoy_stats(records: list[dict]):
     """TDoY-Statistiken in Supabase upserten (Batch)."""
     if not records:
         return
-    get_client().table("tdoy_stats").upsert(
-        records, on_conflict="ticker,tdoy,direction,strategy"
-    ).execute()
+    _upsert_wiederholt("tdoy_stats", records, "ticker,tdoy,direction,strategy")
 
 
 def fetch_tdoy_stats(
@@ -450,9 +459,7 @@ def upsert_monthly_stats(records: list[dict]):
     """Monatliche Statistiken upserten."""
     if not records:
         return
-    get_client().table("monthly_stats").upsert(
-        records, on_conflict="ticker,month,years_back"
-    ).execute()
+    _upsert_wiederholt("monthly_stats", records, "ticker,month,years_back")
 
 
 def fetch_monthly_stats(ticker: str, years_back: int = 20) -> list[dict]:
@@ -480,12 +487,8 @@ def upsert_tdom_stats(records: list[dict]):
     if not records:
         return
     batch_size = 500
-    client = get_client()
     for i in range(0, len(records), batch_size):
-        batch = records[i:i + batch_size]
-        client.table("tdom_stats").upsert(
-            batch, on_conflict="ticker,tdom,direction,strategy"
-        ).execute()
+        _upsert_wiederholt("tdom_stats", records[i:i + batch_size], "ticker,tdom,direction,strategy")
 
 
 def fetch_tdom_stats(

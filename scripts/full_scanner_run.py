@@ -66,7 +66,7 @@ def scan_ticker(ticker: str, today: str) -> dict:
     """Saison-Score aus den Supabase-Kursen rechnen und sofort schreiben (resume-safe). Wirft bei Lade-/Schreibfehler."""
     from shared import saison_score_betrieb as sb
     from shared.supabase_client import get_client
-    e = sb.fuer_ticker(ticker, get_client())
+    e = sb.fuer_ticker(ticker, client_factory=get_client)
     for ab in sb.schreibe(get_client(), [sb.scanner_zeile(e, ticker, today)], [sb.protokoll_zeile(e, ticker)]):
         print(f"  Protokoll weicht ab (erster Eintrag bleibt): {ab}", flush=True)
     return e
