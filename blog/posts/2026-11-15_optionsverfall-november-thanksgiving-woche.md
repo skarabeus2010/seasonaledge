@@ -79,7 +79,7 @@ Die Thanksgiving-Woche hat nur vier Handelstage, die meisten anderen Wochen fün
 
 Zum Vergleich: Die Woche nach dem Verfall war in den übrigen Monaten im Mittel schwächer als eine beliebige Kalenderwoche (−0,03 % gegen +0,17 %, p = 0,051 im Permutationstest). Die beiden Gruppen überschneiden sich, weil jede Woche nach einem Verfall auch eine Kalenderwoche ist. Der Wert ist deshalb nur ein Hinweis.
 
-Woher die Stärke der Thanksgiving-Woche kommt, lässt sich mit diesen Daten nicht trennen. Über alle 53 Jahre gerechnet, also auch in den acht Jahren mit 13 Tagen Abstand, brachte die Thanksgiving-Woche im Mittel +0,61 % (Median +0,85 %, positiv in 37 von 53 Jahren). Gegen alle Kalenderwochen ist auch das nicht belegt (p = 0,17). Der Handelstag vor einem Feiertag gilt in der Forschung seit Langem als freundlich; unser ausführlicher Artikel zu Thanksgiving und Black Friday erscheint am 20. November.
+Woher die Stärke der Thanksgiving-Woche kommt, lässt sich mit diesen Daten nicht trennen. Über alle 53 Jahre gerechnet, also auch in den acht Jahren mit 13 Tagen Abstand, brachte die Thanksgiving-Woche im Mittel +0,61 % (Median +0,85 %, positiv in 37 von 53 Jahren). Gegen alle Kalenderwochen ist auch das nicht belegt (p = 0,17). Der Handelstag vor einem Feiertag gilt in der Forschung seit Langem als freundlich; mehr dazu in unserem Artikel zu [Thanksgiving und Black Friday an der Börse](/blog/thanksgiving-boerse-black-friday/).
 
 ## Die Jahre mit 13 Tagen Abstand
 
@@ -162,7 +162,7 @@ Am Freitag, 18. Dezember 2026. An diesem Triple-Witching-Tag verfallen Quartalso
 #### Interne Verlinkung
 - /opex, /vixpiration, /kalender
 - /blog/opex-zyklus-erklaert/ (Phase 4), /blog/opex-effekt-sp500-third-friday-drift/, /blog/pinning-verfallstag/, /blog/p-wert-erklaert/
-- Ab 20.11.: Link auf /blog/thanksgiving-boerse-black-friday/ nachtragen (Satz im Abschnitt „Die Woche danach“)
+- Link auf /blog/thanksgiving-boerse-black-friday/ gesetzt (2026-11-21)
 
 #### Content-Ideen (Folgeartikel)
 - Triple Witching im Dezember: Verfallswoche und Weihnachtswoche

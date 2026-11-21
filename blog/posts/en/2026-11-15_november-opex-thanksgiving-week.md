@@ -80,7 +80,7 @@ Thanksgiving week has only four trading days, while most other weeks have five (
 
 For comparison, the week after expiration in the other months was on average weaker than an arbitrary calendar week (−0.03% vs +0.17%, p = 0.051 in the permutation test). The two groups overlap, because every week after an expiration is also a calendar week, so treat this only as a hint.
 
-Where the strength of Thanksgiving week comes from cannot be separated with these data. Across all 53 years, including the eight with a 13-day gap, Thanksgiving week averaged +0.61% (median +0.85%, up in 37 of 53 years). Against all calendar weeks that is not established either (p = 0.17). Research has long described the trading day before a holiday as friendly for stocks; our full article on Thanksgiving and Black Friday comes out on November 20.
+Where the strength of Thanksgiving week comes from cannot be separated with these data. Across all 53 years, including the eight with a 13-day gap, Thanksgiving week averaged +0.61% (median +0.85%, up in 37 of 53 years). Against all calendar weeks that is not established either (p = 0.17). Research has long described the trading day before a holiday as friendly for stocks; more in our article on [Thanksgiving and Black Friday in the stock market](/en/blog/thanksgiving-stock-market-black-friday/).
 
 ## The years with a 13-day gap
 
@@ -163,7 +163,7 @@ On Friday, December 18, 2026. On this triple-witching day quarterly options and 
 #### Internal links
 - /en/opex, /en/vixpiration
 - /en/blog/opex-cycle-explained/ (phase 4), /en/blog/opex-effect-sp500-third-friday-drift/, /en/blog/options-expiration-pinning/, /en/blog/p-value-explained/
-- From Nov 20: add link to /en/blog/thanksgiving-stock-market-black-friday/ (sentence in "The week after")
+- Link to /en/blog/thanksgiving-stock-market-black-friday/ added (2026-11-21)
 
 #### Content ideas
 - December triple witching: expiration week and Christmas week

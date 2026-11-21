@@ -326,7 +326,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 ### Blog November 2026 (v66.30)
 - [x] OPEX-November-Artikel live (DE+EN), Thanksgiving-Artikel terminiert, Footer „Mehr“ = Menü „Mehr“.
 - [x] **Thanksgiving-Artikel live** (2026-11-20, geprüft): Timer FERTIG 06:00:18 UTC, DE + EN HTTP 200, beide in der Sitemap.
-- [ ] **Danach:** im OPEX-Artikel (DE+EN, Abschnitt „Die Woche danach“) den Link auf den Thanksgiving-Artikel setzen (Nutzer-OK 2026-11-15), pushen.
+- [x] Link OPEX-Artikel → Thanksgiving-Artikel gesetzt (DE+EN, 2026-11-21).
 - [ ] Ko & Yang (2021, Critical Finance Review) im Volltext prüfen — im Thanksgiving-Artikel nur nach Suchtreffer zitiert.
 - [ ] Optional (Nutzerentscheidung): Rückverweis aus `independence-day-effekt-nasdaq` auf den Thanksgiving-Artikel (veröffentlichter Artikel).
 - [ ] Distribution (`wachstum-distributor`) für beide Artikel; Snippets stehen als Kommentar am Ende der Posts.
