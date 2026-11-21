@@ -128,7 +128,8 @@ pruefe(annOhne.indexOf('≥') < 0,
 console.log('Das Chart zeichnet die NORMIERTE Verteilung:');
 letzteOptionen = null;
 PM.renderFedDistChart('x', st);
-const balken = (letzteOptionen.series || [{}])[0].data || [];
+// Seit 2026-11-21 liegen die Balken als {x, y} auf einer numerischen Achse (Erwartungswert zwischen zwei Balken).
+const balken = ((letzteOptionen.series || [{}])[0].data || []).map((d) => (d && typeof d === 'object' ? d.y : d));
 pruefe(balken.length === 13, '[Aufbau] 13 Balken gezeichnet');
 pruefe(Math.abs(balken[2] - (0.30 / 0.65) * 100) < 1e-9,
   'der Balken fuer 2 Cuts zeigt ' + balken[2].toFixed(2) + ' % (normiert), nicht 30 %');

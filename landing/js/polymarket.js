@@ -228,12 +228,16 @@ SA.polymarket = (function() {
 
     var _en = !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN());
     var cfg = {
-      series: [{ name: _en ? SA.i18n.t('pmjs.probability') : 'Wahrscheinlichkeit', data: probs }],
+      // Numerische x-Achse (0..12 = Anzahl Cuts, 12 = „12+“): der Erwartungswert ist eine Bruchzahl zwischen zwei
+      // Balken. Auf einer Kategorie-Achse loest ApexCharts einen Wert, der keine Kategorie ist, als PIXEL-Position
+      // auf — die Linie stand dann irgendwo (gleicher Fehler wie /dealer-positioning, 2026-11-21).
+      series: [{ name: _en ? SA.i18n.t('pmjs.probability') : 'Wahrscheinlichkeit',
+                 data: probs.map(function(p, i) { return { x: i, y: p, fillColor: colors[i] }; }) }],
       chart: Object.assign({ type: 'bar', height: 360, toolbar: { show: false } }, SA.chartTheme.chart),
       colors: [SA.COLORS.accent],
       plotOptions: {
         bar: {
-          borderRadius: 4, columnWidth: '70%', distributed: true
+          borderRadius: 4, columnWidth: '70%'
         }
       },
       grid: SA.chartTheme.grid,
@@ -247,10 +251,13 @@ SA.polymarket = (function() {
           return label + ' Cuts — ' + (cuts * 25) + ' bps';
         } }
       },
-      xaxis: Object.assign({
-        categories: cats,
+      xaxis: Object.assign({}, SA.chartTheme.xaxis, {
+        type: 'numeric', min: -1, max: cats.length, tickAmount: cats.length + 1,
+        labels: Object.assign({}, (SA.chartTheme.xaxis || {}).labels, {
+          formatter: function(v) { var i = Math.round(Number(v)); return (i >= 0 && i < cats.length) ? cats[i] : ''; } }),
+        tooltip: { enabled: false },
         title: { text: _en ? SA.i18n.t('pmjs.fed_cuts_2026') : 'Anzahl Fed-Cuts 2026', style: { color: '#a89878', fontSize: '11px' } }
-      }, SA.chartTheme.xaxis),
+      }),
       yaxis: Object.assign({}, SA.chartTheme.yaxis, {
         labels: { style: { colors: '#a89878', fontSize: '11px' },
                   formatter: function(v) { return v.toFixed(0) + '%'; } },

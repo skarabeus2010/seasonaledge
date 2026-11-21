@@ -256,37 +256,57 @@
       if(!p){document.getElementById('chart').innerHTML='<p style="color:var(--muted);padding:2rem;text-align:center">Kein Profil für '+state.ticker+' (nur '+Object.keys(profiles).join(', ')+').</p>';return}
       var arr=(state.dim==='strike'?p.by_strike:p.by_term)||[],key=KEY[state.greek];
       var tko=summary.tickers.filter(function(t){return t.ticker===state.ticker})[0]||{};
-      var spot=tko.spot;
-      var cats,data;
-      if(state.dim==='strike'){
-        arr=arr.filter(function(r){return spot?Math.abs(r.strike-spot)<=spot*0.08:true});
-        cats=arr.map(function(r){return r.strike});
-      } else { cats=arr.map(function(r){return r.exp.slice(5)}); }
-      data=arr.map(function(r){return Number((r[key]||0).toFixed(3))});
+      // Spot gilt nur endlich und > 0 (Codex 2026-11-21: Spot 0 erzeugte eine Linie „Spot 0“).
+      var spot=(tko.spot!=null&&isFinite(Number(tko.spot))&&Number(tko.spot)>0)?Number(tko.spot):null;
+      var cats=null,data,xmin=null,xmax=null,ticks=20;
       // Marker fuer die by-Strike-Ansicht: Spot, Zero-Gamma-Flip, Call-/Put-Wall.
-      var xanns=[];
+      // Die Strike-Achse ist NUMERISCH: auf einer Kategorie-Achse loest ApexCharts einen Wert, der keine Kategorie ist
+      // (Spot 689.81, eine Wall ausserhalb des Ausschnitts), als PIXEL-Position auf — die Linien lagen dann irgendwo.
+      var marker=[];
       if(state.dim==='strike'){
-        var mk=function(x,color,txt,off){
-          if(x==null)return;
-          xanns.push({x:Number(x),borderColor:color,strokeDashArray:5,opacity:.9,
-            label:{borderColor:color,orientation:'horizontal',offsetY:off,
-              style:{background:'#0c1420',color:color,fontSize:'11px',fontWeight:700},text:txt}});
-        };
-        mk(spot,'#ffffff','Spot '+spot,0);
-        mk(tko.zero_gamma,ACC,'Flip '+tko.zero_gamma,16);
-        mk(tko.call_wall,GREEN,'Call-Wall '+tko.call_wall,32);
-        mk(tko.put_wall,RED,'Put-Wall '+tko.put_wall,48);
+        [[spot,'#ffffff','Spot '],[tko.zero_gamma,ACC,'Flip '],[tko.call_wall,GREEN,'Call-Wall '],[tko.put_wall,RED,'Put-Wall ']]
+          .forEach(function(m){var v=Number(m[0]);if(m[0]!=null&&isFinite(v))marker.push({x:v,color:m[1],txt:m[2]+m[0]})});
+        // Ob ein Marker als Linie erscheint, entscheidet der Abstand zum Spot (hoechstens 20 %) — VOR Rand und Rundung,
+        // sonst rutscht ein Marker mit 20,5 % ueber die gerundete Grenze ins Bild (Codex 2026-11-21).
+        marker.forEach(function(m){m.linie=spot==null||Math.abs(m.x-spot)<=spot*0.2});
+        // Ausschnitt: ±8 % um den Spot, erweitert auf die zugelassenen Marker, damit jede Linie im Bild liegt.
+        if(spot!=null){
+          xmin=spot*0.92;xmax=spot*1.08;
+          marker.forEach(function(m){if(m.linie){xmin=Math.min(xmin,m.x);xmax=Math.max(xmax,m.x)}});
+          var pad=(xmax-xmin)*0.02;xmin-=pad;xmax+=pad;
+          // glatte Achse: Grenzen und Ticks auf Vielfachen einer runden Schrittweite (hoechstens ~30 Ticks)
+          var roh=(xmax-xmin)/30,stufe=[1,2,5,10,20,25,50,100,200,500,1000].filter(function(s){return s>=roh})[0]||1000;
+          xmin=Math.floor(xmin/stufe)*stufe;xmax=Math.ceil(xmax/stufe)*stufe;var ticks=Math.round((xmax-xmin)/stufe);
+          arr=arr.filter(function(r){return r.strike>=xmin&&r.strike<=xmax});
+        }
+        data=arr.map(function(r){return [Number(r.strike),Number((r[key]||0).toFixed(3))]});
+      } else {
+        cats=arr.map(function(r){return r.exp.slice(5)});
+        data=arr.map(function(r){return Number((r[key]||0).toFixed(3))});
       }
+      var xanns=[],ausserhalb=[];
+      marker.forEach(function(m,i){
+        if(!m.linie){ausserhalb.push(m.txt);return}
+        xanns.push({x:m.x,borderColor:m.color,strokeDashArray:5,opacity:.9,
+          label:{borderColor:m.color,orientation:'horizontal',offsetY:i*16,
+            style:{background:'#0c1420',color:m.color,fontSize:'11px',fontWeight:700},text:m.txt}});
+      });
+      if(hz&&ausserhalb.length)hz.innerHTML+=' Außerhalb des Ausschnitts (mehr als 20 % vom Spot): '+ausserhalb.join(', ')+'.';
+      var xaxisOpts=state.dim==='strike'
+        ? {type:'numeric',min:xmin!=null?xmin:undefined,max:xmax!=null?xmax:undefined,tickAmount:ticks,
+           labels:{style:{colors:MUT,fontSize:'13px'},rotate:-90,rotateAlways:true,formatter:function(v){return Math.round(v)}},
+           title:{text:'Strike',style:{color:MUT,fontSize:'13px'}}}
+        : {categories:cats,labels:{style:{colors:MUT,fontSize:'13px'}},tickAmount:20,title:{text:'Verfall',style:{color:MUT,fontSize:'13px'}}};
       var opts={
         chart:{type:'bar',height:380,background:'transparent',toolbar:{show:false},animations:{enabled:false}},
         theme:{mode:'dark'},
         series:[{name:state.greek+' ($M)',data:data}],
-        plotOptions:{bar:{colors:{ranges:[{from:-1e9,to:0,color:RED},{from:0,to:1e9,color:GREEN}]}},columnWidth:'80%'},
+        plotOptions:{bar:{colors:{ranges:[{from:-1e9,to:0,color:RED},{from:0,to:1e9,color:GREEN}]},columnWidth:'80%'}},
         dataLabels:{enabled:false},
-        xaxis:{categories:cats,labels:{style:{colors:MUT,fontSize:'13px'},rotate:-90,rotateAlways:state.dim==='strike'},tickAmount:20,title:{text:state.dim==='strike'?'Strike':'Verfall',style:{color:MUT,fontSize:'13px'}}},
+        xaxis:xaxisOpts,
         yaxis:{labels:{style:{colors:MUT,fontSize:'13px'},formatter:function(v){return (v>=0?'+':'')+v+'M'}},title:{text:AXIS[state.greek]||'Netto-Hedging ($M)',style:{color:MUT,fontSize:'13px'}}},
         grid:{borderColor:'rgba(255,255,255,.06)'},
-        tooltip:{theme:'dark',y:{formatter:function(v){return v+' Mio $'}}},
+        tooltip:{theme:'dark',x:{formatter:function(v){return state.dim==='strike'?'Strike '+v:v}},y:{formatter:function(v){return v+' Mio $'}}},
         annotations:xanns.length?{xaxis:xanns}:{}
       };
       var host=document.getElementById('chart');
