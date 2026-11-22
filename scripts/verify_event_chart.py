@@ -212,8 +212,8 @@ def fixtures():
     return out
 
 
-def seite(sprache, ticker, fix_pfad, wurzel):
-    r = subprocess.run(["node", str(PROBE), "seite", str(wurzel), sprache, ticker, str(fix_pfad)],
+def seite(sprache, ticker, fix_pfad, wurzel, wechsel=None):
+    r = subprocess.run(["node", str(PROBE), "seite", str(wurzel), sprache, ticker, str(fix_pfad)] + ([wechsel] if wechsel else []),
                        capture_output=True, text=True, encoding="utf-8", timeout=120)
     if r.returncode != 0:
         return None, r.stderr[-500:]
@@ -275,6 +275,21 @@ def teil_c() -> None:
                 pruefe("Durchschnittsverlauf ^GDAXI" in (o["avgTitel"] or "") or ticker != "^GDAXI", f"{k} Titel Durchschnittsverlauf {o['avgTitel']}")
 
 
+def teil_c_wechsel() -> None:
+    """EZB-Automatik ist nicht klebrig: ^GDAXI → SPY schaltet die EZB wieder aus (gespeicherte Auswahl ohne EZB)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        fp = Path(tmp) / "fix.json"
+        fp.write_text(json.dumps(fixtures()), encoding="utf-8")
+        o, err = seite("de", "^GDAXI", fp, WURZEL / "landing", "SPY")
+        pruefe(o is not None, f"C Wechsel: Probe gescheitert {err}")
+        if o is None:
+            return
+        ezb = [x for x in o["liste"] if x["kz"] == "EZB"]
+        pruefe(o["titel"] == "SPY", f"C Wechsel: Titel {o['titel']}")
+        pruefe(not o["fehler"] and o["banner"] is None, f"C Wechsel: Fehler {o['fehler'][:1]} {o['banner']}")
+        pruefe(len(ezb) == 1 and not ezb[0]["an"], f"C Wechsel ^GDAXI → SPY: EZB bleibt an {ezb}")
+
+
 def main() -> int:
     if shutil.which("node") is None:
         sys.stderr.write("node fehlt — der Wächter braucht node\n")
@@ -282,6 +297,7 @@ def main() -> int:
     teil_a()
     teil_b()
     teil_c()
+    teil_c_wechsel()
     if "--mutation" in sys.argv:
         mutation()
     for f in fehler:

@@ -266,6 +266,9 @@
       nach: [5, 10, 20, 40, 60].indexOf(merk('nach')) >= 0 ? merk('nach') : 20
     };
 
+    // ezbAuto: EZB nur wegen eines Euroraum-Titels an (nicht gespeichert, beim Tickerwechsel wieder aus)
+    var ezbAuto = false;
+    function speichereAktiv() { var s = Array.from(wahl.aktiv); merk('aktiv', ezbAuto ? s.filter(function (c) { return c !== 'EZB'; }) : s); }
     var EVENTS = null, proTag = null;          // [[iso, code]], Map iso → [codes]
     var ticker = null, roh = [], daten = [], schluss = [], achse = [], letzter = 0, sicht = null, zoomTimer = null;
     var chart = null, avgChart = null, _anfrage = 0;
@@ -333,10 +336,14 @@
       var pkt = [];
       for (var i = von; i <= Math.min(bis, letzter); i++) { var r = roh[i]; pkt.push(kerzen ? { x: i, y: [r.o, r.h, r.l, r.c] } : { x: i, y: r.c }); }
       var el = document.getElementById('ec-chart');
-      var mitText = wahl.kuerzel && (el.clientWidth || 800) / (bis - von + 1) >= 2.2;
-      var anns = termineIm(von, bis).map(function (t) {
+      // Kürzel nur, wo Platz ist: ein Etikett, das das vorige überdecken würde, entfällt (die Linie bleibt)
+      var pxTag = Math.max(200, (el.clientWidth || 800) - 70) / (bis - von + 1), frei = -Infinity;
+      var anns = termineIm(von, bis).sort(function (a, b) { return a.i - b.i; }).map(function (t) {
+        var text = t.codes.map(kurz).join(' · '), mitte = (t.i - von + 0.5) * pxTag, halb = text.length * 3.3 + 3;
+        var mitText = wahl.kuerzel && mitte - halb >= frei;
+        if (mitText) frei = mitte + halb + 4;
         return { x: t.i, borderColor: farbe(t.codes[0]), strokeDashArray: t.i > letzter ? 2 : 4, opacity: 0.85,
-          label: mitText ? { text: t.codes.map(kurz).join(' · '), orientation: 'horizontal', position: 'top', offsetY: -2, borderWidth: 0,
+          label: mitText ? { text: text, orientation: 'horizontal', position: 'top', offsetY: -2, borderWidth: 0,
             style: { background: 'transparent', color: farbe(t.codes[0]), fontSize: '10px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' } } : { text: '' } };
       });
       var lo = Infinity, hi = -Infinity;
@@ -346,7 +353,7 @@
       var opt = {
         chart: { type: kerzen ? 'candlestick' : 'line', height: '100%', background: 'transparent', foreColor: css('--muted'), fontFamily: 'JetBrains Mono, monospace',
           animations: { enabled: false }, toolbar: { show: true, tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
-          zoom: { enabled: true, type: 'x' },
+          zoom: { enabled: true, type: 'x', allowMouseWheelZoom: false },   // Mausrad scrollt die Seite
           events: {
             zoomed: function (c, o) { if (o && o.xaxis) setzeSicht(o.xaxis.min, o.xaxis.max); },
             scrolled: function (c, o) { if (o && o.xaxis) setzeSicht(o.xaxis.min, o.xaxis.max); },
@@ -469,7 +476,8 @@
         lab.querySelector('input').addEventListener('change', function (e) {
           if (e.target.checked) wahl.aktiv.add(t.code); else wahl.aktiv.delete(t.code);
           lab.classList.toggle('aus', !e.target.checked);
-          merk('aktiv', Array.from(wahl.aktiv)); zeichneHaupt(); naechste();
+          if (t.code === 'EZB') ezbAuto = false;
+          speichereAktiv(); zeichneHaupt(); naechste();
         });
         box.appendChild(lab);
       });
@@ -508,7 +516,7 @@
     document.getElementById('chk-kuerzel').addEventListener('change', function () { wahl.kuerzel = this.checked; merk('kuerzel', wahl.kuerzel); zeichneHaupt(); });
     document.getElementById('btn-alle').addEventListener('click', function () {
       wahl.aktiv = wahl.aktiv.size ? new Set() : new Set(TYPEN.map(function (t) { return t.code; }));
-      merk('aktiv', Array.from(wahl.aktiv)); baueListe(); zeichneHaupt(); naechste();
+      ezbAuto = false; speichereAktiv(); baueListe(); zeichneHaupt(); naechste();
     });
     [['a-typ', 'typ', false], ['a-jahre', 'jahre', true], ['a-vor', 'vor', true], ['a-nach', 'nach', true]].forEach(function (x) {
       document.getElementById(x[0]).addEventListener('change', function () { wahl[x[1]] = x[2] ? +this.value : this.value; merk(x[1], wahl[x[1]]); zeichneAvg(); });
@@ -533,7 +541,11 @@
         achse = SA.eventChart.achse(daten, EVENTS.length ? EVENTS[EVENTS.length - 1][0] : null);
         ticker = t; sicht = null;
         var boerse = null; try { boerse = SA.boersenkalender.boerse(t); } catch (e) { boerse = null; }
-        if (boerse && EUROZONE[boerse] && !wahl.aktiv.has('EZB')) { wahl.aktiv.add('EZB'); merk('aktiv', Array.from(wahl.aktiv)); }
+        // EZB automatisch bei Euroraum-Titeln, ohne die gespeicherte Auswahl zu ändern: beim Wechsel zu einem anderen
+        // Ticker gilt wieder, was der Nutzer selbst gewählt hat
+        if (ezbAuto) wahl.aktiv.delete('EZB');
+        ezbAuto = false;
+        if (boerse && EUROZONE[boerse] && !wahl.aktiv.has('EZB')) { wahl.aktiv.add('EZB'); ezbAuto = true; }
         document.getElementById('title-ticker').textContent = t;
         baueListe(); segmente(); legende(); zeichneHaupt(); zeichneAvg(); naechste();
         $loading.style.display = 'none';

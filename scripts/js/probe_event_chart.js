@@ -31,7 +31,7 @@ if (MODUS === 'rechne') {
 }
 
 const { JSDOM, ResourceLoader, VirtualConsole } = require(path.join(__dirname, '..', 'perf', 'node_modules', 'jsdom'));
-const [WURZEL, SPRACHE, TICKER, FIXDATEI] = process.argv.slice(3);
+const [WURZEL, SPRACHE, TICKER, FIXDATEI, WECHSEL] = process.argv.slice(3);   // WECHSEL: danach per Eingabe + Enter
 const DATEN = JSON.parse(fs.readFileSync(FIXDATEI, 'utf8'));
 const UHR = Date.UTC(2026, 10, 22, 12, 0, 0);
 
@@ -113,10 +113,18 @@ const dom = new JSDOM(html, {
 });
 const W = dom.window;
 const txt = (sel) => { const el = W.document.querySelector(sel); return el ? el.textContent.replace(/\s+/g, ' ').trim() : null; };
-let warte = 0;
+let warte = 0, gewechselt = !WECHSEL;
 (function pruefe() {
-  const fertig = W.document.getElementById('loading') && W.document.getElementById('loading').style.display === 'none' && W.__charts && W.__charts.length >= 2;
+  const fertig = W.document.getElementById('loading') && W.document.getElementById('loading').style.display === 'none' && W.__charts && W.__charts.length >= 2 &&
+    (gewechselt ? (!WECHSEL || txt('#title-ticker') === WECHSEL) : true);
   if (!fertig && warte++ < 300) { setTimeout(pruefe, 30); return; }
+  if (!gewechselt) {
+    gewechselt = true;
+    const inp = W.document.getElementById('ticker-input');
+    inp.value = WECHSEL;
+    inp.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    setTimeout(pruefe, 30); return;
+  }
   setTimeout(() => {
     const banner = W.document.getElementById('error-banner');
     const liste = [...W.document.querySelectorAll('#ec-liste .ec-ev')].map((l) => ({ kz: l.querySelector('.kz').textContent, an: l.querySelector('input').checked, name: l.querySelector('.name').firstChild.textContent }));
