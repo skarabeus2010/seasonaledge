@@ -31,7 +31,7 @@ if str(_project_root) not in sys.path:
 from shared.seo_basis import (  # noqa: E402
     json_ld, ist_veroeffentlicht, ist_indexierbar, geaendert_am, veroeffentlicht_am,
     blog_sprachpaare, blog_hreflang_ziele,
-    anzahl_basiswerte,
+    anzahl_basiswerte, AUTOR_NAME, AUTOR_URL, AUTOR_LD,
 )
 
 
@@ -77,6 +77,9 @@ def _extra_vars_de(post: dict) -> dict:
         "blog_base": "/blog/",
         "post_url": f"{BASE_URL}/blog/{slug}/",
         "str_min_read": "Min Lesezeit",
+        "str_by": "Von",
+        "autor_name": AUTOR_NAME,
+        "autor_url": AUTOR_URL,
         "str_cta_h3": "Analysiere es selbst auf SeasonAlpha",
         "str_cta_p": f"Interaktive Charts, Saisonalitäts-Statistik und technische Filter für {anzahl_basiswerte()} Basiswerte.",
         "str_cta_btn": "Kostenlos starten",
@@ -98,6 +101,9 @@ def _extra_vars_en(post: dict) -> dict:
         "blog_base": "/en/blog/",
         "post_url": f"{BASE_URL_EN}/en/blog/{slug}/",
         "str_min_read": "min read",
+        "str_by": "By",
+        "autor_name": AUTOR_NAME,
+        "autor_url": AUTOR_URL,
         "str_cta_h3": "Analyse it yourself on SeasonAlpha",
         "str_cta_p": f"Interactive charts, seasonality statistics and technical filters for {anzahl_basiswerte()} assets.",
         "str_cta_btn": "Start for free",
@@ -1207,7 +1213,7 @@ def _ld_kontext(post: dict, extra: dict) -> dict:
         "description": post.get("description", ""),
         "datePublished": f"{post['date']}T08:00:00+02:00",
         "dateModified": f"{post['updated']}T08:00:00+02:00",
-        "author": {"@type": "Organization", "name": "SeasonAlpha", "url": BASE_URL},
+        "author": dict(AUTOR_LD),
         "publisher": {
             "@type": "Organization", "name": "SeasonAlpha", "url": BASE_URL,
             "logo": {"@type": "ImageObject",

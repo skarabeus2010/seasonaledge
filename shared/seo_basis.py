@@ -23,6 +23,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 BASE_URL = "https://seasonalpha.ai"
+
+# Autor der Artikel (Nutzerentscheidung 2026-11-22). Eine Quelle für JSON-LD, Meta-Tags, Byline und /ueber-uns#autor.
+AUTOR_NAME = "Alex Seibel"
+AUTOR_URL = f"{BASE_URL}/ueber-uns#autor"
+AUTOR_LD = {"@type": "Person", "name": AUTOR_NAME, "url": AUTOR_URL}
 I18N_JS = REPO / "landing" / "js" / "i18n.js"
 BLOG_POSTS_DE = REPO / "blog" / "posts"
 BLOG_POSTS_EN = REPO / "blog" / "posts" / "en"

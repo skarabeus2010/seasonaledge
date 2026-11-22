@@ -8,7 +8,7 @@
     <meta name="description" content="{{ description }}">
     <link rel="canonical" href="{{ post_url }}">
 
-    <meta name="author" content="SeasonAlpha">
+    <meta name="author" content="{{ autor_name }}">
     <meta name="theme-color" content="#000000">
 
     <!-- Open Graph -->
@@ -23,7 +23,7 @@
     <meta property="og:locale" content="{{ og_locale | default('de_DE') }}">
     <meta property="article:published_time" content="{{ date }}T08:00:00+02:00">
     <meta property="article:modified_time" content="{{ updated }}T08:00:00+02:00">
-    <meta property="article:author" content="SeasonAlpha">
+    <meta property="article:author" content="{{ autor_url }}">
     <meta property="article:section" content="{{ category_label }}">
     {% for tag in tags %}<meta property="article:tag" content="{{ tag }}">
     {% endfor %}
@@ -142,6 +142,8 @@
             font-size: 0.9rem;
             margin-bottom: 2.5rem;
         }
+        .post-meta a { color: var(--dim, #e8e0d0); text-decoration: none; border-bottom: 1px solid rgba(232,168,32,.35); }
+        .post-meta a:hover, .post-meta a:focus-visible { color: var(--accent, #e8a820); }
 
         /* Content */
         .post-content h2 {
@@ -412,7 +414,7 @@
 
     <div class="category-badge">{{ category_label }}</div>
     <h1>{{ title }}</h1>
-    <div class="post-meta">{{ date_formatted }} · {{ reading_time }} {{ str_min_read | default('Min Lesezeit') }}{% if ticker %} · {{ ticker }}{% endif %}</div>
+    <div class="post-meta">{{ str_by }} <a href="{{ autor_url }}" rel="author">{{ autor_name }}</a> · {{ date_formatted }} · {{ reading_time }} {{ str_min_read | default('Min Lesezeit') }}{% if ticker %} · {{ ticker }}{% endif %}</div>
 
     <article class="post-content">
         {{ content }}
