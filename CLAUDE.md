@@ -334,7 +334,7 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 
 ### /event-chart (v66.32, [docs/EVENT_CHART.md](docs/EVENT_CHART.md))
 - [x] Seite live DE+EN, Termine aus den Kalendermodulen, EZB-Automatik für Euroraum-Titel, Wächter im Gate.
-- [ ] Nach dem Deploy: `/event-chart` und `/en/event-chart` im Browser ansehen (SPY, ^GDAXI, SAP.DE), Zoom und Durchschnittsverlauf.
+- [x] Browsertest live (2026-11-22, SPY/^GDAXI/SAP.DE): Kürzel überlappten in 1J, Mausrad zoomte statt zu scrollen, EZB-Automatik blieb nach Tickerwechsel gespeichert — behoben (`004b2c8`), Wechselfall im Wächter.
 - [ ] EZB-Termine 2000–2014 aus der amtlichen Liste ergänzen (`ECB_MEETING_DATES`). Vorher prüfen, was `/zentralbanken` damit rechnet.
 - [ ] Außerplanmäßige EZB-Sitzungen (z. B. 18.03.2020), Eurex-Verfall für europäische Titel, BoE/BoJ/SNB nach dem EZB-Muster.
 
