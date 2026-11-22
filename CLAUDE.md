@@ -338,6 +338,14 @@ C:\dev\rueckantwort_seasonalpha_an_mietwatch_2026-10-01.md
 - [ ] EZB-Termine 2000–2014 aus der amtlichen Liste ergänzen (`ECB_MEETING_DATES`). Vorher prüfen, was `/zentralbanken` damit rechnet.
 - [ ] Außerplanmäßige EZB-Sitzungen (z. B. 18.03.2020), Eurex-Verfall für europäische Titel, BoE/BoJ/SNB nach dem EZB-Muster.
 
+### DB-Reparaturen 2026-11-22 (Nutzerfreigabe, Codex 2 Runden: [R1](docs/review_prompts/2026-11-22_tdom_sndk_reparatur_antwort.md), [R2](docs/review_prompts/2026-11-22_tdom_sndk_reparatur_r2_antwort.md))
+- [x] **SNDK-Split 8:1** (wirksam 19.11., erster Tag neuer Basis 20.11.; in der DB Bruch am Nightly-Fensterrand 13.11.): 440 Zeilen bis 12.11. Kurse ÷ 8, Volumen × 8, log_return/tdom/tdoy unverändert. Unveränderlicher Plan + Einstufung je Zeile (alt/neu/unerwartet), EIN Upsert, Rücklesen 0 Abweichungen, Basisprüfung 445 Paare ohne Treffer, Wiederholung schreibt 0. Plan/Sicherung `/app/logs/reparatur/sndk_split_plan.json`.
+- [x] **TDOM/TDOY ab 2025 = Börsenkalender**: 975 Zeilen / 109 Ticker (SNDK/CRWV ab Börsengang gezählt, ^VIX Phantomzeilen, Euronext/Stockholm/SIX ab 08/2026, XETRA 08.–10.09., US 11.08.), über `backfill_tdoy.schreiben`, Rücklesen 0. Sicherung `/app/logs/reparatur/tdom_tdoy_2025_vorher_20261122T154404.json`. **Ausgenommen:** Futures (=F zählen CME-Tage, Kalender NYSE) und Devisen (Kalender Mo–Fr, DB nur Kurstage) — Entscheidung offen.
+- [x] **Prüfregel 4–6** (`verify_calendar_rules.py`) vergleicht jetzt gegen `tdom_tdoy_fuer_ticker` (ein Ticker je Börse, leere Stichprobe = rot) statt „Vorzeile + 1“ — die alte Regel meldete Phantomzeilen falsch und sah nur SPY/SAP.DE. Nach der Reparatur 12 PASS.
+- [ ] Futures/Devisen-Nummerierung entscheiden (welcher Kalender für =F, Devisen mit oder ohne Kurszeile zählen).
+- [ ] Splits innerhalb des Nightly-Fensters erkennt nur der Health-Check „Kursbasis“ (45 Tage) — ein Split-Erkenner mit automatischem Plan wäre der nächste Schritt (SOXX, ETHA, SNDK: dreimal von Hand).
+- Lesson: eine exklusive Host-Sperre um `docker exec` blockiert sich selbst, weil Import und Client im Container den geteilten Lock auf dieselbe Datei verlangen (Codex R2) — Konkurrenz stattdessen über die Daten ausschließen (Planzeilen außerhalb der Schreibfenster) und im Skript prüfen.
+
 ### Audit 2026-11-15 (v66.29)
 - [x] SOXX-Split, Nightly/Health „Fehler als Erfolg“, Marktkalender, Indikator-Zwillinge (Codex-Freigabe R2).
 - [ ] Nach dem Deploy: Nightly 15.11. prüfen (`refresh_log` mit `PHASE`-Liste leer, Phase K „Marktkalender: OK“), Health-Mail 16.11. „Nightly-Ausgaben“ grün, `/kalender` ab November 2026.

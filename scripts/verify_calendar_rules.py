@@ -307,42 +307,54 @@ def _client():
 
 
 def rule456_tdom_tdoy_db(client):
-    """Regel 4-6: TDOM/CDOM/TDOY/CDOY-Konsistenz in prices (Stichprobe)."""
-    bad = []
-    _start = f"{date.today().year - 1}-01-01"
-    for t in ("SPY", "SAP.DE"):
-        rows = (client.table("prices").select("date,tdom,tdoy")
-                .eq("ticker", t).gte("date", _start)
-                .order("date").execute().data)
-        rows = [r for r in rows if r.get("tdom") is not None]
-        if len(rows) < 50:
+    """Regel 4-6: gespeicherte TDOM/TDOY = Börsenkalender (Stichprobe: ein Ticker je Börse, ab Vorjahr).
+
+    Soll ist `tdom_tdoy_fuer_ticker` (dieselbe Funktion, mit der Nightly/Intraday/Onboarding seit P2 schreiben).
+    Bis 2026-11-22 verlangte die Regel „Vorzeile + 1“ — das meldet bei Phantomzeilen an geschlossenen Tagen und bei
+    echten Kurslücken falsche Fehler und übersieht einen Versatz, der über einen ganzen Monat gleich bleibt
+    (Codex 2026-11-22, docs/review_prompts/2026-11-22_tdom_sndk_reparatur_antwort.md, Befund 3).
+    Futures (=F), Krypto und Devisen bleiben außen vor: für sie ist die Nummerierung noch offen.
+    Grenze: geprüft wird die Speicherung gegen den Produktionsrechner, keine unabhängige Kalenderreferenz (die prüfen
+    verify_kalender_sollfaelle.py und verify_sitzungen.py). Eine Börse ohne Stichprobe macht die Regel rot.
+    """
+    from shared.exchange_holidays import tdom_tdoy_fuer_ticker
+    from shared.symbols import SYMBOLS, get_exchange_for_holidays
+    je_boerse = {}
+    for t in sorted(SYMBOLS):
+        b = get_exchange_for_holidays(t)
+        if t.endswith("=F") or b in ("CRYPTO", "FOREX") or b in je_boerse:
             continue
-        prev = None
-        for r in rows:
-            d = date.fromisoformat(r["date"])
-            tdom, tdoy = r["tdom"], r["tdoy"]
-            if prev:
-                pd_, ptdom, ptdoy = prev
-                if d.month == pd_.month and d.year == pd_.year:
-                    if tdom != ptdom + 1:
-                        bad.append(f"{t} {r['date']}: TDOM {ptdom}->{tdom}")
-                        break
-                else:  # neuer Monat
-                    if tdom != 1:
-                        bad.append(f"{t} {r['date']}: TDOM-Reset {tdom}≠1")
-                        break
-                if d.year == pd_.year and tdoy != ptdoy + 1:
-                    bad.append(f"{t} {r['date']}: TDOY {ptdoy}->{tdoy}")
-                    break
-                if d.year != pd_.year and tdoy != 1:
-                    bad.append(f"{t} {r['date']}: TDOY-Reset {tdoy}≠1")
-                    break
-            prev = (d, tdom, tdoy)
+        je_boerse[b] = t
+    for b, t in (("NYSE", "SPY"), ("XETRA", "SAP.DE")):
+        je_boerse[b] = t
+    bad, geprueft, leer = [], 0, []
+    _start = f"{date.today().year - 1}-01-01"
+    for b, t in sorted(je_boerse.items()):
+        rows, ab = [], _start
+        while True:   # Keyset, damit kein Jahr an der 1000-Zeilen-Grenze abgeschnitten wird
+            r = (client.table("prices").select("date,tdom,tdoy").eq("ticker", t).gte("date", ab)
+                 .order("date").limit(1000).execute().data)
+            rows += [x for x in r if not rows or x["date"] > rows[-1]["date"]]
+            if len(r) < 1000:
+                break
+            ab = r[-1]["date"]
+        if not rows:
+            leer.append(f"{t} ({b})")   # keine Stichprobe ist kein Bestehen (Codex R2 Befund 4)
+            continue
+        soll = tdom_tdoy_fuer_ticker(t, [x["date"][:10] for x in rows])
+        falsch = [(x["date"][:10], (x["tdom"], x["tdoy"]), s) for x, s in zip(rows, soll)
+                  if (x["tdom"], x["tdoy"]) != tuple(s)]
+        geprueft += len(rows)
+        if falsch:
+            d, ist, s = falsch[0]
+            bad.append(f"{t} ({b}) {len(falsch)} Zeilen, erste {d}: {ist}≠{tuple(s)}")
+    if leer:
+        bad.append("ohne Kurszeilen ab " + _start + ": " + ", ".join(leer))
     if bad:
-        report("Regel 4-6: TDOM/TDOY-Konsistenz (DB)", FAIL, "; ".join(bad[:4]))
+        report("Regel 4-6: TDOM/TDOY = Börsenkalender (DB)", FAIL, "; ".join(bad[:4]))
     else:
-        report("Regel 4-6: TDOM/TDOY-Konsistenz (DB)", PASS,
-               "monoton +1/Handelstag, korrekte Monats-/Jahres-Resets")
+        report("Regel 4-6: TDOM/TDOY = Börsenkalender (DB)", PASS,
+               f"{len(je_boerse)} Börsen, {geprueft} Zeilen ab {_start} gleich dem Kalender")
 
 
 def rule1_gap_audit_db(client):
