@@ -109,7 +109,7 @@ SA.i18n = (function() {
   // REGEL: jede inhaltliche Aenderung an de.json/en.json erhoeht diese
   // Kennung. Ein geaenderter Text ohne neue Kennung ist nicht
   // veroeffentlicht.
-  var _JSON_VER = 'v29';
+  var _JSON_VER = 'v30';
 
   function _loadJSON(lang) {
     var cacheKey = 'sa-i18n-' + _JSON_VER + '-' + lang;
@@ -305,6 +305,10 @@ SA.i18n = (function() {
     '/tdom-analyse': {
       title: 'TDoM Analysis — Trading Day of the Month | SeasonAlpha',
       desc:  'Average return, win rate and heatmap per trading day of the month. Exchange-specific (NYSE/XETRA/LSE) — analyses the true trading calendar, not calendar days.'
+    },
+    '/event-chart': {
+      title: 'Event Chart — Price Chart with Fed, ECB, OPEX & VIX Expiration | SeasonAlpha',
+      desc:  'Candlestick chart with Fed and ECB rate decisions, Fed minutes, the jobs report, options expiration, triple witching and VIX expiration as lines, plus the average price path around each event.'
     },
     '/drawdown': {
       title: 'Drawdown Analysis — Max Drawdown, Duration & Time to Recovery | SeasonAlpha',

@@ -228,6 +228,10 @@ jobs:
       # echte Seite DE + gebaute EN in jsdom (braucht das npm ci darueber). Mutationen 20/20 (verify_drawdown_mutation.py).
       - name: Waechter - Drawdown-Analyse
         run: python3 scripts/verify_drawdown.py
+      # /event-chart: Terminliste = scripts/build_event_termine.py, Rechenkern landing/js/event-chart-compute.js gegen
+      # numpy-Referenz, echte Seite DE + gebaute EN in jsdom (EZB-Automatik bei ^GDAXI). Mutationen 7/7 (--mutation).
+      - name: Waechter - Event-Chart
+        run: python3 scripts/verify_event_chart.py --mutation
       # Audit 2026-11-15: jede gescheiterte Nightly-Phase steht als „PHASE: …“ im refresh_log (Log nach Phase K) und ist
       # in der Health-Mail rot; TDOM/TDOY-Schreibfehler, Backfill-Abfragefehler, Kalender-Ausgabe (Alter + Inhalt) und
       # getAll-Fehlerantworten gehen nicht mehr als Erfolg durch. Mutationen 13/13 (verify_nightly_phasen_mutation.py).

@@ -341,6 +341,7 @@ AUSNAHMEN = {
     "build_cot_positioning.py": "COT, wöchentliche Daten",
     "kalender_momentaufnahme.py": "Prüfwerkzeug, schreibt einmalig die eingefrorene Momentaufnahme (Fixture)",
     "opex_momentaufnahme.py": "Prüfwerkzeug, schreibt einmalig die eingefrorene OPEX-Momentaufnahme (Fixture, Vorbedingung Kalender V3); `--pruefen` ist rein lesend",
+    "build_event_termine.py": "Terminliste für /event-chart, von Hand gestartet, schreibt nur landing/data/event_termine.json (committet); `--pruefen` ist rein lesend",
     "build_etf_flows.py": "ETF-Flows",
     "build_shortvol_proxy.py": "Vola-Proxy",
     "build_volcontrol_proxy.py": "Vola-Proxy",

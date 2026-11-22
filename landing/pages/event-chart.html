@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- SA_META_V5 -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Event-Chart &mdash; Kurschart mit Fed, EZB, OPEX &amp; VIX-Verfall | SeasonAlpha</title>
+  <meta name="description" content="Kerzenchart mit Fed- und EZB-Zinsentscheiden, Fed-Protokollen, Arbeitsmarktbericht, Optionsverfall, Großem Verfall und VIX-Verfall als Linien, dazu der durchschnittliche Kursverlauf rund um jeden Termin.">
+  <meta name="author" content="SeasonAlpha">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://seasonalpha.ai/event-chart">
+  <link rel="alternate" hreflang="de" href="https://seasonalpha.ai/event-chart">
+  <link rel="alternate" hreflang="en" href="https://seasonalpha.ai/en/event-chart">
+  <link rel="alternate" hreflang="x-default" href="https://seasonalpha.ai/event-chart">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://seasonalpha.ai/event-chart">
+  <meta property="og:title" content="Event-Chart &mdash; Kurschart mit Fed, EZB, OPEX &amp; VIX-Verfall | SeasonAlpha">
+  <meta property="og:description" content="Kerzenchart mit Fed- und EZB-Zinsentscheiden, Fed-Protokollen, Arbeitsmarktbericht, Optionsverfall, Großem Verfall und VIX-Verfall als Linien, dazu der durchschnittliche Kursverlauf rund um jeden Termin.">
+  <meta property="og:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="SeasonAlpha">
+  <meta property="og:locale" content="de_DE">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@SeasonAlph4882">
+  <meta name="twitter:creator" content="@SeasonAlph4882">
+  <meta name="twitter:title" content="Event-Chart &mdash; Kurschart mit Fed, EZB, OPEX &amp; VIX-Verfall | SeasonAlpha">
+  <meta name="twitter:description" content="Kerzenchart mit Fed- und EZB-Zinsentscheiden, Fed-Protokollen, Arbeitsmarktbericht, Optionsverfall, Großem Verfall und VIX-Verfall als Linien, dazu der durchschnittliche Kursverlauf rund um jeden Termin.">
+  <meta name="twitter:image" content="https://seasonalpha.ai/landing/assets/images/og-image.png">
+
+  <link rel="icon" type="image/svg+xml" href="/landing/assets/images/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/landing/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/landing/assets/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/landing/assets/images/apple-touch-icon.png">
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Event-Chart","url":"https://seasonalpha.ai/event-chart","description":"Kerzenchart mit Fed- und EZB-Zinsentscheiden, Fed-Protokollen, Arbeitsmarktbericht, Optionsverfall, Großem Verfall und VIX-Verfall als Linien, dazu der durchschnittliche Kursverlauf rund um jeden Termin.","isPartOf":{"@type":"WebSite","name":"SeasonAlpha","url":"https://seasonalpha.ai"},"publisher":{"@type":"Organization","name":"SeasonAlpha","url":"https://seasonalpha.ai","logo":{"@type":"ImageObject","url":"https://seasonalpha.ai/landing/assets/images/og-image.png"}}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://seasonalpha.ai/"},{"@type":"ListItem","position":2,"name":"Event-Chart","item":"https://seasonalpha.ai/event-chart"}]}</script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/landing/css/app.css">
+  <style>
+    :root{--e-opex:#f2994a;--e-tw:#ff5a5f;--e-q:#e0679b;--e-vix:#a98bff;--e-fomc:#5b9cff;--e-fomcx:#8fb4ff;--e-min:#3cc9b8;--e-jobs:#5fd27a;--e-ezb:#e3c64f;--up:#26a69a;--down:#ef5350}
+    .page-title{font-family:var(--f-d);font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.25rem}
+    .page-title b{color:var(--accent)}
+    .page-caption{color:var(--muted);font-size:.8125rem;margin-bottom:.75rem;max-width:80ch}
+    .loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:var(--r)}
+    .loading-overlay .spinner{width:32px;height:32px;border:3px solid rgba(232,168,32,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading-overlay span{color:var(--accent);margin-left:.75rem;font-size:.875rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (prefers-reduced-motion:reduce){.loading-overlay .spinner{animation:none}}
+    main{position:relative;min-width:0}
+    .error-banner{background:rgba(255,64,64,.1);border:1px solid rgba(255,64,64,.2);color:var(--red);padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.8125rem;display:none}
+    .ec-seg{display:flex;gap:.3rem;flex-wrap:wrap;margin:.35rem 0}
+    .ec-seg button{flex:1;min-height:34px;padding:.3rem .4rem;border:1px solid var(--border);background:var(--surface);color:var(--dim);border-radius:6px;font:500 .75rem var(--f-m);cursor:pointer}
+    .ec-seg button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+    .ec-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .ec-karte{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.75rem;min-width:0;margin-bottom:.75rem}
+    .ec-legende{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .9rem;font:.75rem var(--f-m);color:var(--muted);padding:0 .25rem .5rem;min-height:1.8rem;font-variant-numeric:tabular-nums}
+    .ec-legende b{color:var(--text);font-weight:600}
+    .up{color:var(--up)} .down{color:var(--down)}
+    .ec-box{position:relative;height:clamp(320px,50vh,520px)}
+    #ec-chart{position:absolute;inset:0}
+    .ec-hinweis{font-size:.75rem;color:var(--muted);margin:0 .25rem .4rem}
+    .ec-pane{border-top:1px solid var(--border);margin-top:.4rem;padding-top:.5rem}
+    .ec-pane-kopf{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:.5rem 1rem;padding:0 .25rem}
+    .ec-pane-titel{font:.75rem var(--f-m);color:var(--muted);display:flex;flex-direction:column;gap:.15rem}
+    .ec-pane-titel b{color:var(--text);font-weight:600;font-size:.8125rem}
+    .ec-steuer{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center}
+    .ec-steuer label{font:600 .6875rem var(--f-m);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:.35rem}
+    .ec-steuer select{font:500 .8125rem var(--f-b);color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .45rem;min-height:36px}
+    .ec-steuer select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .ec-avg{height:clamp(220px,30vh,300px)}
+    .ec-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;margin-bottom:.75rem}
+    .ec-kpi{background:var(--elevated);border-radius:8px;padding:.6rem .75rem}
+    .ec-kpi .l{font:600 .6875rem var(--f-m);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+    .ec-kpi .v{font:600 1.25rem var(--f-d);color:var(--text);font-variant-numeric:tabular-nums;margin-top:.15rem}
+    .ec-kpi .s{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+    .ec-tab-wrap{overflow-x:auto}
+    .ec-table{border-collapse:collapse;font-size:.8125rem;font-variant-numeric:tabular-nums;min-width:560px;width:100%}
+    .ec-table th,.ec-table td{text-align:right;padding:.4rem .6rem;border-top:1px solid var(--border);white-space:nowrap}
+    .ec-table th:first-child,.ec-table td:first-child{text-align:left}
+    .ec-table th{font:600 .6875rem var(--f-m);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;border-top:0}
+    .ec-table td{color:var(--dim)}
+    .ec-liste{display:flex;flex-direction:column;gap:2px}
+    .ec-ev{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:.6rem;padding:.4rem .3rem;border-radius:6px;cursor:pointer;min-height:44px;position:relative}
+    .ec-ev:hover{background:var(--elevated)}
+    .ec-ev input{position:absolute;opacity:0;pointer-events:none}
+    .ec-ev .box{width:16px;height:16px;border-radius:4px;border:2px solid var(--c);display:grid;place-items:center}
+    .ec-ev input:checked+.box{background:var(--c)}
+    .ec-ev input:checked+.box::after{content:"";width:8px;height:4px;border:solid var(--card);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+    .ec-ev input:focus-visible+.box{outline:2px solid var(--accent);outline-offset:2px}
+    .ec-ev .name{color:var(--text);font-size:.8125rem;line-height:1.25}
+    .ec-ev .name small{display:block;color:var(--muted);font-size:.6875rem}
+    .ec-ev .kz{font:600 .6875rem var(--f-m);color:var(--c)}
+    .ec-ev.aus .name{color:var(--muted)}
+    .ec-link{font:600 .6875rem var(--f-m);color:var(--accent);background:none;border:0;cursor:pointer;padding:.25rem 0;min-height:32px}
+    .ec-kopf{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
+    .ec-check{display:flex;gap:.5rem;align-items:center;font-size:.75rem;color:var(--muted);margin-top:.5rem;min-height:32px}
+    .ec-next{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 1rem}
+    .ec-next li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:.6rem;padding:.4rem 0;border-top:1px solid var(--border);font-size:.8125rem}
+    .ec-next time{font:.75rem var(--f-m);color:var(--dim);font-variant-numeric:tabular-nums}
+    .ec-chip{display:inline-flex;align-items:center;padding:0 .4rem;margin:0 .25rem .2rem 0;border-radius:4px;font:600 .6875rem var(--f-m);border:1px solid currentColor}
+    .ec-tt{padding:.5rem .6rem;font:.75rem var(--f-m);line-height:1.6}
+    .ec-tt b{color:var(--text)}
+    .ec-karte h2{font-size:.875rem;margin:0 0 .5rem;color:var(--text)}
+    .box-info{font-size:.6875rem;color:var(--muted);line-height:1.6;margin-top:.5rem}
+  </style>
+</head>
+<body>
+
+  <div id="nav-container"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <h3 data-i18n="ec.ticker_h3">Ticker</h3>
+      <input type="text" id="ticker-input" value="SPY" placeholder="Ticker" list="ticker-list">
+      <datalist id="ticker-list"></datalist>
+
+      <hr>
+      <h3 data-i18n="ec.zeitraum_h3">Zeitraum</h3>
+      <div class="ec-seg" id="seg-bereich"><button type="button" data-v="3M">3M</button><button type="button" data-v="6M">6M</button><button type="button" data-v="1J" data-i18n="ec.b_1j">1J</button><button type="button" data-v="2J" data-i18n="ec.b_2j">2J</button><button type="button" data-v="5J" data-i18n="ec.b_5j">5J</button></div>
+      <h3 data-i18n="ec.art_h3">Darstellung</h3>
+      <div class="ec-seg" id="seg-art"><button type="button" data-v="kerzen" data-i18n="ec.art_kerzen">Kerzen</button><button type="button" data-v="linie" data-i18n="ec.art_linie">Linie</button></div>
+
+      <hr>
+      <div class="ec-kopf"><h3 data-i18n="ec.termine_h3">Termine</h3><button class="ec-link" id="btn-alle" type="button" data-i18n="ec.alle">Alle an/aus</button></div>
+      <div class="ec-liste" id="ec-liste"></div>
+      <label class="ec-check"><input type="checkbox" id="chk-kuerzel" checked><span data-i18n="ec.kuerzel">Kürzel über den Linien</span></label>
+
+      <hr>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.6">
+        <span data-i18n-html="ec.sidebar_desc">Bei Titeln aus dem Euroraum (Xetra, Euronext, Mailand) sind die <b>EZB-Zinsentscheide</b> automatisch eingeblendet. Die US-Termine gelten für alle Basiswerte.</span>
+      </div>
+    </aside>
+
+    <main>
+      <div class="loading-overlay" id="loading"><div class="spinner"></div><span data-i18n="common.loading">Lade Daten&hellip;</span></div>
+      <div class="error-banner" id="error-banner"></div>
+      <h1 class="page-title"><b data-i18n="ec.page_title">Event-Chart</b> &mdash; <span id="title-ticker">SPY</span></h1>
+      <p class="page-caption" data-i18n="ec.page_caption">Kurschart mit Fed- und EZB-Terminen, Arbeitsmarktbericht und Verfallsterminen als senkrechte Linien, darunter der durchschnittliche Kursverlauf rund um einen Termin.</p>
+
+      <section class="ec-karte" aria-label="Kurschart mit Terminen">
+        <div class="ec-legende" id="ec-legende" aria-live="polite"></div>
+        <p class="ec-hinweis" id="ec-hinweis" hidden></p>
+        <div class="ec-box"><div id="ec-chart"></div></div>
+        <div class="ec-pane">
+          <div class="ec-pane-kopf">
+            <div class="ec-pane-titel"><b id="avg-titel">Durchschnittsverlauf</b>
+              <span data-i18n="ec.avg_unter">normiert auf den Schluss am Termintag = 100 · Handelstage · gestrichelt: alle Handelstage</span></div>
+            <div class="ec-steuer">
+              <label><span data-i18n="ec.l_termin">Termin</span> <select id="a-typ"></select></label>
+              <label><span data-i18n="ec.l_jahre">Jahre</span> <select id="a-jahre"><option value="5" data-i18n="ec.j5">5 Jahre</option><option value="10" data-i18n="ec.j10">10 Jahre</option><option value="15" data-i18n="ec.j15">15 Jahre</option><option value="20" data-i18n="ec.j20">20 Jahre</option><option value="0" data-i18n="ec.j_alle">seit 2000</option></select></label>
+              <label><span data-i18n="ec.l_vor">Vorher</span> <select id="a-vor"><option>5</option><option>10</option><option>20</option></select></label>
+              <label><span data-i18n="ec.l_nach">Nachher</span> <select id="a-nach"><option>5</option><option>10</option><option>20</option><option>40</option><option>60</option></select></label>
+            </div>
+          </div>
+          <div class="ec-avg"><div id="ec-avg"></div></div>
+        </div>
+      </section>
+
+      <section class="ec-karte" aria-label="Kennzahlen zum Durchschnittsverlauf">
+        <div class="ec-kpis" id="ec-kpis"></div>
+        <div class="ec-tab-wrap"><table class="ec-table" id="ec-tab"></table></div>
+      </section>
+
+      <section class="ec-karte">
+        <h2 data-i18n="ec.next_h">Nächste Termine</h2>
+        <ul class="ec-next" id="ec-next"></ul>
+      </section>
+
+      <details open style="margin-top:1rem">
+        <summary data-i18n="common.methodology">Methodik</summary>
+        <div class="details-body">
+          <ul>
+            <li data-i18n-html="ec.m_kurse"><b>Kurse:</b> Tagesschluss (Eröffnung, Hoch, Tief, Schluss) aus der SeasonAlpha-Datenbank ab 1999. Über 600 Handelstagen im Ausschnitt zeichnet der Chart eine Linie statt Kerzen.</li>
+            <li data-i18n-html="ec.m_verfall"><b>Verfall:</b> Optionsverfall (OPEX) am dritten Freitag, bei NYSE-Schließung am Handelstag davor, bis 2019 nach dieser Regel, ab 2020 nach dem Cboe-Kalender. Großer Verfall (Triple Witching) = März, Juni, September, Dezember. Quartalsende-Verfall = letzter NYSE-Handelstag im Quartal. VIX-Verfall nach Cboe ab Kontrakt 09/2015.</li>
+            <li data-i18n-html="ec.m_fed"><b>Fed und EZB:</b> Zinsentscheide und Protokolle laut federalreserve.gov, außerplanmäßige Fed-Sitzungen mit Zinsbeschluss getrennt. Künftige Protokolle: Sitzung + drei Wochen. EZB-Zinsentscheide ab 2015; außerplanmäßige EZB-Sitzungen fehlen.</li>
+            <li data-i18n-html="ec.m_jobs"><b>Arbeitsmarktbericht:</b> US-Arbeitsmarktbericht (Beschäftigung und Arbeitslosenquote) nach der Terminregel des BLS, mit den Verschiebungen durch die Haushaltssperren 2013 und 2025.</li>
+            <li data-i18n-html="ec.m_ausland"><b>Nicht-US-Titel:</b> Fällt ein Termin auf einen Tag ohne Handel an der Heimatbörse, zählt der nächste Handelstag. Beim DAX und anderen europäischen Titeln sind die US-Verfallstermine eingeblendet; der Eurex-Verfall folgt eigenen Regeln.</li>
+            <li data-i18n-html="ec.m_avg"><b>Durchschnittsverlauf:</b> Für jeden Termin im gewählten Zeitraum der Kursverlauf von x Handelstagen vorher bis y Handelstage nachher, normiert auf den Schluss am Termintag = 100. Mittel, Median und mittlere Hälfte (25–75 %) über alle Termine mit vollständigem Fenster. Zum Vergleich derselbe Verlauf für jeden Handelstag im selben Zeitraum. Kein Signifikanztest, keine Handelsempfehlung.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details style="margin-top:.5rem">
+        <summary data-i18n="ec.faq_h">Häufige Fragen zum Event-Chart</summary>
+        <div class="details-body">
+          <h3 data-i18n="ec.faq1_q">Was zeigt der Durchschnittsverlauf?</h3>
+          <p data-i18n="ec.faq1_a">Wie sich der Kurs im Mittel vor und nach einem Termin bewegt hat, gemessen am Schlusskurs des Termintags. Die gestrichelte Linie zeigt denselben Verlauf für alle Handelstage, damit erkennbar ist, ob der Termin vom üblichen Verlauf abweicht.</p>
+          <h3 data-i18n="ec.faq2_q">Warum erscheinen beim DAX die EZB-Termine?</h3>
+          <p data-i18n="ec.faq2_a">Für Titel aus dem Euroraum ist die EZB die zuständige Notenbank. Die Seite blendet ihre Zinsentscheide deshalb bei Xetra-, Euronext- und Mailänder Titeln automatisch ein. Für alle anderen Basiswerte lassen sie sich in der Liste zuschalten.</p>
+          <h3 data-i18n="ec.faq3_q">Warum gibt es EZB-Termine erst ab 2015?</h3>
+          <p data-i18n="ec.faq3_a">Die Sitzungsliste der Seite beginnt 2015. Wer für die EZB einen längeren Zeitraum wählt, sieht den Verlauf ab 2015, und der Vergleich mit allen Handelstagen nutzt denselben Zeitraum.</p>
+          <h3 data-i18n="ec.faq4_q">Ist der Verlauf eine Prognose?</h3>
+          <p data-i18n="ec.faq4_a">Nein. Er beschreibt, wie es bei früheren Terminen gelaufen ist. Ob ein Unterschied zum üblichen Verlauf zufällig ist, prüft die Seite nicht.</p>
+        </div>
+      </details>
+    </main>
+  </div>
+
+  <div id="footer-container"></div>
+
+  <script>window.__SA_SB_URL='%%SUPABASE_URL%%';window.__SA_SB_KEY='%%SUPABASE_ANON_KEY%%';</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.__SA_RELEASE='%%RELEASE%%';window.__SA_METHODE='alt';</script>
+  <script src="/landing/js/methode.js"></script>
+  <script src="/landing/js/auth.js"></script>
+  <script src="/landing/js/i18n.js"></script>
+  <script src="/landing/js/app.js"></script>
+  <script src="/landing/js/kurse.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@4"></script>
+  <script src="/landing/js/charts.js"></script>
+  <script src="/landing/js/boersenkalender.js"></script>
+  <script src="/landing/js/event-chart-compute.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    // Rechnung: landing/js/event-chart-compute.js (SA.eventChart). Termine: landing/data/event_termine.json
+    // (scripts/build_event_termine.py). Hier nur Laden + Darstellung.
+    function T(k, de) { return (SA.i18n && SA.i18n.t) ? SA.i18n.t(k, de) : de; }
+    function EN() { return !!(SA.i18n && SA.i18n.isEN && SA.i18n.isEN()); }
+    function fmt(s, o) { return String(s).replace(/\{(\w+)\}/g, function (_, k) { return o[k] != null ? o[k] : ''; }); }
+    function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+    function zahl(v, st) { return v.toLocaleString(EN() ? 'en-US' : 'de-DE', { minimumFractionDigits: st, maximumFractionDigits: st }); }
+    function pz(v, st) { st = st == null ? 2 : st; return (v >= 0 ? '+' : '−') + zahl(Math.abs(v), st) + (EN() ? '%' : ' %'); }
+    function datum(iso) { var p = iso.split('-'); return EN() ? p[1] + '/' + p[2] + '/' + p[0] : p[2] + '.' + p[1] + '.' + p[0]; }
+    function datumKurz(iso) { var p = iso.split('-'); return EN() ? p[1] + '/' + p[2] + '/' + p[0].slice(2) : p[2] + '.' + p[1] + '.' + p[0].slice(2); }
+    var WT_DE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WT_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    function wtag(iso) { return (EN() ? WT_EN : WT_DE)[new Date(iso + 'T12:00:00Z').getUTCDay()]; }
+
+    var TYPEN = [
+      { code: 'FOMC',  kurz: 'FOMC',  de: ['Fed-Zinsentscheid', '14:00 New York'], en: ['Fed rate decision', '2 pm New York'], v: '--e-fomc' },
+      { code: 'FOMCX', kurz: 'FOMC*', de: ['Fed-Sondersitzung', 'außerplanmäßig'], en: ['Fed emergency meeting', 'unscheduled'], v: '--e-fomcx' },
+      { code: 'EZB',   kurz: 'EZB',   de: ['EZB-Zinsentscheid', 'Frankfurt · ab 2015'], en: ['ECB rate decision', 'Frankfurt · from 2015'], v: '--e-ezb', ab: '2015-01-01' },
+      { code: 'MIN',   kurz: 'MIN',   de: ['Fed-Protokoll', 'Minutes, 3 Wochen nach der Sitzung'], en: ['Fed minutes', 'three weeks after the meeting'], v: '--e-min' },
+      { code: 'JOBS',  kurz: 'JOBS',  de: ['Arbeitsmarktbericht', 'Beschäftigung + Arbeitslosenquote'], en: ['Jobs report', 'payrolls + unemployment rate'], v: '--e-jobs' },
+      { code: 'TW',    kurz: 'TW',    de: ['Großer Verfall', 'Triple Witching, Quartalsmonat'], en: ['Triple witching', 'quarterly expiration'], v: '--e-tw' },
+      { code: 'OPEX',  kurz: 'OPEX',  de: ['Optionsverfall', '3. Freitag im Monat'], en: ['Options expiration', '3rd Friday of the month'], v: '--e-opex' },
+      { code: 'Q',     kurz: 'Q',     de: ['Quartalsende-Verfall', 'SPX-Quartalsoptionen'], en: ['Quarter-end expiration', 'SPX quarterlies'], v: '--e-q' },
+      { code: 'VIX',   kurz: 'VIX',   de: ['VIX-Verfall', 'VIXpiration, meist Mittwoch'], en: ['VIX expiration', 'VIXpiration, usually Wednesday'], v: '--e-vix' }
+    ];
+    var TYP = {}, PRIO = {};
+    TYPEN.forEach(function (t, i) { TYP[t.code] = t; PRIO[t.code] = i; });
+    function name(c) { return TYP[c][EN() ? 'en' : 'de'][0]; }
+    function info(c) { return TYP[c][EN() ? 'en' : 'de'][1]; }
+    function kurz(c) { return EN() && c === 'EZB' ? 'ECB' : TYP[c].kurz; }
+    function farbe(c) { return css(TYP[c].v); }
+    var EUROZONE = { XETRA: 1, EURONEXT: 1, MILAN: 1 };   // = shared/central_banks.EXCHANGE_TO_CENTRAL_BANK → ECB
+    var BEREICHE = { '3M': 63, '6M': 126, '1J': 252, '2J': 504, '5J': 1260 };
+    var KERZEN_MAX = 600;
+
+    function merk(k, v) {
+      try { if (v === undefined) return JSON.parse(localStorage.getItem('sa-eventchart.' + k)); localStorage.setItem('sa-eventchart.' + k, JSON.stringify(v)); }
+      catch (e) { return null; }
+    }
+    var wahl = {
+      aktiv: new Set(merk('aktiv') || ['FOMC', 'FOMCX', 'TW', 'OPEX', 'VIX', 'JOBS']),
+      bereich: BEREICHE[merk('bereich')] ? merk('bereich') : '1J',
+      art: merk('art') === 'linie' ? 'linie' : 'kerzen',
+      kuerzel: merk('kuerzel') !== false,
+      typ: TYP[merk('typ')] ? merk('typ') : 'FOMC',
+      jahre: [0, 5, 10, 15, 20].indexOf(merk('jahre')) >= 0 ? merk('jahre') : 10,
+      vor: [5, 10, 20].indexOf(merk('vor')) >= 0 ? merk('vor') : 10,
+      nach: [5, 10, 20, 40, 60].indexOf(merk('nach')) >= 0 ? merk('nach') : 20
+    };
+
+    var EVENTS = null, proTag = null;          // [[iso, code]], Map iso → [codes]
+    var ticker = null, roh = [], daten = [], schluss = [], achse = [], letzter = 0, sicht = null, zoomTimer = null;
+    var chart = null, avgChart = null, _anfrage = 0;
+    var $loading = document.getElementById('loading');
+    function zeigeFehler(t) { var b = document.getElementById('error-banner'); b.textContent = t; b.style.display = 'block'; }
+    function versteckeFehler() { document.getElementById('error-banner').style.display = 'none'; }
+
+    function termineLaden() {
+      if (EVENTS) return Promise.resolve(EVENTS);
+      return fetch('/landing/data/event_termine.json', { cache: 'no-cache' }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (j) {
+        if (!j || !Array.isArray(j.termine)) throw new Error('Terminliste ungültig');
+        EVENTS = j.termine.filter(function (e) { return TYP[e[1]]; });
+        proTag = new Map();
+        EVENTS.forEach(function (e) { if (!proTag.has(e[0])) proTag.set(e[0], []); proTag.get(e[0]).push(e[1]); });
+        proTag.forEach(function (l) { l.sort(function (a, b) { return PRIO[a] - PRIO[b]; }); });
+        return EVENTS;
+      });
+    }
+
+    // ── Hauptchart ──
+    function ausschnitt() {
+      if (sicht) return sicht;
+      var n = BEREICHE[wahl.bereich];
+      return [Math.max(0, letzter - n + 1), Math.min(achse.length - 1, letzter + Math.max(15, Math.round(n / 8)))];
+    }
+    function setzeSicht(min, max) {
+      var von = Math.max(0, Math.round(min)), bis = Math.min(achse.length - 1, Math.round(max));
+      if (bis - von < 10) { var m = (von + bis) >> 1; von = Math.max(0, m - 5); bis = Math.min(achse.length - 1, m + 5); }
+      sicht = [von, bis];
+      clearTimeout(zoomTimer); zoomTimer = setTimeout(zeichneHaupt, 60);
+    }
+    function termineIm(von, bis) {
+      var g = new Map();
+      proTag.forEach(function (codes, d) {
+        var an = codes.filter(function (c) { return wahl.aktiv.has(c); });
+        if (!an.length) return;
+        var i = SA.eventChart.idxAb(achse, d);
+        if (i < von || i > bis) return;
+        if (!g.has(i)) g.set(i, { i: i, codes: [] });
+        g.get(i).codes.push.apply(g.get(i).codes, an);
+      });
+      return Array.from(g.values()).map(function (x) {
+        var u = Array.from(new Set(x.codes)).sort(function (a, b) { return PRIO[a] - PRIO[b]; });
+        return { i: x.i, codes: u };
+      });
+    }
+    function tip(i) {
+      if (i == null || !roh[i]) return '';
+      var r = roh[i], v = roh[i - 1];
+      var h = '<div class="ec-tt"><b>' + wtag(r.date) + ' ' + datum(r.date) + '</b><br>O ' + zahl(r.o, 2) + ' · H ' + zahl(r.h, 2) + ' · ' + (EN() ? 'L ' : 'T ') + zahl(r.l, 2) + ' · ' + (EN() ? 'C ' : 'S ') + '<b>' + zahl(r.c, 2) + '</b>';
+      if (v) { var c = (r.c / v.c - 1) * 100; h += ' <span class="' + (c >= 0 ? 'up' : 'down') + '">' + pz(c) + '</span>'; }
+      termineIm(i, i).forEach(function (t) { t.codes.forEach(function (c) { h += '<br><span style="color:' + farbe(c) + '">■</span> ' + name(c); }); });
+      return h + '</div>';
+    }
+    function zeichneHaupt() {
+      if (!roh.length) return;
+      var a = ausschnitt(), von = a[0], bis = a[1];
+      var kerzen = wahl.art === 'kerzen' && (bis - von) <= KERZEN_MAX;
+      var hin = document.getElementById('ec-hinweis');
+      hin.hidden = !(wahl.art === 'kerzen' && !kerzen);
+      hin.textContent = fmt(T('ec.hinweis_linie', 'Bei mehr als {n} Handelstagen wird als Linie gezeichnet.'), { n: KERZEN_MAX });
+      var pkt = [];
+      for (var i = von; i <= Math.min(bis, letzter); i++) { var r = roh[i]; pkt.push(kerzen ? { x: i, y: [r.o, r.h, r.l, r.c] } : { x: i, y: r.c }); }
+      var el = document.getElementById('ec-chart');
+      var mitText = wahl.kuerzel && (el.clientWidth || 800) / (bis - von + 1) >= 2.2;
+      var anns = termineIm(von, bis).map(function (t) {
+        return { x: t.i, borderColor: farbe(t.codes[0]), strokeDashArray: t.i > letzter ? 2 : 4, opacity: 0.85,
+          label: mitText ? { text: t.codes.map(kurz).join(' · '), orientation: 'horizontal', position: 'top', offsetY: -2, borderWidth: 0,
+            style: { background: 'transparent', color: farbe(t.codes[0]), fontSize: '10px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' } } : { text: '' } };
+      });
+      var lo = Infinity, hi = -Infinity;
+      for (var j = von; j <= Math.min(bis, letzter); j++) { lo = Math.min(lo, kerzen ? roh[j].l : roh[j].c); hi = Math.max(hi, kerzen ? roh[j].h : roh[j].c); }
+      if (!isFinite(lo)) { lo = hi = roh[letzter].c; }
+      var rand = Math.max((hi - lo) * 0.05, hi * 0.002);
+      var opt = {
+        chart: { type: kerzen ? 'candlestick' : 'line', height: '100%', background: 'transparent', foreColor: css('--muted'), fontFamily: 'JetBrains Mono, monospace',
+          animations: { enabled: false }, toolbar: { show: true, tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
+          zoom: { enabled: true, type: 'x' },
+          events: {
+            zoomed: function (c, o) { if (o && o.xaxis) setzeSicht(o.xaxis.min, o.xaxis.max); },
+            scrolled: function (c, o) { if (o && o.xaxis) setzeSicht(o.xaxis.min, o.xaxis.max); },
+            beforeResetZoom: function () { sicht = null; setTimeout(zeichneHaupt, 0); var b = ausschnitt(); return { xaxis: { min: b[0] - 0.5, max: b[1] + 0.5 } }; }
+          } },
+        theme: { mode: 'dark' },
+        series: [{ name: ticker, data: pkt }],
+        stroke: { width: kerzen ? 1 : 1.6, colors: kerzen ? undefined : [css('--accent')] },
+        colors: [css('--accent')],
+        plotOptions: { candlestick: { colors: { upward: css('--up'), downward: css('--down') }, wick: { useFillColor: true } } },
+        grid: { borderColor: 'rgba(232,168,32,.06)', padding: { top: 18, right: 8 } },
+        xaxis: { type: 'numeric', min: von - 0.5, max: bis + 0.5, tickAmount: 8, axisBorder: { color: css('--border') }, axisTicks: { color: css('--border') },
+          labels: { rotate: 0, hideOverlappingLabels: true, formatter: function (v) { var k = Math.round(v); return achse[k] ? datumKurz(achse[k]) : ''; } },
+          tooltip: { enabled: false } },
+        yaxis: { opposite: true, min: lo - rand, max: hi + rand, tickAmount: 6, labels: { formatter: function (v) { return zahl(v, v > 1000 ? 0 : 2); } } },
+        annotations: { xaxis: anns },
+        tooltip: { theme: 'dark', custom: function (o) { return tip(pkt[o.dataPointIndex] && pkt[o.dataPointIndex].x); } },
+        legend: { show: false },
+        dataLabels: { enabled: false }
+      };
+      if (chart) chart.destroy();
+      chart = new ApexCharts(el, opt);
+      chart.render();
+    }
+    function legende() {
+      var r = roh[letzter], v = roh[letzter - 1];
+      var h = '<b>' + ticker + '</b><span>' + wtag(r.date) + ' ' + datum(r.date) + '</span><span>O <b>' + zahl(r.o, 2) + '</b> H <b>' + zahl(r.h, 2) + '</b> ' + (EN() ? 'L' : 'T') + ' <b>' + zahl(r.l, 2) + '</b> ' + (EN() ? 'C' : 'S') + ' <b>' + zahl(r.c, 2) + '</b></span>';
+      if (v) { var c = (r.c / v.c - 1) * 100; h += '<span class="' + (c >= 0 ? 'up' : 'down') + '">' + pz(c) + '</span>'; }
+      document.getElementById('ec-legende').innerHTML = h;
+    }
+
+    // ── Durchschnittsverlauf ──
+    function startDatum() {
+      var e = daten[letzter];
+      var s = wahl.jahre ? (Number(e.slice(0, 4)) - wahl.jahre) + e.slice(4) : '2000-01-01';
+      if (TYP[wahl.typ].ab && s < TYP[wahl.typ].ab) s = TYP[wahl.typ].ab;     // Vergleichsbasis im selben Zeitraum
+      return s;
+    }
+    function zeichneAvg() {
+      if (!roh.length) return;
+      var termine = EVENTS.filter(function (e) { return e[1] === wahl.typ; }).map(function (e) { return e[0]; });
+      var r = SA.eventChart.durchschnitt(daten, schluss, termine, { vor: wahl.vor, nach: wahl.nach, start: startDatum() });
+      document.getElementById('avg-titel').textContent = fmt(T('ec.avg_titel', 'Durchschnittsverlauf {t} um „{e}“'), { t: ticker, e: name(wahl.typ) });
+      var kpis = document.getElementById('ec-kpis'), tab = document.getElementById('ec-tab');
+      if (r.n < 5) {
+        kpis.innerHTML = '<div class="ec-kpi"><div class="l">' + T('ec.k_termine', 'Termine') + '</div><div class="v">' + r.n + '</div><div class="s">' + T('ec.k_zuwenig', 'zu wenige für einen Verlauf (mindestens 5)') + '</div></div>';
+        tab.innerHTML = ''; if (avgChart) { avgChart.destroy(); avgChart = null; } document.getElementById('ec-avg').innerHTML = '';
+        return;
+      }
+      var vor = wahl.vor, nach = wahl.nach;
+      function k(j) { return j + vor; }
+      var ende = r.mittel[k(nach)] - 100, endeB = r.basis[k(nach)] - 100;
+      var pos = r.P.filter(function (p) { return p[k(nach)] > 100; }).length;
+      var vorlauf = 100 / r.mittel[0] * 100 - 100;
+      var tiefs = r.P.map(function (p) { return Math.min.apply(null, p.slice(k(0))); }).sort(function (a, b) { return a - b; });
+      var loc = EN() ? 'en-US' : 'de-DE';
+      kpis.innerHTML = [
+        [T('ec.k_termine', 'Termine'), r.n, fmt(T('ec.k_seit', 'seit {d}'), { d: datum(r.start) })],
+        [fmt(T('ec.k_nach', 'Ø nach {n} Tagen'), { n: nach }), '<span class="' + (ende >= 0 ? 'up' : 'down') + '">' + pz(ende) + '</span>', fmt(T('ec.k_normal', 'normale Tage {p} · n {n}'), { p: pz(endeB), n: r.nBasis.toLocaleString(loc) })],
+        [fmt(T('ec.k_median', 'Median nach {n} Tagen'), { n: nach }), pz(r.median[k(nach)] - 100), fmt(T('ec.k_pos', 'positiv in {p} von {n}'), { p: pos, n: r.n })],
+        [fmt(T('ec.k_vorlauf', 'Ø Vorlauf {n} Tage'), { n: vor }), pz(vorlauf), T('ec.k_vorlauf_s', 'Rendite bis zum Termintag')],
+        [T('ec.k_tief', 'Tiefster Stand danach'), pz(SA.eventChart.quantil(tiefs, 0.5) - 100), fmt(T('ec.k_tief_s', 'Median des Tiefs bis Tag +{n}'), { n: nach })]
+      ].map(function (x) { return '<div class="ec-kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="s">' + x[2] + '</div></div>'; }).join('');
+
+      var xs = []; for (var j = -vor; j <= nach; j++) xs.push(j);
+      function rd(v) { return Math.round(v * 1000) / 1000; }
+      var werte = [].concat(r.q1, r.q3, r.mittel, r.median, r.basis);
+      var lo = Math.min.apply(null, werte), hi = Math.max.apply(null, werte), rand = Math.max((hi - lo) * 0.08, 0.1);
+      var opt = {
+        chart: { type: 'rangeArea', height: '100%', background: 'transparent', foreColor: css('--muted'), fontFamily: 'JetBrains Mono, monospace',
+          animations: { enabled: false }, toolbar: { show: false }, zoom: { enabled: false } },
+        theme: { mode: 'dark' },
+        series: [
+          { type: 'rangeArea', name: T('ec.s_band', 'Mittlere Hälfte (25–75 %)'), data: xs.map(function (x, i) { return { x: x, y: [rd(r.q1[i]), rd(r.q3[i])] }; }) },
+          { type: 'line', name: fmt(T('ec.s_mittel', 'Mittel (n {n})'), { n: r.n }), data: xs.map(function (x, i) { return { x: x, y: rd(r.mittel[i]) }; }) },
+          { type: 'line', name: 'Median', data: xs.map(function (x, i) { return { x: x, y: rd(r.median[i]) }; }) },
+          { type: 'line', name: T('ec.s_alle', 'Alle Handelstage'), data: xs.map(function (x, i) { return { x: x, y: rd(r.basis[i]) }; }) }
+        ],
+        colors: [css('--accent'), css('--accent'), css('--text'), css('--muted')],
+        fill: { opacity: [0.16, 1, 1, 1] },
+        stroke: { curve: 'straight', width: [0, 2.4, 1.4, 1.6], dashArray: [0, 0, 4, 2] },
+        grid: { borderColor: 'rgba(232,168,32,.06)', padding: { right: 12 } },
+        xaxis: { type: 'numeric', min: -vor, max: nach, tickAmount: Math.min(vor + nach, 12), axisBorder: { color: css('--border') }, axisTicks: { color: css('--border') },
+          labels: { formatter: function (v) { var n = Math.round(v); return n === 0 ? T('ec.x_termin', 'Termin') : (n > 0 ? '+' : '') + n; } },
+          title: { text: T('ec.x_titel', 'Handelstage relativ zum Termin'), style: { fontWeight: 500, color: css('--muted') } }, tooltip: { enabled: false } },
+        yaxis: { opposite: true, min: lo - rand, max: hi + rand, tickAmount: 5, forceNiceScale: false, labels: { formatter: function (v) { return zahl(v, 1); }, minWidth: 52 } },
+        annotations: { xaxis: [{ x: 0, borderColor: farbe(wahl.typ), strokeDashArray: 0, label: { text: kurz(wahl.typ), borderWidth: 0, orientation: 'horizontal', style: { background: 'transparent', color: farbe(wahl.typ), fontWeight: 600 } } }],
+          yaxis: [{ y: 100, borderColor: css('--border'), strokeDashArray: 3 }] },
+        dataLabels: { enabled: false },
+        markers: { size: 0 },
+        legend: { show: true, position: 'top', horizontalAlign: 'left', fontSize: '12px', labels: { colors: css('--dim') }, markers: { size: 6 } },
+        tooltip: { shared: true, theme: 'dark', x: { formatter: function (v) { return v === 0 ? T('ec.x_termintag', 'Termintag') : fmt(T('ec.x_tag', 'Tag {n}'), { n: (v > 0 ? '+' : '') + v }); } },
+          y: { formatter: function (v) { return Array.isArray(v) ? zahl(v[0], 2) + ' – ' + zahl(v[1], 2) : (v == null ? '' : zahl(v, 2) + '  (' + pz(v - 100) + ')'); } } }
+      };
+      if (avgChart) avgChart.destroy();
+      avgChart = new ApexCharts(document.getElementById('ec-avg'), opt);
+      avgChart.render();
+
+      var stufen = [1, 5, 10, 20, 40, 60].filter(function (s) { return s <= nach; }); if (stufen.indexOf(nach) < 0) stufen.push(nach);
+      var h = '<thead><tr><th>' + T('ec.t_nach', 'Nach Tagen') + '</th><th>' + T('ec.t_termin', 'Ø Termin') + '</th><th>Median</th><th>' + T('ec.t_pos', 'positiv') + '</th><th>' + T('ec.t_alle', 'Ø alle Tage') + '</th><th>' + T('ec.t_diff', 'Differenz') + '</th></tr></thead><tbody>';
+      stufen.forEach(function (s) {
+        var m = r.mittel[k(s)] - 100, b = r.basis[k(s)] - 100, md = r.median[k(s)] - 100;
+        var p = r.P.filter(function (x) { return x[k(s)] > 100; }).length, pb = r.B.filter(function (x) { return x[k(s)] > 100; }).length / r.B.length * 100;
+        h += '<tr><td>+' + s + '</td><td class="' + (m >= 0 ? 'up' : 'down') + '">' + pz(m) + '</td><td>' + pz(md) + '</td><td>' +
+          fmt(T('ec.t_pos_zelle', '{p} von {n} ({a} %; alle {b} %)'), { p: p, n: r.n, a: Math.round(p / r.n * 100), b: Math.round(pb) }) + '</td><td>' + pz(b) + '</td><td>' +
+          (m - b >= 0 ? '+' : '−') + zahl(Math.abs(m - b), 2) + ' ' + T('ec.pp', 'Pp') + '</td></tr>';
+      });
+      tab.innerHTML = h + '</tbody>';
+    }
+
+    // ── Liste, nächste Termine, Steuerung ──
+    function baueListe() {
+      var box = document.getElementById('ec-liste'); box.innerHTML = '';
+      var vorhanden = new Set(EVENTS.map(function (e) { return e[1]; }));
+      TYPEN.filter(function (t) { return vorhanden.has(t.code); }).forEach(function (t) {
+        var lab = document.createElement('label');
+        lab.className = 'ec-ev' + (wahl.aktiv.has(t.code) ? '' : ' aus');
+        lab.style.setProperty('--c', 'var(' + t.v + ')');
+        lab.innerHTML = '<input type="checkbox"' + (wahl.aktiv.has(t.code) ? ' checked' : '') + '><span class="box"></span><span class="name">' + name(t.code) + '<small>' + info(t.code) + '</small></span><span class="kz">' + kurz(t.code) + '</span>';
+        lab.querySelector('input').addEventListener('change', function (e) {
+          if (e.target.checked) wahl.aktiv.add(t.code); else wahl.aktiv.delete(t.code);
+          lab.classList.toggle('aus', !e.target.checked);
+          merk('aktiv', Array.from(wahl.aktiv)); zeichneHaupt(); naechste();
+        });
+        box.appendChild(lab);
+      });
+      var sel = document.getElementById('a-typ');
+      sel.innerHTML = TYPEN.filter(function (t) { return vorhanden.has(t.code); }).map(function (t) {
+        return '<option value="' + t.code + '"' + (t.code === wahl.typ ? ' selected' : '') + '>' + name(t.code) + '</option>';
+      }).join('');
+    }
+    function naechste() {
+      var ul = document.getElementById('ec-next');
+      if (!roh.length) { ul.innerHTML = ''; return; }
+      var ab = daten[letzter];
+      var tage = Array.from(proTag.keys()).filter(function (d) { return d > ab && proTag.get(d).some(function (c) { return wahl.aktiv.has(c); }); }).sort().slice(0, 12);
+      if (!tage.length) { ul.innerHTML = '<li><span>' + T('ec.next_keine', 'Keine Termine ausgewählt.') + '</span></li>'; return; }
+      ul.innerHTML = tage.map(function (d) {
+        var tags = proTag.get(d).filter(function (c) { return wahl.aktiv.has(c); }).map(function (c) {
+          return '<span class="ec-chip" style="color:' + farbe(c) + '" title="' + name(c) + '">' + kurz(c) + '</span>';
+        }).join('');
+        return '<li><time datetime="' + d + '">' + wtag(d) + ' ' + datum(d) + '</time><span>' + tags + '</span></li>';
+      }).join('');
+    }
+    function segmente() {
+      document.querySelectorAll('#seg-bereich button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === wahl.bereich); b.setAttribute('aria-pressed', b.dataset.v === wahl.bereich); });
+      document.querySelectorAll('#seg-art button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === wahl.art); b.setAttribute('aria-pressed', b.dataset.v === wahl.art); });
+      document.getElementById('chk-kuerzel').checked = wahl.kuerzel;
+      document.getElementById('a-jahre').value = String(wahl.jahre);
+      document.getElementById('a-vor').value = String(wahl.vor);
+      document.getElementById('a-nach').value = String(wahl.nach);
+    }
+    document.querySelectorAll('#seg-bereich button').forEach(function (b) {
+      b.addEventListener('click', function () { wahl.bereich = b.dataset.v; merk('bereich', wahl.bereich); sicht = null; segmente(); zeichneHaupt(); });
+    });
+    document.querySelectorAll('#seg-art button').forEach(function (b) {
+      b.addEventListener('click', function () { wahl.art = b.dataset.v; merk('art', wahl.art); segmente(); zeichneHaupt(); });
+    });
+    document.getElementById('chk-kuerzel').addEventListener('change', function () { wahl.kuerzel = this.checked; merk('kuerzel', wahl.kuerzel); zeichneHaupt(); });
+    document.getElementById('btn-alle').addEventListener('click', function () {
+      wahl.aktiv = wahl.aktiv.size ? new Set() : new Set(TYPEN.map(function (t) { return t.code; }));
+      merk('aktiv', Array.from(wahl.aktiv)); baueListe(); zeichneHaupt(); naechste();
+    });
+    [['a-typ', 'typ', false], ['a-jahre', 'jahre', true], ['a-vor', 'vor', true], ['a-nach', 'nach', true]].forEach(function (x) {
+      document.getElementById(x[0]).addEventListener('change', function () { wahl[x[1]] = x[2] ? +this.value : this.value; merk(x[1], wahl[x[1]]); zeichneAvg(); });
+    });
+
+    function laden(t) {
+      t = String(t || '').trim().toUpperCase();
+      if (!t) return;
+      var nr = ++_anfrage;
+      $loading.style.display = 'flex'; versteckeFehler();
+      Promise.all([termineLaden(), SA.kurse.zeilen(t, { felder: ['date', 'open', 'high', 'low', 'close'], ab: '1999-01-01' })]).then(function (x) {
+        if (nr !== _anfrage) return;                       // überholte Antwort (schneller Tickerwechsel)
+        var rows = (x[1] || []).filter(function (r) { return r.close != null && isFinite(r.close) && r.close > 0; });
+        if (rows.length < 30) throw new Error(T('ec.zu_kurz', 'zu wenige Kurszeilen'));
+        roh = rows.map(function (r) {
+          var c = +r.close, o = r.open > 0 ? +r.open : c, h = r.high > 0 ? +r.high : Math.max(o, c), l = r.low > 0 ? +r.low : Math.min(o, c);
+          return { date: String(r.date).slice(0, 10), o: o, h: Math.max(h, o, c), l: Math.min(l, o, c), c: c };
+        });
+        daten = roh.map(function (r) { return r.date; });
+        schluss = roh.map(function (r) { return r.c; });
+        letzter = roh.length - 1;
+        achse = SA.eventChart.achse(daten, EVENTS.length ? EVENTS[EVENTS.length - 1][0] : null);
+        ticker = t; sicht = null;
+        var boerse = null; try { boerse = SA.boersenkalender.boerse(t); } catch (e) { boerse = null; }
+        if (boerse && EUROZONE[boerse] && !wahl.aktiv.has('EZB')) { wahl.aktiv.add('EZB'); merk('aktiv', Array.from(wahl.aktiv)); }
+        document.getElementById('title-ticker').textContent = t;
+        baueListe(); segmente(); legende(); zeichneHaupt(); zeichneAvg(); naechste();
+        $loading.style.display = 'none';
+      }).catch(function (e) {
+        if (nr !== _anfrage) return;
+        $loading.style.display = 'none';
+        roh = []; ticker = t;
+        document.getElementById('title-ticker').textContent = t;
+        if (chart) { chart.destroy(); chart = null; } if (avgChart) { avgChart.destroy(); avgChart = null; }
+        ['ec-legende', 'ec-kpis', 'ec-tab', 'ec-next', 'ec-chart', 'ec-avg'].forEach(function (i) { document.getElementById(i).innerHTML = ''; });
+        zeigeFehler(fmt(T('ec.fehler', 'Daten für {t} konnten nicht geladen werden ({e}).'), { t: t, e: (e && e.message) || e }));
+      });
+    }
+
+    function sprache() { if (!EVENTS) return; baueListe(); segmente(); if (roh.length) { legende(); zeichneHaupt(); zeichneAvg(); naechste(); } }
+    function start() {
+      if (typeof SA === 'undefined' || !SA.supabase) { setTimeout(start, 50); return; }
+      if (SA.supabase.url && SA.supabase.url.indexOf('%%') < 0) laden(SA.prefs.applyTicker('ticker-input', 'SPY'));
+      else zeigeFehler('Supabase nicht konfiguriert');
+    }
+    var rt; if (window.ResizeObserver) new ResizeObserver(function () { clearTimeout(rt); rt = setTimeout(zeichneHaupt, 150); }).observe(document.getElementById('ec-chart'));
+    SA.initTickerInput('ticker-input', 'ticker-list', function (t) { laden(t); });
+    document.addEventListener('sa:i18n-bereit', sprache);
+    segmente();
+    start();
+  })();
+  </script>
+</body>
+</html>
