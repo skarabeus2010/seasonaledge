@@ -296,6 +296,11 @@ Wenn ein Artikel Zahlen einer Seite zitiert, die sich täglich ändert, muss der
 | `seo_title` | Nein | eigener `<title>`, sonst `title` |
 | `updated` | Nein | bei inhaltlicher Überarbeitung setzen (Sitemap-`lastmod`) |
 
+**Autor (seit 2026-11-22):** kein Frontmatter-Feld. Jeder Artikel trägt automatisch die Person **Alex Seibel** —
+JSON-LD `author` (Person), `meta author`, `article:author` und die Zeile „Von/By Alex Seibel“ mit Link auf
+`/ueber-uns#autor`. Einzige Quelle: `AUTOR_NAME`/`AUTOR_URL`/`AUTOR_LD` in `shared/seo_basis.py`. Vita und
+Profil-Links (`sameAs`) fehlen bewusst, bis der Nutzer sie liefert — nichts erfinden.
+
 ---
 
 ## Content-Kalender (Empfehlung)

@@ -243,6 +243,7 @@ Häufigste Stolperfallen (Rest in UI_PATTERNS.md, Plotly-Theme in CHARTS.md):
 - **Eigene Bilder relativ einbinden** (`![Alt](<ordner>/datei.png)`, Datei unter `blog/posts/images/<ordner>/`); der Builder setzt DE `/blog/<slug>/images/…`, EN `/en/blog/<slug>/images/…` (bis 2026-10-07 zeigte EN fälschlich auf `/blog/` → 404 bei abweichendem Slug).
 - **Datenartikel zu einer sich ändernden Seite: eingefrorener Snapshot + Faktenblatt + Zahlenwächter** (Muster Wahlen: `scripts/wahlen_snapshot.py`, `scripts/research/wahlen_fakten.py`, `scripts/verify_wahlen_blog.py`). Zwei Mittel auf verschiedenen Stichproben nie ohne Fallzahl nebeneinander. Detail: [docs/BLOG_WORKFLOW.md](docs/BLOG_WORKFLOW.md).
 - Nach Blog-Code-Änderung neu bauen: `docker exec seasonalpha-app python3 blog/blog_builder.py --build` + `docker compose restart nginx`.
+- **Autor = Person „Alex Seibel“** aus `shared/seo_basis.AUTOR_*` (JSON-LD, Meta, Byline → `/ueber-uns#autor`); kein Frontmatter-Feld, Vita/`sameAs` erst mit Angaben des Nutzers.
 - **Terminierte Artikel (`status: scheduled` + `publish_date`) erscheinen NICHT von selbst** — gebaut wird nur im Deploy. Für einen Termin einmaligen Timer setzen: `systemd-run --unit=sa-blog-freischalten-<JJJJMMTT> --on-calendar='<JJJJ-MM-TT> 06:00:00 UTC' /opt/seasonaledge/deploy/blog_freischalten.sh` (Skript wiederholt Blog-Build, Sitemap, `release_setzen`, `verify_seo_html`; vorher einmal von Hand testen; übersteht keinen Neustart). Detail: [docs/BLOG_WORKFLOW.md](docs/BLOG_WORKFLOW.md).
 
 ### Sprache
