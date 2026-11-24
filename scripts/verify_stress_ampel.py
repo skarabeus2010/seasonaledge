@@ -673,7 +673,7 @@ def statisch(basis):
     crs, night, health, week = t(CRS), t(NIGHT), t(HEALTH), t(WEEK_T)
     P["schreibweg_ohne_if"] = True if ("IsolationForest" not in crs and "compute_regime_scores import compute_regime_scores" not in night
                                        and "stress_score.vollauf" in crs and "_stress.vollauf" in night) else "Schreibweg nutzt noch IF"
-    P["health_methodennachweis"] = True if ("stress_score.stress_aktuell" in health and "letzter_fertiger_lauf" in health) \
+    P["health_methodennachweis"] = True if ("stress_score.stress_bis" in health and "letzter_fertiger_lauf" in health) \
         else "Health-Check ohne Nachrechnung"
     # Seit 2026-10-09 (Nutzerentscheidung) steht die Ampel in KEINER Mail mehr — weder Weekly noch Daily.
     week_py, daily_py = t(WEEK_PY), t(DAILY_PY)

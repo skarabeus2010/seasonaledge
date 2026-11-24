@@ -163,6 +163,19 @@ def stress_aktuell(daten, closes):
     return z
 
 
+
+def stress_bis(daten, closes, stichtag):
+    """stress_aktuell auf den Kurszeilen bis einschließlich `stichtag` (ISO-Datum, `daten` aufsteigend).
+
+    Für den Vergleich eines gespeicherten Laufs mit der Nachrechnung: die Prices-Tabelle trägt während der
+    Handelszeit schon eine Intraday-Zeile der laufenden Sitzung. Ohne den Schnitt rechnet die Prüfung einen Tag
+    weiter als der Lauf und meldet eine Abweichung, die keine ist (Health-Check 24.11.2026, gestartet 15:29 UTC).
+    Der Score eines Tages hängt nur von diesem Tag und den Tagen davor ab — der Schnitt ändert ihn nicht."""
+    import bisect as _b
+    k = _b.bisect_right(daten, stichtag)
+    return stress_aktuell(daten[:k], closes[:k])
+
+
 def kurse_hash(daten, closes):
     h = hashlib.sha256()
     for d, c in zip(daten, closes):

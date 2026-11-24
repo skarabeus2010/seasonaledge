@@ -248,6 +248,10 @@ jobs:
         run: |
           python3 -m pip install --quiet httpx==0.28.1 postgrest==2.34.1
           python3 scripts/verify_db_wiederholung.py
+      # Health-Check 24.11.2026 rot (Fehlalarm): der GitHub-Cron 05:00 UTC startete 15:29 UTC, die Nachrechnung des
+      # Stress-Scores lief über die Intraday-Zeile von heute hinaus. Vergleich jetzt am gespeicherten Datum (stress_bis).
+      - name: Waechter - Stress-Score-Nachrechnung am Stichtag
+        run: python3 scripts/verify_stress_stichtag.py
       # Indikator-Zwillinge (Audit 2026-11-15): shared/indicators.py = landing/js/indicators.js fuer EMA (SMA-Start),
       # RSI (Wilder, ohne Verlust 100, flach unbestimmt), Bollinger (Population), MACD/LBR; Handfaelle beider Seiten.
       # Mutationen 7/7 (verify_indikator_zwillinge_mutation.py).

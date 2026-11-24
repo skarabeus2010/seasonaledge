@@ -856,8 +856,11 @@ def collect_health_data() -> dict:
             letzte = (client.table("stress_scores").select("date,score,s,ampel").eq("lauf_id", lauf["lauf_id"])
                       .order("date", desc=True).limit(1).execute().data) or []
             daten, closes, _ = stress_score.lade_kurse("SPY", client)
-            neu = stress_score.stress_aktuell(daten, closes)
             last_date_str = letzte[0]["date"] if letzte else "—"
+            # Nachrechnung bis zum gespeicherten Datum: während der US-Handelszeit trägt `prices` schon eine
+            # Intraday-Zeile von heute (der GitHub-Cron 05:00 UTC startete z. B. am 24.11. erst 15:29 UTC).
+            # Ob der Lauf aktuell ist, entscheidet getrennt das Alter in Werktagen.
+            neu = stress_score.stress_bis(daten, closes, last_date_str) if letzte else {}
             last_d = datetime.strptime(last_date_str, "%Y-%m-%d").date() if letzte else None
             age_workdays = 0
             probe = last_workday
@@ -873,7 +876,7 @@ def collect_health_data() -> dict:
                   or abs(float(letzte[0]["s"]) - neu["s"]) > 1e-9 or letzte[0]["ampel"] != neu["ampel"]):
                 status = "red"
                 detail = (f"Gespeicherter Wert {last_date_str} weicht von der Nachrechnung ab "
-                          f"(nachgerechnet bis {neu.get('date')}) — Lauf prüfen")
+                          f"(nachgerechnet für {neu.get('date')}) — Lauf prüfen")
             elif age_workdays == 0:
                 status, detail = "green", f"Aktuell bis {last_date_str}, nachgerechnet gleich"
             elif age_workdays <= 1:
